@@ -35,7 +35,8 @@ list, checks it (`validate_concepts.py`) and asks you to approve it by typing
 `/exam-papers:approve concepts`.
 
 To make a paper, give Claude your `spec.json` (format and template in the make-paper skill's
-`schemas/`) and invoke `/exam-papers:make-paper`.
+`schemas/`) and invoke `/exam-papers:make-paper`. The spec names its pack in `exam.syllabusPack`
+(e.g. `"icse9-physics-selina"`); the paper uses that pack's approved concept list and no other.
 
 ## Workflow
 
@@ -48,7 +49,7 @@ file does not change where the paper is. At the two approval points you type
 `/exam-papers:approve blueprint` and `/exam-papers:approve paper`; a hook records each one, with the
 file's hash, in `TASK/approvals.json`, and editing an approved file voids its approval.
 
-1. **Paper spec**: the user supplies `spec.json`; `validate_paper_spec.py` checks it (rules S1–S19).
+1. **Paper spec**: the user supplies `spec.json`; `validate_paper_spec.py` checks it (rules S1–S20).
 2. **Blueprint**: `make_blueprint.py` builds `blueprint.json` from the spec and the approved concept
    list: one slot per question part (chapter, marks, kind, difficulty, concept, MCQ answer letter). It
    first checks the concept list against its syllabus (`validate_concepts.py`, rules C1–C6). The user
@@ -145,7 +146,7 @@ requirements.txt, requirements-dev.txt
 
 ## Status
 
-- [x] Paper spec format + `validate_paper_spec.py` (rules S1–S19)
+- [x] Paper spec format + `validate_paper_spec.py` (rules S1–S20)
 - [x] Question and blueprint formats (rules Q1–Q15) + `check_questions.py`
 - [x] Shared enums (`spec_types.py`); rule numbers in every message (`[S6] ...`, `[Q4] ...`, `[C6] ...`)
 - [x] Syllabus 2026–2027 saved as the sample pack's `syllabus.md`
@@ -165,6 +166,8 @@ requirements.txt, requirements-dev.txt
 - [x] Review loop: up to 3 rounds, errors fixed without asking, warnings and suggestions decided by the
       teacher, disputes after round 3 (`review_status.py`, `review/rounds/`, `review/decisions.json`)
 - [x] Typed decisions on review findings (`/exam-papers:decide`; a hook writes `review/decisions.json`)
+- [x] The spec names its syllabus pack (`exam.syllabusPack`, rule S20); `make_blueprint.py` finds
+      `syllabi/<pack>/concepts.json` from it
 - [x] `/exam-papers:make-pack` skill: number the syllabus, draft the concept list, validate, gate 1
 - [x] Gate 1: a pack's concept list is approved by typing `/exam-papers:approve concepts` (validated,
       hash-bound); `make_blueprint.py` refuses an unapproved list
@@ -172,7 +175,7 @@ requirements.txt, requirements-dev.txt
       with `notTested` reasons; the ICSE Physics sample moved to point ids
 - [x] Final approval shows every change made in the review loop (`review_status.py --fixes`), and any
       automatic fix can be undone with `/exam-papers:decide reject ID`
-- [x] Unit tests moved to their own test data (`tests/test_data/`); 384 tests, all passing
+- [x] Unit tests moved to their own test data (`tests/test_data/`); 387 tests, all passing
 - [ ] New example: approve the `icse9-physics-ch1-5` blueprint, write its questions, review, render
 
 Open question: the syllabus includes spherical mirrors (with mirror-formula numericals) and

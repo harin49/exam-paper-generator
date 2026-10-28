@@ -4,7 +4,11 @@ Each enum member is also a plain string, so it compares equal to the value read 
     SectionType.MCQ == "mcq"  ->  True
 Use Enum.values() for membership checks and error messages.
 """
+import re
 from enum import Enum
+
+# A syllabus pack's folder name under syllabi/, e.g. "icse9-physics-selina" (spec: exam.syllabusPack).
+PACK_NAME = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
 
 class _StrEnum(str, Enum):

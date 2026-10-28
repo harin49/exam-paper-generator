@@ -17,7 +17,7 @@ from fractions import Fraction
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from spec_types import (Audience, Diagrams, Difficulty, KeyPart, MeasureOn,  # noqa: E402
+from spec_types import (PACK_NAME, Audience, Diagrams, Difficulty, KeyPart, MeasureOn,  # noqa: E402
                         Numbering, OutputFormat, SectionType, SubParts, WeightMode)
 
 SECTION_TYPES = SectionType.values()
@@ -32,7 +32,7 @@ DIFFICULTY_LEVELS = Difficulty.values()
 
 ALLOWED_KEYS = {
     "root": {"exam", "pattern", "content", "output"},
-    "exam": {"board", "class", "subject", "book", "chapters"},
+    "exam": {"board", "class", "subject", "book", "syllabusPack", "chapters"},
     "pattern": {"totalMarks", "durationMinutes", "sections", "numbering", "smallestMarkUnit"},
     "section": {"id", "type", "questionsOffered", "questionsToAttempt", "marksPerQuestion",
                 "sectionTotal", "mcqOptions", "subParts", "minSubParts", "maxSubParts",
@@ -129,6 +129,9 @@ def validate(spec):
         for k in ("board", "subject", "book"):
             need(r, exam, k, "exam", lambda x: isinstance(x, str) and x.strip(), "a non-empty string")
         need(r, exam, "class", "exam", lambda x: is_int(x) and x > 0, "a positive whole number")
+        need(r, exam, "syllabusPack", "exam", lambda x: isinstance(x, str) and PACK_NAME.match(x),
+             "the name of the syllabus pack's folder under syllabi/: lower case letters and digits, "
+             "words joined by hyphens (e.g. \"icse9-physics-selina\")", rule="S20")
         ch = need(r, exam, "chapters", "exam",
                   lambda x: isinstance(x, list) and x and all(is_int(c) and c > 0 for c in x),
                   "a non-empty list of positive chapter numbers", rule="S2")

@@ -98,6 +98,13 @@ class BrokenSpecs(unittest.TestCase):
             "weights": {"1": 50, "2": 50}}
         self.assertIn("no weight for chapter(s) [3]", self.errors())
 
+    def test_syllabus_pack_is_required_and_well_formed(self):
+        del self.spec["exam"]["syllabusPack"]
+        self.assertIn("[S20] exam.syllabusPack: is required", self.errors())
+        for bad in ("ICSE9-Physics", "icse9_physics", "icse9 physics", "", "-icse9"):
+            self.spec["exam"]["syllabusPack"] = bad
+            self.assertIn("[S20] exam.syllabusPack", self.errors(), bad)
+
     def test_missing_required_field(self):
         del self.spec["output"]["header"]
         self.assertIn("output.header: is required", self.errors())

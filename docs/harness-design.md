@@ -239,6 +239,11 @@ The plugin holds only code, prompts and formats. Everything a teacher makes live
 *Why:* an installed plugin is a cache that should not be written to, and Cowork can only write to
 attached folders. The teacher owns and can see everything.
 
+*As built:* a spec names its pack in `exam.syllabusPack` (required, rule S20), and
+`make_blueprint.py` reads `syllabi/<pack>/concepts.json` from the nearest folder above the spec, so a
+paper never runs on a guessed concept list. A pack is made with `/exam-papers:make-pack` and approved
+at gate 1 (D7); its syllabus points are numbered by a script (D21).
+
 ### D18. In cloud Cowork, one task makes one paper
 
 Where hooks run in a sandbox that ends with the task (Cowork on Pro and Max plans, and on Team and

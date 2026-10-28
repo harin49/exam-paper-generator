@@ -18,6 +18,7 @@ the skill's `scripts/spec_types.py`.
 | `class` | whole number | e.g. `9` |
 | `subject` | text | e.g. `"Physics"` |
 | `book` | text | e.g. `"Selina Concise Physics Part I"` |
+| `syllabusPack` | text | The syllabus pack the paper is made from: its folder name under `syllabi/` in the workspace, e.g. `"icse9-physics-selina"`. Its approved concept list decides what may be asked. |
 | `chapters` | list of chapter numbers | The chapters the paper may draw from. |
 
 ## `pattern`: sections and marks
@@ -96,6 +97,8 @@ Every message starts with its rule number, e.g. `[S6] pattern.sections[B]: secti
 - **S14.** If `everyChapterInCompulsorySection` is true, there is a compulsory section and it has at
   least one question per chapter.
 - **S15.** `header` is present, as text or `null`.
+- **S20.** `exam.syllabusPack` is present and is a pack folder name: lower case letters and digits,
+  words joined by hyphens.
 
 **Warnings** (the spec is valid, but something looks off):
 

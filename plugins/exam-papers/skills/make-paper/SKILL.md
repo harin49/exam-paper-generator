@@ -60,7 +60,7 @@ There are two places:
 |---|---|---|---|
 | every | `${CLAUDE_SKILL_DIR}/scripts/next_step.py` | Prints the one step that may run next (order from `${CLAUDE_SKILL_DIR}/workflow.json`) | nothing |
 | 0 | `${CLAUDE_SKILL_DIR}/scripts/new_paper.py` | Makes `TASK` and copies the user's spec into it | `TASK/spec.json` |
-| 1 | `${CLAUDE_SKILL_DIR}/scripts/validate_paper_spec.py` | Checks the spec (rules S1-S19) | nothing |
+| 1 | `${CLAUDE_SKILL_DIR}/scripts/validate_paper_spec.py` | Checks the spec (rules S1-S20) | nothing |
 | 2 | `${CLAUDE_SKILL_DIR}/scripts/make_blueprint.py` | Plans every question slot from the spec and concept list | `TASK/blueprint.json` |
 | 4 | `${CLAUDE_SKILL_DIR}/scripts/check_questions.py` | Checks the questions (rules Q1-Q15) | nothing |
 | 5.1 | `${CLAUDE_SKILL_DIR}/scripts/extract_paper.py` | Makes the paper with no answers for the blind solver | `TASK/review/solver-input.json` |
@@ -130,12 +130,13 @@ it as `spec.json`, and prints the folder's path: that is `TASK` from here on. It
 existing folder (a repeat on the same day gets `-2`, `-3`...). Exit code 2 means the spec could not be
 read. To carry on with an earlier paper, use its existing `TASK` and skip this script.
 
-Find the syllabus pack for the spec's board, class, subject and book under `syllabi/` in the
-workspace: that folder is `PACK`. If there is none, look for a matching sample pack under
-`${CLAUDE_SKILL_DIR}/assets/syllabi/`; if one matches, ask the user whether to copy it into
-`syllabi/`, and copy it only on their yes. If there is no pack at all, a concept list must be drafted
-and approved before a paper can be made: tell the user, ask for their syllabus, and make the pack
-with the make-pack skill (`/exam-papers:make-pack`); then come back to this step.
+The spec names its syllabus pack in `exam.syllabusPack`: `PACK` is `syllabi/<that name>/` in the
+workspace. If that folder does not exist and a sample pack of the same name is under
+`${CLAUDE_SKILL_DIR}/assets/syllabi/`, ask the user whether to copy it into `syllabi/`, and copy it
+only on their yes. Otherwise a concept list must be drafted and approved before a paper can be made:
+tell the user, ask for their syllabus, and make the pack with the make-pack skill
+(`/exam-papers:make-pack`, using the spec's pack name); then come back to this step. Never pick a
+different pack than the spec names.
 
 The pack's concept list must be approved as it is now (gate 1); `make_blueprint.py` refuses one that
 is not. If `PACK/approvals.json` has no approval of it (always so for a newly copied sample), run
@@ -160,7 +161,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/validate_paper_spec.py" TASK/spec.json
 ### 2. Make the blueprint (approval point)
 
 ```
-python3 "${CLAUDE_SKILL_DIR}/scripts/make_blueprint.py" TASK/spec.json --concepts PACK/concepts.json
+python3 "${CLAUDE_SKILL_DIR}/scripts/make_blueprint.py" TASK/spec.json
 ```
 
 It writes

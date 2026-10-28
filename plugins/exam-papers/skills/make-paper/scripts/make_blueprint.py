@@ -2,10 +2,13 @@
 """Make a blueprint (blueprint.json) from a paper spec and a concept list.
 
 Usage:
-    python3 make_blueprint.py SPEC.json --concepts CONCEPTS.json [--out BLUEPRINT.json] [--force] [--json]
+    python3 make_blueprint.py SPEC.json [--concepts CONCEPTS.json] [--out BLUEPRINT.json] [--force] [--json]
 
-The concept list must be approved as it is now (approvals.json beside it, see approvals.py); an
-unapproved one is refused (exit 1). The blueprint is written beside the spec unless --out is given. An existing blueprint that the
+The concept list is syllabi/<pack>/concepts.json for the pack the spec names (exam.syllabusPack),
+found in the first folder above the spec that has it (the workspace: the spec is in papers/<task>/);
+--concepts gives another file instead. The concept list must be approved as it is now (approvals.json
+beside it, see approvals.py); an unapproved one is refused (exit 1). The blueprint is written beside
+the spec unless --out is given. An existing blueprint that the
 teacher approved (approvals.json beside it, see approvals.py) is never overwritten unless --force is
 given.
 
@@ -42,7 +45,7 @@ from itertools import product
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import check_questions as cq  # noqa: E402
 from approvals import is_approved  # noqa: E402
-from spec_types import Kind, Numbering, SectionType, SubParts  # noqa: E402
+from spec_types import PACK_NAME, Kind, Numbering, SectionType, SubParts  # noqa: E402
 from validate_concepts import validate as validate_concepts  # noqa: E402
 from validate_paper_spec import Report, frac, validate as validate_spec  # noqa: E402
 
@@ -359,6 +362,22 @@ def build(spec, concepts, syllabus_text=None):
     return questions, r
 
 
+def find_concept_list(spath, spec):
+    """syllabi/<pack>/concepts.json in the nearest folder above the spec, for the spec's pack."""
+    pack = (spec.get("exam") or {}).get("syllabusPack") if isinstance(spec, dict) else None
+    if not isinstance(pack, str) or not PACK_NAME.match(pack):
+        return None
+    folder = os.path.dirname(os.path.abspath(spath))
+    while True:
+        path = os.path.join(folder, "syllabi", pack, "concepts.json")
+        if os.path.isfile(path):
+            return path
+        parent = os.path.dirname(folder)
+        if parent == folder:
+            return None
+        folder = parent
+
+
 def main(argv):
     args = argv[1:]
     as_json, force = "--json" in args, "--force" in args
@@ -372,14 +391,19 @@ def main(argv):
                 return 2
             opts[flag] = args[i + 1]
             del args[i:i + 2]
-    if len(args) != 1 or "--concepts" not in opts:
+    if len(args) != 1:
         print(__doc__.strip())
         return 2
-    spath, cpath = args[0], opts["--concepts"]
+    spath = args[0]
     out = opts.get("--out") or os.path.join(os.path.dirname(spath), "blueprint.json")
     try:
         with open(spath, encoding="utf-8") as f:
             spec = json.load(f)
+        cpath = opts.get("--concepts") or find_concept_list(spath, spec)
+        if cpath is None:
+            print(f"Cannot find the concept list: no syllabi/<pack>/concepts.json above {spath} for the "
+                  "pack the spec names in exam.syllabusPack (make the pack with the make-pack skill)")
+            return 2
         with open(cpath, encoding="utf-8") as f:
             concepts = json.load(f)
         syl = concepts.get("syllabus") if isinstance(concepts, dict) else None

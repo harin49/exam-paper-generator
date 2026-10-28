@@ -13,7 +13,7 @@
       "kind": "numerical",
       "difficulty": "medium",
       "concept": "pendulum_frequency",
-      "correctOption": "a"
+      "correctOption": "c"
     },
     {
       "number": 2,
@@ -26,7 +26,7 @@
       "kind": "numerical",
       "difficulty": "medium",
       "concept": "fps_cgs_systems",
-      "correctOption": "c"
+      "correctOption": "a"
     },
     {
       "number": 3,
@@ -65,7 +65,7 @@
       "kind": "numerical",
       "difficulty": "easy",
       "concept": "velocity_time_graph_area",
-      "correctOption": "a"
+      "correctOption": "d"
     },
     {
       "number": 6,
@@ -78,7 +78,7 @@
       "kind": "theory",
       "difficulty": "easy",
       "concept": "rest_and_motion",
-      "correctOption": "b"
+      "correctOption": "c"
     },
     {
       "number": 7,
@@ -91,7 +91,7 @@
       "kind": "numerical",
       "difficulty": "medium",
       "concept": "linear_momentum",
-      "correctOption": "d"
+      "correctOption": "b"
     },
     {
       "number": 8,
@@ -104,7 +104,7 @@
       "kind": "theory",
       "difficulty": "medium",
       "concept": "newtons_first_law",
-      "correctOption": "c"
+      "correctOption": "a"
     },
     {
       "number": 9,
@@ -117,7 +117,7 @@
       "kind": "theory",
       "difficulty": "easy",
       "concept": "inertia_examples",
-      "correctOption": "a"
+      "correctOption": "c"
     },
     {
       "number": 10,
@@ -130,7 +130,7 @@
       "kind": "numerical",
       "difficulty": "easy",
       "concept": "thrust_and_pressure",
-      "correctOption": "c"
+      "correctOption": "a"
     },
     {
       "number": 11,
@@ -169,7 +169,7 @@
       "kind": "numerical",
       "difficulty": "medium",
       "concept": "relative_density",
-      "correctOption": "a"
+      "correctOption": "d"
     },
     {
       "number": 14,
@@ -182,7 +182,7 @@
       "kind": "theory",
       "difficulty": "medium",
       "concept": "upthrust_properties",
-      "correctOption": "c"
+      "correctOption": "b"
     },
     {
       "number": 15,
@@ -195,7 +195,7 @@
       "kind": "theory",
       "difficulty": "easy",
       "concept": "density_and_sinking_floating",
-      "correctOption": "d"
+      "correctOption": "a"
     },
     {
       "number": 16,

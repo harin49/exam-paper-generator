@@ -171,6 +171,25 @@ class CommandLine(unittest.TestCase):
     def run_main(self, *extra):
         return mb.main(["make_blueprint.py", self.spec, "--concepts", self.concepts, "--json", *extra])
 
+    def test_finds_the_specs_pack_above_its_folder(self):
+        # The workspace layout: syllabi/<pack>/ and papers/<task>/spec.json side by side.
+        task = os.path.join(self.tmp, "papers", "icse-9-physics")
+        os.makedirs(task)
+        spec = os.path.join(task, "spec.json")
+        shutil.copy(SPEC, spec)
+        self.assertEqual(mb.find_concept_list(spec, load(spec)), self.concepts)
+        self.assertEqual(mb.main(["make_blueprint.py", spec, "--json"]), 0)
+        self.assertEqual(load(os.path.join(task, "blueprint.json"))["conceptList"],
+                         "../../syllabi/icse9-physics-selina/concepts.json")
+
+    def test_a_missing_pack_is_a_read_error(self):
+        doc = load(SPEC)
+        doc["exam"]["syllabusPack"] = "cbse10-maths-none"
+        with open(self.spec, "w", encoding="utf-8") as f:
+            json.dump(doc, f)
+        self.assertEqual(mb.main(["make_blueprint.py", self.spec]), 2)
+        self.assertIsNone(mb.find_concept_list(self.spec, doc))
+
     def test_an_unapproved_concept_list_is_refused(self):
         os.remove(os.path.join(self.pack, "approvals.json"))
         self.assertEqual(self.run_main(), 1)

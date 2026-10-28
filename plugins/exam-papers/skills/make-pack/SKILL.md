@@ -44,7 +44,8 @@ syllabus does not list them: concepts are organised by book chapter, and paper s
 number.
 
 Name the pack `<board><class>-<subject>-<book>` in lower case, with hyphens between words (for
-example `icse9-physics-selina`, `cbse10-maths-rd-sharma`), and confirm the name with the user. That
+example `icse9-physics-selina`, `cbse10-maths-rd-sharma`), and confirm the name with the user. If
+you came here from making a paper, use the name its spec gives in `exam.syllabusPack`. That
 folder is `PACK` from here on. If `syllabi/PACK/` already exists, stop and ask: changing an existing
 pack is a different job (its concept tags must never be renamed, because papers refer to them).
 

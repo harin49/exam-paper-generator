@@ -26,8 +26,8 @@
       "title": "Make the blueprint",
       "by": "script",
       "waitsForUser": false,
-      "run": "python3 \"${CLAUDE_SKILL_DIR}/scripts/make_blueprint.py\" TASK/spec.json --concepts CONCEPT_LIST",
-      "note": "CONCEPT_LIST is the concept list found in step 0. If the spec changed after the blueprint was made, the blueprint is out of date.",
+      "run": "python3 \"${CLAUDE_SKILL_DIR}/scripts/make_blueprint.py\" TASK/spec.json",
+      "note": "It reads the concept list of the pack the spec names (syllabi/<exam.syllabusPack>/concepts.json). If the spec changed after the blueprint was made, the blueprint is out of date.",
       "inputs": ["spec.json"],
       "outputs": ["blueprint.json"],
       "done": {"recorded": ["spec.json"]}

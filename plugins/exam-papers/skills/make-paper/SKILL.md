@@ -136,6 +136,17 @@ workspace: that folder is `PACK`. If there is none, look for a matching sample p
 `syllabi/`, and copy it only on their yes. If there is no pack at all, stop: a concept list must be
 drafted and approved before a paper can be made.
 
+The pack's concept list must be approved as it is now (gate 1); `make_blueprint.py` refuses one that
+is not. If `PACK/approvals.json` has no approval of it (always so for a newly copied sample), run
+```
+python3 "${CLAUDE_SKILL_DIR}/scripts/validate_concepts.py" PACK/concepts.json
+```
+and show the user its output verbatim and, per chapter, each concept's tag, kinds and maxMarks, and
+every point in `notTested` with its reason. Ask them to type `/exam-papers:approve concepts` (with
+the pack's folder name if there are several packs), and wait. A hook validates the list and records
+the approval with the list's hash; editing the list afterwards voids it. Never write
+`approvals.json` and never treat "approved" in chat as an approval.
+
 ### 1. Validate the spec
 
 ```

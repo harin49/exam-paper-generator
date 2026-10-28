@@ -98,12 +98,12 @@ class ConceptList(unittest.TestCase):
         concept(self.doc, "pascals_law")["level"] = "easy"
         self.assertIn("unknown field 'level'", self.errors())
 
-    def test_draft_status_warns(self):
-        self.doc["status"] = "draft"
-        r = vc.validate(self.doc, self.syllabus)
-        self.assertTrue(any("status is \"draft\"" in w for w in r.warnings))
-        self.doc["status"] = "approved"
+    def test_status_is_ignored_with_a_warning(self):
         self.assertEqual(vc.validate(self.doc, self.syllabus).warnings, [])
+        self.doc["status"] = "approved"
+        r = vc.validate(self.doc, self.syllabus)
+        self.assertEqual(r.errors, [])
+        self.assertTrue(any("status is ignored" in w for w in r.warnings))
 
 
 class CommandLine(unittest.TestCase):

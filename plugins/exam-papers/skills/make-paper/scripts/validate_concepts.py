@@ -27,10 +27,9 @@ from spec_types import Kind  # noqa: E402
 from validate_paper_spec import Report, is_int, is_num  # noqa: E402
 
 TOP_KEYS = {"board", "class", "book", "syllabus", "syllabusYear", "status", "chapters", "note", "notTested"}
-TOP_REQUIRED = {"board", "class", "book", "syllabus", "status", "chapters"}
+TOP_REQUIRED = {"board", "class", "book", "syllabus", "chapters"}
 CHAPTER_KEYS = {"title", "concepts"}
 CONCEPT_KEYS = {"tag", "source", "kinds", "maxMarks"}
-STATUSES = {"draft", "approved"}
 TAG_RE = re.compile(r"^[a-z][a-z0-9_]*$")
 POINT_RE = re.compile(r"\[(S\d+)\]")
 
@@ -58,10 +57,9 @@ def validate(doc, syllabus_text):
             r.error("file", f"{k} must be non-empty text", "C1")
     if "class" in doc and not (is_int(doc["class"]) and doc["class"] > 0):
         r.error("file", "class must be a positive whole number", "C1")
-    if "status" in doc and doc["status"] not in STATUSES:
-        r.error("file", f"status must be one of {sorted(STATUSES)}", "C1")
-    elif doc.get("status") == "draft":
-        r.warn("file", "status is \"draft\": a teacher should review the list and set it to \"approved\"", "C1")
+    if "status" in doc:
+        r.warn("file", "status is ignored: a concept list is approved by the teacher typing "
+                       "/exam-papers:approve concepts (the field can be deleted)", "C1")
 
     chapters = doc.get("chapters")
     if not (isinstance(chapters, dict) and chapters):

@@ -4,7 +4,8 @@
 Usage:
     python3 make_blueprint.py SPEC.json --concepts CONCEPTS.json [--out BLUEPRINT.json] [--force] [--json]
 
-The blueprint is written beside the spec unless --out is given. An existing blueprint that the
+The concept list must be approved as it is now (approvals.json beside it, see approvals.py); an
+unapproved one is refused (exit 1). The blueprint is written beside the spec unless --out is given. An existing blueprint that the
 teacher approved (approvals.json beside it, see approvals.py) is never overwritten unless --force is
 given.
 
@@ -26,7 +27,8 @@ blueprint:
      in a row. The shuffle is seeded from the spec, so the same spec always gives the same letters.
 The result is then checked with the same rules as check_questions.py (Q2-Q14 where they apply).
 
-Exit codes: 0 written, 1 errors (in the inputs, or the result fails a check), 2 a file could not be read.
+Exit codes: 0 written, 1 errors (in the inputs, an unapproved concept list, or the result fails a
+check), 2 a file could not be read.
 """
 import hashlib
 import json
@@ -389,6 +391,15 @@ def main(argv):
     except (OSError, ValueError) as e:
         print(f"Cannot read input: {e}")
         return 2
+
+    try:
+        concepts_approved = is_approved(os.path.dirname(os.path.abspath(cpath)), "concepts", cpath)
+    except (OSError, ValueError):
+        concepts_approved = False
+    if not concepts_approved:
+        print(f"{cpath} is not approved as it is now: the teacher approves a concept list by typing "
+              "/exam-papers:approve concepts (the approval is kept in approvals.json beside it).")
+        return 1
 
     if os.path.exists(out) and not force:
         try:

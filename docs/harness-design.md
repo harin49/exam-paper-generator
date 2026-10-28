@@ -183,10 +183,12 @@ Each gate is passed only by a typed command (D6).
 
 The spec is not a gate: the teacher writes it, and `validate_paper_spec.py` checks it.
 
-*Built so far:* gate 2 (`/exam-papers:approve blueprint`) and gate 4 (`/exam-papers:approve paper`,
-the `approve_paper` step before rendering). Gate 1 comes with the syllabus-pack task that drafts the
-concept list; gate 3 with the writer and severity loop, which changes how findings are decided.
-Until then the concept list's `status` field and the chat decision written to `fixes.json` stand in.
+*Built:* all four. Gate 1 is `/exam-papers:approve concepts [PACK]`: the hook runs
+`validate_concepts.py`, refuses a list with errors, and records the list's hash in
+`syllabi/<pack>/approvals.json` (without PACK it picks the one pack whose list is not approved as it
+is now); `make_blueprint.py` refuses an unapproved list, and the list's old `status` field is ignored
+with a warning. Gate 2 is `/exam-papers:approve blueprint`, gate 3 `/exam-papers:decide` (D20) and
+gate 4 `/exam-papers:approve paper` (the `approve_paper` step before rendering).
 
 *Why:* each gate sits where a teacher's judgement is needed and a mistake would be costly to undo
 later. The final gate is new: today nothing asks the teacher to sign off the finished paper.

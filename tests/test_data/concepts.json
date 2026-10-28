@@ -3,7 +3,6 @@
   "class": 9,
   "book": "Selina Concise Physics Part I",
   "syllabus": "syllabus.md",
-  "status": "approved",
   "note": "Test data for the unit tests only.",
   "chapters": {
     "1": {

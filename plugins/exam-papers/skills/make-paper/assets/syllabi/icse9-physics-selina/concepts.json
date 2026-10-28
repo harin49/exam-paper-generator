@@ -4,7 +4,6 @@
   "book": "Selina Concise Physics Part I",
   "syllabus": "syllabus.md",
   "syllabusYear": "2026-2027",
-  "status": "approved",
   "note": "Syllabus: provided by the user on 2026-10-27 (pasted text), kept as given except that a block of garbled characters from copying the equation in 3(iii) was replaced by the equation written out once, and the typo \"eaction\" in 3(iv) corrected to \"reaction\". The list of SI units the syllabus refers to (\"given at the end of this syllabus\") was not in the pasted text. Point ids [S1]-[S53] added by number_syllabus.py. Concepts are organised by Selina book chapter (syllabus section 4 \"Fluids\" is book chapters 4 and 5); each concept's source is the syllabus point it comes from.",
   "notTested": {
     "S17": "Heading only: the topic's content is S18.",

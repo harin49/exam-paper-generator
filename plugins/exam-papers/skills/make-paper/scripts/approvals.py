@@ -1,4 +1,5 @@
-"""The teacher's approvals of a paper's task folder, kept in TASK/approvals.json.
+"""The teacher's approvals, kept in approvals.json: a paper's (TASK/approvals.json, for the blueprint
+and the final paper) and a syllabus pack's (syllabi/<pack>/approvals.json, for its concept list).
 
 Only the plugin's approval hook (hooks/approve.py) writes approvals.json, when the teacher types
 /exam-papers:approve GATE; another hook stops Claude and its subagents from writing it (D6). Each
@@ -15,7 +16,7 @@ import os
 from task_files import file_hash, log_event, now
 
 APPROVALS = "approvals.json"
-GATES = {"blueprint": "blueprint.json", "paper": "questions.json"}
+GATES = {"blueprint": "blueprint.json", "paper": "questions.json", "concepts": "concepts.json"}
 
 
 def read_approvals(folder):

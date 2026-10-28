@@ -159,13 +159,27 @@ class CommandLine(unittest.TestCase):
         self.spec = os.path.join(self.dir, "spec.json")
         shutil.copy(SPEC, self.spec)
         self.out = os.path.join(self.dir, "blueprint.json")
+        # A copy of the sample pack, approved as the teacher would with /exam-papers:approve concepts.
+        self.pack = os.path.join(self.tmp, "syllabi", "icse9-physics-selina")
+        shutil.copytree(REF, self.pack)
+        record_approval(self.pack, "concepts", "/exam-papers:approve concepts")
+        self.concepts = os.path.join(self.pack, "concepts.json")
 
     def tearDown(self):
         shutil.rmtree(self.tmp)
 
     def run_main(self, *extra):
-        return mb.main(["make_blueprint.py", self.spec, "--concepts", os.path.join(REF, "concepts.json"),
-                        "--json", *extra])
+        return mb.main(["make_blueprint.py", self.spec, "--concepts", self.concepts, "--json", *extra])
+
+    def test_an_unapproved_concept_list_is_refused(self):
+        os.remove(os.path.join(self.pack, "approvals.json"))
+        self.assertEqual(self.run_main(), 1)
+        self.assertFalse(os.path.exists(self.out))
+
+    def test_editing_an_approved_concept_list_voids_its_approval(self):
+        with open(self.concepts, "a", encoding="utf-8") as f:
+            f.write("\n")
+        self.assertEqual(self.run_main(), 1)
 
     def test_writes_draft_with_relative_paths(self):
         self.assertEqual(self.run_main(), 0)

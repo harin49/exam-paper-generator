@@ -18,8 +18,11 @@ syllabus it is drafted from, and is shared by every paper for that syllabus. Exa
    problems.") goes in `notTested` with the reason, instead of getting a concept.
 3. **Checked** with the skill's `scripts/validate_concepts.py` (rules C1–C6 below): every syllabus point
    has a concept or a reason in `notTested`, every concept points to a real point, tags are unique.
-4. **Approved by a teacher**, who checks topics, `kinds` and `maxMarks`, then sets `status` to
-   `"approved"`. From then on the file is frozen: every paper reads it as it is.
+4. **Approved by a teacher**, who checks topics, `kinds`, `maxMarks` and the `notTested` reasons,
+   then types `/exam-papers:approve concepts`. A hook runs `validate_concepts.py` (it refuses a list
+   with errors) and records the approval with the list's SHA-256 hash in `approvals.json` beside it.
+   From then on the file is frozen: `make_blueprint.py` refuses a list that is not approved as it is
+   now, so editing it voids the approval until the teacher approves it again.
 5. **When the syllabus changes**, the old and new syllabus are compared and only the differences are
    proposed (concepts added or removed). Existing tags are never renamed, because older papers and
    blueprints refer to them.
@@ -32,7 +35,7 @@ sections differently; each concept's `source` is the id of the syllabus point it
 ```json
 {
   "board": "ICSE", "class": 9, "book": "Selina Concise Physics Part I",
-  "syllabus": "syllabus.md", "syllabusYear": "2026-2027", "status": "draft",
+  "syllabus": "syllabus.md", "syllabusYear": "2026-2027",
   "notTested": { "S17": "Heading only: the topic's content is S18." },
   "chapters": {
     "1": { "title": "Measurements and Experimentation", "concepts": [
@@ -48,7 +51,7 @@ sections differently; each concept's `source` is the id of the syllabus point it
 | `board`, `class`, `book` | Must match the paper spec's `exam` (checked by rule Q8). |
 | `syllabus` | The numbered syllabus file, relative to this file. Its points carry ids `[S1]`, `[S2]`, ... (from `number_syllabus.py`). |
 | `syllabusYear` | Optional: the syllabus year it was drafted from. |
-| `status` | `"draft"` until a teacher approves it, then `"approved"`. |
+| `status` | No longer used (approval is by the typed command); a list that still has it gets a warning. |
 | `note` | Optional free text (where the syllabus came from, anything changed in it). |
 | `notTested` | Optional: syllabus points with no concept, each with the reason (`{"S17": "Heading only..."}`). Shown to the teacher at approval. |
 | `chapters` | Keyed by book chapter number: `title` and `concepts`. |
@@ -66,7 +69,8 @@ Every message starts with its rule number, e.g. `[C6] syllabus [S45]: has no con
 
 **Errors:**
 
-- **C1.** Every field above is present with the right type; no unknown fields.
+- **C1.** `board`, `class`, `book`, `syllabus` and `chapters` are present; every field has the right
+  type; no unknown fields.
 - **C2.** Tags are snake_case and unique across the whole list.
 - **C3.** `kinds` is a non-empty list of allowed kinds, with no repeats.
 - **C4.** `maxMarks` is a positive number.
@@ -75,7 +79,7 @@ Every message starts with its rule number, e.g. `[C6] syllabus [S45]: has no con
 - **C6.** Every syllabus point has at least one concept, or is in `notTested` with a reason
   (coverage). A point in `notTested` that also has concepts is a warning.
 
-**Warning:** C1 also warns while `status` is `"draft"`.
+**Warning:** C1 warns if the list still has the old `status` field, which no longer approves anything.
 
 The validator also reports, as information, the number of concepts per chapter (and how many allow
 numerical questions) and how many syllabus points are covered, and which are not tested and why.

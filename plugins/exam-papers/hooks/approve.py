@@ -4,6 +4,9 @@
 UserPromptExpansion: only a command the user types expands, so Claude and its subagents cannot get
 here.
 - /exam-papers:approve GATE [TASK] records the approval in that task's approvals.json.
+- /exam-papers:approve concepts [PACK] records the approval of a syllabus pack's concept list in
+  syllabi/PACK/approvals.json, if the list passes validate_concepts.py. Without PACK it goes to the
+  one pack whose concept list is not approved as it is now.
 - /exam-papers:decide accept R2 R4 reject R5 [TASK] records the teacher's decision on the open review
   findings in that task's review/decisions.json (review_status.py checks it: every finding listed to
   decide is accepted or rejected; an open error may also be rejected, and so may a fix the writer
@@ -23,13 +26,15 @@ import sys
 
 PLUGIN = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(PLUGIN, "skills", "make-paper", "scripts"))
-from approvals import APPROVALS, GATES, record_approval  # noqa: E402
+from approvals import APPROVALS, GATES, is_approved, record_approval  # noqa: E402
 from next_step import WORKFLOW, next_step, read_workflow  # noqa: E402
 from review_status import record_decision, status  # noqa: E402
+import validate_concepts  # noqa: E402
 
 COMMAND = "exam-papers:approve"
 DECIDE = "exam-papers:decide"
-USAGE = f"Type /{COMMAND} followed by one of: {', '.join(GATES)}, and optionally the paper's folder."
+USAGE = (f"Type /{COMMAND} followed by one of: {', '.join(GATES)}, and optionally the paper's folder "
+         "(for concepts: the pack's folder under syllabi/).")
 DECIDE_USAGE = (f"Type /{DECIDE} accept R2 R4 reject R5 (each finding listed to decide, accepted or "
                 "rejected), and optionally the paper's folder at the end.")
 PROTECTED = (APPROVALS, "decisions.json")
@@ -99,6 +104,8 @@ def on_expansion(event):
     if not words or words[0] not in GATES or len(words) > 2:
         return block(USAGE)
     gate = words[0]
+    if gate == "concepts":
+        return on_approve_concepts(root, words[1] if len(words) == 2 else None, text)
     task, reason = pick_task(root, words[1] if len(words) == 2 else None,
                              waiting_tasks(root, {f"approve_{gate}"}, steps), f"a {gate} approval",
                              f"/{COMMAND} {gate}")
@@ -107,6 +114,50 @@ def on_expansion(event):
     rec = record_approval(task, gate, text)
     print(f"Approval recorded by the exam-papers hook: {gate} ({rec['file']}, sha256 {rec['sha256'][:12]}) "
           f"for {task}. Run next_step.py on that folder and continue.")
+    return 0
+
+
+def unapproved_packs(root):
+    """The pack folders under root/syllabi/ whose concept list is not approved as it is now."""
+    found = []
+    for folder in sorted(glob.glob(os.path.join(root, "syllabi", "*", ""))):
+        folder = folder.rstrip(os.sep)
+        if os.path.isfile(os.path.join(folder, "concepts.json")):
+            try:
+                if not is_approved(folder, "concepts"):
+                    found.append(folder)
+            except (OSError, ValueError):
+                found.append(folder)
+    return found
+
+
+def on_approve_concepts(root, name, text):
+    if name:
+        pack = os.path.join(root, "syllabi", name) if os.sep not in name else os.path.join(root, name)
+        if not os.path.isfile(os.path.join(pack, "concepts.json")):
+            return block(f"{name} has no concepts.json under {os.path.join(root, 'syllabi')}.")
+    else:
+        waiting = unapproved_packs(root)
+        if not waiting:
+            return block(f"No pack under {os.path.join(root, 'syllabi')} has a concept list waiting for approval.")
+        if len(waiting) > 1:
+            names = ", ".join(os.path.basename(p) for p in waiting)
+            return block(f"Several packs have a concept list waiting for approval ({names}). "
+                         f"Type /{COMMAND} concepts PACK with one of them.")
+        pack = waiting[0]
+    try:
+        with open(os.path.join(pack, "concepts.json"), encoding="utf-8") as f:
+            doc = json.load(f)
+        with open(os.path.join(pack, doc.get("syllabus", "syllabus.md")), encoding="utf-8") as f:
+            report = validate_concepts.validate(doc, f.read())
+    except (OSError, ValueError, AttributeError) as e:
+        return block(f"Cannot check the concept list in {pack}: {e}")
+    if report.errors:
+        shown = "; ".join(report.errors[:5]) + (f"; and {len(report.errors) - 5} more" if len(report.errors) > 5 else "")
+        return block(f"The concept list in {pack} fails validate_concepts.py, so it cannot be approved: {shown}")
+    rec = record_approval(pack, "concepts", text)
+    print(f"Approval recorded by the exam-papers hook: concepts (concepts.json, sha256 {rec['sha256'][:12]}) "
+          f"for {pack}. Papers can now be made from this pack.")
     return 0
 
 

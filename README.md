@@ -144,7 +144,7 @@ requirements.txt, requirements-dev.txt
 - [x] Syllabus 2026–2027 saved as the sample pack's `syllabus.md`
 - [x] Concept list redrafted from the syllabus (94 concepts, all 22 syllabus sections covered)
       + `validate_concepts.py` (rules C1–C6)
-- [x] `concepts.json` reviewed and approved (status: approved, now frozen)
+- [x] `concepts.json` reviewed and approved by the user (now approved with `/exam-papers:approve concepts`)
 - [x] `make_blueprint.py` + tests; first draft blueprint in `examples/icse9-physics-ch1-5/`
 - [x] `render.py` + tests
 - [x] `SKILL.md` reviewed and approved (user supplies the spec; no clarifying questions for now)
@@ -158,11 +158,13 @@ requirements.txt, requirements-dev.txt
 - [x] Review loop: up to 3 rounds, errors fixed without asking, warnings and suggestions decided by the
       teacher, disputes after round 3 (`review_status.py`, `review/rounds/`, `review/decisions.json`)
 - [x] Typed decisions on review findings (`/exam-papers:decide`; a hook writes `review/decisions.json`)
+- [x] Gate 1: a pack's concept list is approved by typing `/exam-papers:approve concepts` (validated,
+      hash-bound); `make_blueprint.py` refuses an unapproved list
 - [x] Syllabus points numbered by a script (`number_syllabus.py`, ids `[S1]`...), coverage per point
       with `notTested` reasons; the ICSE Physics sample moved to point ids
 - [x] Final approval shows every change made in the review loop (`review_status.py --fixes`), and any
       automatic fix can be undone with `/exam-papers:decide reject ID`
-- [x] Unit tests moved to their own test data (`tests/test_data/`); 373 tests, all passing
+- [x] Unit tests moved to their own test data (`tests/test_data/`); 379 tests, all passing
 - [ ] New example: approve the `icse9-physics-ch1-5` blueprint, write its questions, review, render
 
 Open question: the syllabus includes spherical mirrors (with mirror-formula numericals) and

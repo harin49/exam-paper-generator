@@ -101,7 +101,7 @@ class Approve(Hook):
 
     def test_bad_arguments_show_the_usage(self):
         self.task_waiting_for_blueprint()
-        for args in ("", "concepts", "blueprint a b"):
+        for args in ("", "syllabus", "blueprint a b"):
             self.assertIn("Type /exam-papers:approve", self.blocked(self.typed(args)), args)
 
     def test_a_subagent_cannot_approve(self):
@@ -113,6 +113,60 @@ class Approve(Hook):
         folder = self.task_waiting_for_blueprint()
         self.assertEqual(self.typed("blueprint", command_name="exam-papers:make-paper"), "")
         self.assertFalse(is_approved(folder, "blueprint"))
+
+
+class ApproveConcepts(Hook):
+    SAMPLE = os.path.join(PLUGIN, "skills", "make-paper", "assets", "syllabi", "icse9-physics-selina")
+
+    def pack(self, name="icse9-physics-selina"):
+        folder = os.path.join(self.root, "syllabi", name)
+        shutil.copytree(self.SAMPLE, folder)
+        return folder
+
+    def typed(self, args):
+        return self.run_hook({"hook_event_name": "UserPromptExpansion",
+                              "prompt": f"/exam-papers:approve {args}".strip(),
+                              "command_name": "exam-papers:approve", "command_source": "plugin",
+                              "cwd": self.root})
+
+    def blocked(self, out):
+        doc = json.loads(out)
+        self.assertEqual(doc["decision"], "block")
+        return doc["reason"]
+
+    def test_approves_the_one_unapproved_pack(self):
+        folder = self.pack()
+        out = self.typed("concepts")
+        self.assertIn("Approval recorded", out)
+        self.assertTrue(is_approved(folder, "concepts"))
+        self.assertIn("No pack", self.blocked(self.typed("concepts")))       # nothing left waiting
+
+    def test_editing_the_list_voids_the_approval(self):
+        folder = self.pack()
+        self.typed("concepts")
+        with open(os.path.join(folder, "concepts.json"), "a", encoding="utf-8") as f:
+            f.write("\n")
+        self.assertFalse(is_approved(folder, "concepts"))
+        self.assertIn("Approval recorded", self.typed("concepts"))
+
+    def test_an_invalid_list_cannot_be_approved(self):
+        folder = self.pack()
+        doc = load_json(os.path.join(folder, "concepts.json"))
+        del doc["notTested"]["S53"]
+        with open(os.path.join(folder, "concepts.json"), "w", encoding="utf-8") as f:
+            json.dump(doc, f)
+        reason = self.blocked(self.typed("concepts"))
+        self.assertIn("fails validate_concepts.py", reason)
+        self.assertIn("[C6] syllabus [S53]", reason)
+        self.assertFalse(is_approved(folder, "concepts"))
+
+    def test_several_packs_need_a_name(self):
+        self.pack("a")
+        b = self.pack("b")
+        self.assertIn("a, b", self.blocked(self.typed("concepts")))
+        self.assertIn("Approval recorded", self.typed("concepts b"))
+        self.assertTrue(is_approved(b, "concepts"))
+        self.assertIn("nope has no concepts.json", self.blocked(self.typed("concepts nope")))
 
 
 class Decide(Hook):

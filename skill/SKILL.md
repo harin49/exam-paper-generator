@@ -180,9 +180,11 @@ Two independent checks; neither edits `questions.json`. File formats:
    python3 skill/scripts/extract_paper.py TASK/questions.json
    ```
    This writes `TASK/review/solver-input.json`: the paper as a student sees it, with no answers.
-2. **Blind solver.** Spawn a subagent whose prompt is the full text of `agents/blind-solver.md` plus
-   two paths: `TASK/review/solver-input.json` (its input) and `TASK/review/solver-answers.json` (its
-   output). Give it nothing else: do not paste in `questions.json`, the key or any answer.
+2. **Blind solver.** Start the `blind-solver` subagent by its type (defined in
+   `agents/blind-solver.md`, which limits its tools; do not paste that file into a general-purpose
+   subagent). Its prompt is only two paths: `TASK/review/solver-input.json` (its input) and
+   `TASK/review/solver-answers.json` (its output). Give it nothing else: do not paste in
+   `questions.json`, the key or any answer.
 3. **Compare.**
    ```
    python3 skill/scripts/compare_solutions.py TASK/questions.json TASK/review/solver-answers.json --out TASK/review/compare-output.txt
@@ -190,8 +192,8 @@ Two independent checks; neither edits `questions.json`. File formats:
    Exit code 1 means mismatches (`[V1]`-`[V5]`), not a failure of the script. The output also lists
    problems the solver reported (`[V6]`) and the theory parts side by side. Show it to the user
    verbatim.
-4. **Reviewer.** Spawn a subagent whose prompt is the full text of `agents/reviewer.md` plus these
-   paths: `TASK/questions.json`, `TASK/spec.json`, the concept list, the syllabus
+4. **Reviewer.** Start the `reviewer` subagent by its type (defined in `agents/reviewer.md`; do not
+   paste that file into a general-purpose subagent). Its prompt gives these paths: `TASK/questions.json`, `TASK/spec.json`, the concept list, the syllabus
    (`skill/references/icse9-physics-selina/syllabus.md` for this book), and the output path
    `TASK/review/reviewer-report.json`; also paste in the full output of step 3. The reviewer writes
    its findings to that file and runs `skill/scripts/render_review.py` on it, which writes

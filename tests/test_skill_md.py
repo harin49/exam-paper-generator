@@ -39,6 +39,28 @@ class SkillMd(unittest.TestCase):
         for name in ("agents/blind-solver.md", "agents/reviewer.md"):
             self.assertIn(name, TEXT)
 
+    def test_agents_are_started_by_type_not_pasted(self):
+        # Pasting an agent file into a general-purpose subagent drops its tool limits.
+        with open(os.path.join(ROOT, "skill", "workflow.json"), encoding="utf-8") as f:
+            workflow = f.read()
+        for text in (TEXT, workflow):
+            self.assertNotIn("full text of", text)
+        for name in ("blind-solver", "reviewer"):
+            self.assertIn(f"`{name}` subagent by its type", TEXT)
+
+
+class AgentFiles(unittest.TestCase):
+    def test_blind_solver_prompt_names_no_other_file(self):
+        with open(os.path.join(ROOT, "agents", "blind-solver.md"), encoding="utf-8") as f:
+            text = f.read()
+        self.assertEqual(re.findall(r"`[\w/.-]+\.(?:md|py)`", text), [])
+
+    def test_agent_tools_are_limited(self):
+        for name in ("blind-solver", "reviewer"):
+            with open(os.path.join(ROOT, "agents", f"{name}.md"), encoding="utf-8") as f:
+                head = f.read().split("---")[1]
+            self.assertIn("tools: Read, Write, Bash", head, name)
+
 
 if __name__ == "__main__":
     unittest.main()

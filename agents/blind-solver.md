@@ -17,7 +17,7 @@ The prompt gives you two paths:
 - the **input file** (`solver-input.json`): the paper, with its constants;
 - the **output file** (`solver-answers.json`): where you write your answers.
 
-The format of both files is in `schemas/review-format.md`; the summary below is enough.
+Everything you need to know about both files is in this prompt; there is no other file to read.
 
 ## Stay blind
 

@@ -137,7 +137,7 @@ tests/                          # unit tests for the scripts: python3 -m unittes
 - [x] Review chain: `extract_paper.py`, `compare_solutions.py`, `agents/blind-solver.md`, `agents/reviewer.md`
       (run once end to end with real subagents)
 - [x] `workflow.json` + `next_step.py`: one step at a time, in a fixed order, checked against the task folder
-- [x] Unit tests moved to their own test data (`tests/test_data/`); 285 tests, all passing
+- [x] Unit tests moved to their own test data (`tests/test_data/`); 288 tests, all passing
 - [ ] New example: approve the `icse9-physics-ch1-5` blueprint, write its questions, review, render
 
 Open question: the syllabus includes spherical mirrors (with mirror-formula numericals) and

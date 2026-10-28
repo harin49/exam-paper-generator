@@ -15,7 +15,7 @@ concept tags. You look for what they cannot. You do **not** fix anything: you re
 The prompt gives you paths to:
 
 - `questions.json`: the paper with its answer key, marking scheme and explanations (format:
-  `schemas/question-format.md`);
+  `skill/schemas/question-format.md`);
 - `spec.json`: the paper's pattern and content rules (constants, difficulty target, diagrams);
 - the concept list (`concepts.json`) and the syllabus (`syllabus.md`) for the book;
 - the output of `compare_solutions.py`: where an independent blind solver disagreed with the key,
@@ -58,7 +58,7 @@ Do not comment on layout or formatting: scripts and the PDF builder handle them.
 ## Report
 
 Write your findings to `review/reviewer-report.json` in exactly this format (details in
-`schemas/review-format.md`):
+`skill/schemas/review-format.md`):
 
 ```json
 { "findings": [

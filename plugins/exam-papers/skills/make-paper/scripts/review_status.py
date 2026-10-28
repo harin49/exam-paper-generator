@@ -6,15 +6,19 @@ Usage:
     python3 review_status.py TASK --not STATE
     python3 review_status.py TASK --close-round
     python3 review_status.py TASK --changes
+    python3 review_status.py TASK --fixes
 
 TASK is the paper's task folder. The files it reads, all in TASK/review/:
     reviewer-report.json   the reviewer's findings, every one so far with its status (review-format.md)
-    rounds.json            the closed rounds: {"rounds": [{"round", "key", "report", "questions", "time"}]}
-    rounds/N/              round N's questions.json and reviewer-report.json, as they were reviewed
+    rounds.json            the closed rounds: {"rounds": [{"round", "key", "report", "questions",
+                           "writerResponse", "time"}]}
+    rounds/N/              round N's questions.json and reviewer-report.json, as they were reviewed,
+                           and the writer-response.json of the revision that led to them (if new)
     decisions.json         the teacher's decisions, written only by the plugin's hook when the teacher
                            types /exam-papers:decide: {"decisions": [{"round", "report", "accepted",
-                           "rejected", "time", "command"}]}; "round" is the closed round decided on (it settles
-                           that round's disputes), "report" the SHA-256 of its report (for the record)
+                           "rejected", "undo", "time", "command"}]}; "round" is the closed round decided
+                           on (it settles that round's disputes), "report" the SHA-256 of its report
+                           (for the record), "undo" the rejected findings whose fix is to be reverted
 
 With no option it prints the status: the round, the open findings, what the teacher has to decide,
 what the writer has to address, and the next state:
@@ -23,7 +27,8 @@ what the writer has to address, and the next state:
     decide   the teacher decides (gate 3): an open warning or suggestion nobody has decided, or, from
              round 3 on, anything still open that the teacher has not settled for this round
     revise   the writer revises: open errors and open accepted findings (before round 3), or the
-             findings the teacher accepted for one more round (from round 3 on)
+             findings the teacher accepted for one more round (from round 3 on); and it reverts any
+             fix the teacher undid (rejected after it was resolved)
     done     nothing is open (rejected findings stay closed)
 
 --not STATE exits 0 when the next state is not STATE and 1 when it is (next_step.py uses it).
@@ -31,6 +36,9 @@ what the writer has to address, and the next state:
 wherever the severity changed), then copies questions.json and the report into rounds/N/ and appends
 round N to rounds.json. Closing the same round twice does nothing.
 --changes prints what changed in questions.json since the last closed round, part by part.
+--fixes prints every change made in the review loop, round by round, for the final approval: each
+writer response (automatic, accepted by the teacher, or reverted), the reviewer's verdict on it, the
+text before and after, and any change no writer response accounts for.
 
 Exit codes:
     0  printed (or --not: the next state is not STATE; or the round was closed)
@@ -39,6 +47,7 @@ Exit codes:
 """
 import json
 import os
+import re
 import shutil
 import sys
 
@@ -110,7 +119,29 @@ def read_decisions(task, ids):
         both = sorted(set(d["accepted"]) & set(d["rejected"]))
         if both:
             raise StatusError(f"{path}: decision {i} both accepts and rejects {', '.join(both)}")
+        if not isinstance(d.get("undo", []), list) or not set(d.get("undo", [])) <= set(d["rejected"]):
+            raise StatusError(f"{path}: decision {i}: 'undo' must list rejected findings only")
     return doc["decisions"]
+
+
+def read_responses(task):
+    """Every writer response entry in order, each with the round it led to ("round": None for a
+    revision whose round is not closed yet)."""
+    out, last = [], None
+    for r in read_rounds(task):
+        path = os.path.join(task, ROUNDS_DIR, str(r["round"]), "writer-response.json")
+        if r.get("writerResponse") and os.path.isfile(path):
+            out += [dict(e, round=r["round"]) for e in load(path).get("responses", []) if isinstance(e, dict)]
+            last = r["writerResponse"]
+    current = os.path.join(task, WRITER_RESPONSE)
+    if os.path.isfile(current) and file_hash(current) != last:
+        out += [dict(e, round=None) for e in load(current).get("responses", []) if isinstance(e, dict)]
+    return out
+
+
+def latest_actions(responses):
+    """The writer's latest action on each finding."""
+    return {e.get("id"): e.get("action") for e in responses}
 
 
 def cross_round_problems(report, previous):
@@ -140,6 +171,9 @@ def status(task):
         verdict.update({i: "accepted" for i in d["accepted"]})
         verdict.update({i: "rejected" for i in d["rejected"]})
     for_this_round = {i for d in decisions if d["round"] == n for i in d["accepted"]}
+    actions = latest_actions(read_responses(task))
+    undone = [i for d in decisions for i in d.get("undo", [])]
+    to_revert = [i for i in dict.fromkeys(undone) if actions.get(i) != "reverted"]
     open_ = [f for f in findings if f["status"] == "open" and verdict.get(f["id"]) != "rejected"]
 
     to_decide, to_address, disputes = [], [], []
@@ -162,7 +196,7 @@ def status(task):
         state = "close"
     elif to_decide or disputes:
         state = "decide"
-    elif to_address:
+    elif to_address or to_revert:
         state = "revise"
     else:
         state = "done"
@@ -171,16 +205,20 @@ def status(task):
                      for s in ("error", "warning", "suggestion")},
             "resolved": [f["id"] for f in findings if f["status"] == "resolved"],
             "rejected": sorted((i for i, v in verdict.items() if v == "rejected"), key=lambda i: int(i[1:])),
-            "toDecide": to_decide, "disputes": disputes, "toAddress": to_address}
+            "toDecide": to_decide, "disputes": disputes, "toAddress": to_address, "toRevert": to_revert,
+            "fixed": [f["id"] for f in findings
+                      if f["status"] == "resolved" and actions.get(f["id"]) == "fixed"
+                      and verdict.get(f["id"]) != "rejected"]}
 
 
 def decision_problems(s, findings, accepted, rejected):
     """What is wrong with a decision on the status s (empty when it can be recorded). Every finding
     listed to decide must be accepted or rejected; an open error may also be rejected (the teacher
-    overrules the reviewer); nothing else may be decided."""
+    overrules the reviewer), and so may a resolved finding the writer fixed (the teacher undoes the
+    fix); nothing else may be decided."""
     problems = []
     listed = s["toDecide"] + s["disputes"]
-    open_errors = s["open"]["error"]
+    rejectable = listed + s["open"]["error"] + s["fixed"]
     known = {f["id"] for f in findings}
     unknown = sorted(set(accepted + rejected) - known, key=lambda i: (len(i), i))
     if unknown:
@@ -192,10 +230,10 @@ def decision_problems(s, findings, accepted, rejected):
     if bad_accept:
         problems.append(f"{', '.join(bad_accept)} cannot be accepted now (only the findings listed to "
                         "decide; errors are fixed without asking)")
-    bad_reject = [i for i in rejected if i in known and i not in listed and i not in open_errors]
+    bad_reject = [i for i in rejected if i in known and i not in rejectable]
     if bad_reject:
         problems.append(f"{', '.join(bad_reject)} cannot be rejected now (only the findings listed to "
-                        "decide, and open errors)")
+                        "decide, open errors, and fixes to undo)")
     missing = [i for i in listed if i not in accepted and i not in rejected]
     if missing:
         problems.append(f"decide every listed finding at once; still undecided: {', '.join(missing)}")
@@ -208,22 +246,23 @@ def record_decision(task, accepted, rejected, command):
     """Append the teacher's decision on the current round. Only the decide hook calls this.
     Returns the problems that stopped it (empty when it was recorded)."""
     s = status(task)
-    if s["next"] not in ("decide", "revise"):
-        return [f"the paper is not waiting for a decision (next: {s['next']})"]
+    if s["next"] == "close":
+        return ["the latest review round is not closed yet"]
     problems = decision_problems(s, read_report(task)["findings"], accepted, rejected)
     if problems:
         return problems
     path = os.path.join(task, DECISIONS)
     doc = load(path) if os.path.isfile(path) else {"decisions": []}
+    undo = [i for i in rejected if i in s["fixed"]]
     entry = {"round": s["round"], "report": file_hash(os.path.join(task, REPORT)),
-             "accepted": accepted, "rejected": rejected, "time": now(), "command": command}
+             "accepted": accepted, "rejected": rejected, "undo": undo, "time": now(), "command": command}
     doc["decisions"].append(entry)
     tmp = path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(doc, f, indent=2)
         f.write("\n")
     os.replace(tmp, path)
-    log_event(task, "decided", round=s["round"], accepted=accepted, rejected=rejected)
+    log_event(task, "decided", round=s["round"], accepted=accepted, rejected=rejected, undo=undo)
     return []
 
 
@@ -248,8 +287,15 @@ def close_round(task):
     os.makedirs(folder, exist_ok=True)
     shutil.copyfile(os.path.join(task, REPORT), os.path.join(folder, "reviewer-report.json"))
     shutil.copyfile(os.path.join(task, "questions.json"), os.path.join(folder, "questions.json"))
+    response = file_hash(os.path.join(task, WRITER_RESPONSE))
+    saved = [x.get("writerResponse") for x in rounds if x.get("writerResponse")]
+    if response and (not saved or saved[-1] != response):
+        shutil.copyfile(os.path.join(task, WRITER_RESPONSE), os.path.join(folder, "writer-response.json"))
+    else:
+        response = None                      # no new revision led to this round (e.g. a teacher's edit)
     rounds.append({"round": n, "key": key, "report": sha,
-                   "questions": file_hash(os.path.join(task, "questions.json")), "time": now()})
+                   "questions": file_hash(os.path.join(task, "questions.json")),
+                   "writerResponse": response, "time": now()})
     with open(os.path.join(task, ROUNDS), "w", encoding="utf-8") as f:
         json.dump({"rounds": rounds}, f, indent=2)
         f.write("\n")
@@ -275,23 +321,98 @@ def show(value):
     return value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
 
 
+def diff(old_path, new_path):
+    """[(location, field, before, after)] for every field that differs between two questions files."""
+    old, new = load(old_path).get("questions", []), load(new_path).get("questions", [])
+    before, after = dict(leaves(old)), dict(leaves(new))
+    out = []
+    for loc in list(after) + [x for x in before if x not in after]:
+        a, b = before.get(loc, {}), after.get(loc, {})
+        for key in sorted(set(a) | set(b)):
+            if a.get(key) != b.get(key):
+                out.append((loc.strip(), key, a.get(key, "(none)"), b.get(key, "(none)")))
+    return out
+
+
+def diff_lines(items, indent=""):
+    lines = []
+    for loc, key, a, b in items:
+        lines += [f"{indent}{loc} {key}:", f"{indent}  before: {show(a)}", f"{indent}  after:  {show(b)}"]
+    return lines
+
+
 def changes(task):
     rounds = read_rounds(task)
     if not rounds:
         return "No round has been closed yet: nothing to compare with."
     n = len(rounds)
-    old = load(os.path.join(task, ROUNDS_DIR, str(n), "questions.json")).get("questions", [])
-    new = load(os.path.join(task, "questions.json")).get("questions", [])
-    before, after = dict(leaves(old)), dict(leaves(new))
-    lines = []
-    for loc in list(after) + [x for x in before if x not in after]:
-        a, b = before.get(loc, {}), after.get(loc, {})
-        for key in sorted(set(a) | set(b)):
-            if a.get(key) != b.get(key):
-                lines += [f"{loc.strip()} {key}:", f"  before: {show(a.get(key, '(none)'))}",
-                          f"  after:  {show(b.get(key, '(none)'))}"]
+    lines = diff_lines(diff(os.path.join(task, ROUNDS_DIR, str(n), "questions.json"),
+                            os.path.join(task, "questions.json")))
     head = f"Changes to questions.json since round {n} was reviewed:"
     return head + ("\n" + "\n".join(lines) if lines else " none")
+
+
+def question_of(location):
+    """The question number a location like "Q18(b)" or "Q6 and Q17(b)" starts with, as "Q18"."""
+    m = re.match(r"\s*(Q\d+)", location or "")
+    return m.group(1) if m else None
+
+
+def fixes(task):
+    """Every change made in the review loop, for the final approval (see --fixes)."""
+    rounds = read_rounds(task)
+    if not rounds:
+        return "No review round has been closed yet."
+    decisions = read_decisions(task, {f["id"] for f in read_report(task)["findings"]})
+    accepted = {i for d in decisions for i in d["accepted"]}
+    undone = {i for d in decisions for i in d.get("undo", [])}
+    responses = read_responses(task)
+    lines = ["# Changes made in the review loop"]
+    if len(rounds) == 1:
+        lines += ["", "No revisions: the paper is as the writer first drafted it."]
+    unclaimed = []
+    for k in range(2, len(rounds) + 1):
+        folder = os.path.join(task, ROUNDS_DIR, str(k))
+        prev = load(os.path.join(task, ROUNDS_DIR, str(k - 1), "reviewer-report.json"))["findings"]
+        now_report = {f["id"]: f for f in load(os.path.join(folder, "reviewer-report.json"))["findings"]}
+        severity = {f["id"]: f["severity"] for f in prev}
+        items = diff(os.path.join(task, ROUNDS_DIR, str(k - 1), "questions.json"),
+                     os.path.join(folder, "questions.json"))
+        mine = [e for e in responses if e["round"] == k]
+        claimed = {question_of(e.get("location")) for e in mine}
+        lines += ["", f"## Round {k}: the revision after round {k - 1}"]
+        if not mine:
+            lines.append("No writer revision (the questions were changed some other way).")
+        for e in mine:
+            fid, action = e.get("id"), e.get("action")
+            if action == "reverted":
+                label = "UNDONE BY YOU"
+            elif fid in accepted:
+                label = "ACCEPTED BY YOU"
+            else:
+                label = "AUTOMATIC"
+            lines.append(f"{fid}  {severity.get(fid, '?')}  {e.get('location', '?')}  {label}  {action}")
+            lines.append(f"  Writer: {e.get('change') or e.get('reason') or '(no text)'}")
+            verdict = now_report.get(fid)
+            if verdict:
+                note = f" ({verdict['note']})" if verdict.get("note") else ""
+                lines.append(f"  Reviewer in round {k}: {verdict['status']}{note}")
+            if fid in undone and action == "fixed":
+                lines.append("  You undid this fix later.")
+            q = question_of(e.get("location"))
+            lines += diff_lines([x for x in items if question_of(x[0]) == q], "  ")
+        unclaimed += [(k, x) for x in items if question_of(x[0]) not in claimed]
+    pending = diff(os.path.join(task, ROUNDS_DIR, str(len(rounds)), "questions.json"),
+                   os.path.join(task, "questions.json"))
+    lines += ["", "## Changes no writer response accounts for"]
+    if not unclaimed and not pending:
+        lines.append("None.")
+    for k, x in unclaimed:
+        lines += [f"Round {k}:"] + diff_lines([x], "  ")
+    if pending:
+        lines += ["Not reviewed yet (made after the last round):"] + diff_lines(pending, "  ")
+    lines += ["", "To undo a fix: /exam-papers:decide reject ID (the writer restores the text before it)."]
+    return "\n".join(lines)
 
 
 def summary(s):
@@ -304,6 +425,7 @@ def summary(s):
              f"Teacher to decide: {ids(s['toDecide'])}",
              f"Disputes (still open after round {s['maxRounds']}): {ids(s['disputes'])}",
              f"Writer to address: {ids(s['toAddress'])}",
+             f"Writer to revert (fixes you undid): {ids(s['toRevert'])}",
              f"NEXT: {s['next']}"]
     return "\n".join(lines)
 
@@ -313,7 +435,7 @@ def main(argv):
     as_json = "--json" in args
     args = [a for a in args if a != "--json"]
     mode, state = None, None
-    for flag in ("--close-round", "--changes"):
+    for flag in ("--close-round", "--changes", "--fixes"):
         if flag in args:
             mode = flag
             args.remove(flag)
@@ -333,6 +455,9 @@ def main(argv):
             return close_round(task)
         if mode == "--changes":
             print(changes(task))
+            return 0
+        if mode == "--fixes":
+            print(fixes(task))
             return 0
         s = status(task)
     except (OSError, ValueError, KeyError, TypeError) as e:   # StatusError is a ValueError

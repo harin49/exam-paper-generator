@@ -22,7 +22,8 @@ The prompt gives you the full path of each of these:
 - the script `check_questions.py`;
 - the output `questions.json` (in the paper's folder);
 - in revise mode also: `reviewer-report.json` (the findings), the list of finding IDs to address,
-  any instruction from the teacher, and the output `writer-response.json`.
+  any instruction from the teacher, the list of fixes to revert (if any), and the output
+  `writer-response.json`.
 
 Read `question-format.md` before you write anything.
 
@@ -74,6 +75,10 @@ say why, with your evidence. Then write `writer-response.json`:
     "reason": "The data is sufficient: the mass is given in the stem (2 kg)." }
 ] }
 ```
+
+**Reverting.** For each ID your prompt lists to revert, the teacher has undone your earlier fix:
+restore the text exactly as it was before that fix (your prompt gives the before and after), change
+nothing else for it, and answer `"action": "reverted"` with what you restored in `change`.
 
 Every listed ID appears exactly once. `change` says what changed, specifically enough for the teacher
 to undo it; `reason` gives your evidence.

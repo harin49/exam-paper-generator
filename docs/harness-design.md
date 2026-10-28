@@ -306,7 +306,7 @@ keeps the solver's mistakes out of the key.
 *Built in four pieces:* (1) the writer agent, the guards and mismatch triage (done 2026-10-28);
 (2) the reviewer every round, `review_status.py` and the loop in `workflow.json` (done 2026-10-28);
 (3) the typed `/exam-papers:decide`, writing `review/decisions.json` (done 2026-10-28); (4) the
-gate-4 list of automatic fixes.
+gate-4 list of automatic fixes (done 2026-10-28).
 
 *As built in piece 2:*
 
@@ -338,6 +338,22 @@ gate-4 list of automatic fixes.
   findings and open errors can be rejected, so the teacher can overrule the reviewer on an error even
   while the writer is due to fix it.
 - The guard that protects `approvals.json` now protects `decisions.json` the same way.
+
+*As built in piece 4:*
+
+- Closing a round also saves the writer's response that led to it (`review/rounds/N/
+  writer-response.json`); before, each revision overwrote the last, so by gate 4 only the final
+  explanation was left.
+- `review_status.py TASK --fixes` lists, round by round, every writer response labelled AUTOMATIC,
+  ACCEPTED BY YOU or UNDONE BY YOU, the reviewer's verdict on it in the next round, and the text
+  before and after (from the round snapshots); then every change no writer response accounts for
+  (a hand edit, or anything made after the last review). Gate 4 shows it verbatim, so nothing
+  changes silently.
+- **Undo** is `/exam-papers:decide reject ID` on a resolved finding the writer fixed, typed at gate 4
+  (or earlier). The hook records it in the decision's `undo` list; `review_status.py` then says
+  `revise` with the ID under "Writer to revert"; the writer restores the before-text and answers
+  `reverted`; a new round reviews the result, and the finding stays closed. Rejecting a dispute is
+  not an undo: only a *resolved* fixed finding is reverted.
 
 ### D14. State is a hash ledger plus a run log
 

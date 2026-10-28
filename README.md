@@ -157,7 +157,9 @@ requirements.txt, requirements-dev.txt
 - [x] Review loop: up to 3 rounds, errors fixed without asking, warnings and suggestions decided by the
       teacher, disputes after round 3 (`review_status.py`, `review/rounds/`, `review/decisions.json`)
 - [x] Typed decisions on review findings (`/exam-papers:decide`; a hook writes `review/decisions.json`)
-- [x] Unit tests moved to their own test data (`tests/test_data/`); 357 tests, all passing
+- [x] Final approval shows every change made in the review loop (`review_status.py --fixes`), and any
+      automatic fix can be undone with `/exam-papers:decide reject ID`
+- [x] Unit tests moved to their own test data (`tests/test_data/`); 364 tests, all passing
 - [ ] New example: approve the `icse9-physics-ch1-5` blueprint, write its questions, review, render
 
 Open question: the syllabus includes spherical mirrors (with mirror-formula numericals) and

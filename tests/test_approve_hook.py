@@ -207,6 +207,26 @@ class Decide(Hook):
         self.assertIn("Decision recorded", self.typed("accept R1 b"))
         self.assertEqual(len(self.decisions(b)), 1)
 
+    def test_a_fix_can_be_undone_at_the_final_gate(self):
+        folder = self.task_after_review(("R1", "error"))
+        with open(os.path.join(folder, "review", "writer-response.json"), "w", encoding="utf-8") as f:
+            json.dump({"responses": [{"id": "R1", "action": "fixed", "location": "Q1", "change": "c"}]}, f)
+        self.assertIsNone(ns.record_done(folder, STEPS, "apply_fixes"))
+        for path, step in (("review/solver-input.json", "extract_paper"), ("review/solver-answers.json", "blind_solver"),
+                           ("review/compare-output.txt", "compare_solutions")):
+            if ns.next_step(folder, STEPS)[1]["id"] == step:
+                self.assertIsNone(ns.record_done(folder, STEPS, step))
+        report = {"findings": [dict(self.finding("R1", "error"), status="resolved")]}
+        with open(os.path.join(folder, "review", "reviewer-report.json"), "w", encoding="utf-8") as f:
+            json.dump(report, f)
+        self.assertIsNone(ns.record_done(folder, STEPS, "reviewer"))
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(rs.close_round(folder), 0)
+        self.assertEqual(ns.next_step(folder, STEPS)[1]["id"], "approve_paper")
+        out = self.typed("reject R1")
+        self.assertIn("fixes to undo R1", out)
+        self.assertEqual(ns.next_step(folder, STEPS)[1]["id"], "apply_fixes")
+
     def test_a_subagent_cannot_decide(self):
         folder = self.task_after_review(("R1", "warning"))
         self.assertIn("teacher types", self.blocked(self.typed("accept R1", agent_id="a1")))

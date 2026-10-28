@@ -132,7 +132,7 @@
       "title": "The writer addresses the findings",
       "by": "subagent",
       "waitsForUser": false,
-      "run": "Run python3 \"${CLAUDE_SKILL_DIR}/scripts/review_status.py\" TASK and show it. Start the exam-papers:writer subagent by its type in revise mode, with the IDs under 'Writer to address', the user's instructions for them, and the paths SKILL.md step 5.7 lists. Wait for it to finish, then show the user TASK/review/writer-response.json and carry on without waiting. next_step.py then sends the paper through the next review round.",
+      "run": "Run python3 \"${CLAUDE_SKILL_DIR}/scripts/review_status.py\" TASK and show it. Start the exam-papers:writer subagent by its type in revise mode, with the IDs under 'Writer to address', the IDs under 'Writer to revert' with their before and after text from review_status.py TASK --fixes, the user's instructions, and the paths SKILL.md step 5.7 lists. Wait for it to finish, then show the user TASK/review/writer-response.json and carry on without waiting. next_step.py then sends the paper through the next review round.",
       "inputs": ["review/reviewer-report.json", "review/decisions.json", "review/rounds.json"],
       "outputs": ["questions.json", "review/writer-response.json"],
       "done": {"any": [
@@ -146,7 +146,7 @@
       "title": "Approve the final paper",
       "by": "user",
       "waitsForUser": true,
-      "run": "Show the final paper as SKILL.md step 5.8 says, then ask the user to type /exam-papers:approve paper, and wait. Never write approvals.json.",
+      "run": "Show the final paper and the output of python3 \"${CLAUDE_SKILL_DIR}/scripts/review_status.py\" TASK --fixes (verbatim) as SKILL.md step 5.8 says, then ask the user to type /exam-papers:approve paper, or /exam-papers:decide reject ID to undo a fix, and wait. Never write approvals.json.",
       "done": {"approved": "paper"}
     },
     {

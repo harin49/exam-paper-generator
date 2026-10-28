@@ -249,19 +249,27 @@ File formats: `${CLAUDE_SKILL_DIR}/schemas/review-format.md`. Everything goes in
    finding stays closed for good; an accepted one is fixed by the writer like an error. The user may
    also reject an open error they think the reviewer got wrong (`/exam-papers:decide reject R1`),
    even while the writer is due to fix it.
-7. **Revise (writer, no approval needed).** When the summary lists IDs under "Writer to address",
-   start the `exam-papers:writer` subagent by its type in **revise** mode. Its prompt gives those
-   IDs, any instruction the user gave for them, and these paths in full: `TASK/questions.json`,
+7. **Revise (writer, no approval needed).** When the summary lists IDs under "Writer to address" or
+   "Writer to revert", start the `exam-papers:writer` subagent by its type in **revise** mode. Its
+   prompt gives those IDs (for each one to revert, the before and after text from
+   `review_status.py TASK --fixes`), any instruction the user gave, and these paths in full: `TASK/questions.json`,
    `TASK/review/reviewer-report.json`, `TASK/blueprint.json`, `TASK/spec.json`,
    `PACK/concepts.json`, `PACK/syllabus.md`, `${CLAUDE_SKILL_DIR}/schemas/question-format.md`, the
    script `${CLAUDE_SKILL_DIR}/scripts/check_questions.py`, and the output
    `TASK/review/writer-response.json`. Never give the writer the comparison output or the solver's
    answers. When it has finished, show the user `TASK/review/writer-response.json` and carry on
    without waiting: the next round starts (the user can interrupt at any time).
-8. **Approve the paper (approval point).** When nothing is open, show the user the finished paper:
-   every question with its answer and marking, and a list of every change made to the questions
-   since the blueprint was approved (the writer's responses in each round). Ask them to type
-   `/exam-papers:approve paper`, and wait. Any later change to `TASK/questions.json` voids this
+8. **Approve the paper (approval point).** When nothing is open, show the user the finished paper
+   (every question with its answer and marking) and every change made in the review loop:
+   ```
+   python3 "${CLAUDE_SKILL_DIR}/scripts/review_status.py" TASK --fixes
+   ```
+   Show its output verbatim: each change is labelled AUTOMATIC (an error fixed without asking),
+   ACCEPTED BY YOU or UNDONE BY YOU, with the reviewer's verdict and the text before and after, and
+   it lists any change no writer response accounts for. Ask the user to type
+   `/exam-papers:approve paper`, and wait. To undo a fix instead, the user types
+   `/exam-papers:decide reject ID`: the finding is closed for good, the writer restores the text
+   (step 7), and a new round reviews the result. Any later change to `TASK/questions.json` voids this
    approval and starts a new review round; the 3-round cap still applies, so anything the reviewer
    flags in it comes to the user as a dispute.
 

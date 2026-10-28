@@ -203,6 +203,97 @@ class Changes(Task):
         self.assertTrue(rs.changes(self.task).endswith(" none"))
 
 
+class Fixes(Task):
+    """The final approval's list of changes (--fixes), and undoing a fix."""
+
+    def answer_part(self):
+        q = load_json(os.path.join(self.task, "questions.json"))
+        for x in q["questions"]:
+            for p in x.get("parts", []):
+                if "answer" in p:
+                    return q, x, p
+
+    def writer_fixes(self, rid, new_answer, action="fixed"):
+        q, x, p = self.answer_part()
+        p["answer"] = new_answer
+        self.write("questions.json", q)
+        loc = f"Q{x['number']}({p['label']})"
+        self.write("review/writer-response.json",
+                   {"responses": [{"id": rid, "action": action, "location": loc, "change": f"Now: {new_answer}"}]})
+        return loc
+
+    def test_lists_each_fix_with_its_label_verdict_and_text(self):
+        self.report(finding("R1"), finding("R2", "warning"))
+        self.close()
+        self.decide(1, accepted=["R2"])
+        _, _, p = self.answer_part()
+        old = p["answer"]
+        loc = self.writer_fixes("R1", "A fixed answer.")
+        self.report(finding("R1", status="resolved", note="Now right."), finding("R2", "warning"))
+        self.close()
+        self.assertTrue(os.path.isfile(os.path.join(self.task, "review", "rounds", "2", "writer-response.json")))
+        text = rs.fixes(self.task)
+        self.assertIn("## Round 2: the revision after round 1", text)
+        self.assertIn(f"R1  error  {loc}  AUTOMATIC  fixed", text)
+        self.assertIn("Reviewer in round 2: resolved (Now right.)", text)
+        self.assertIn(f"before: {old}", text)
+        self.assertIn("after:  A fixed answer.", text)
+        self.assertIn("## Changes no writer response accounts for\nNone.", text)
+
+    def test_an_unclaimed_edit_is_flagged(self):
+        self.report()
+        self.close()
+        self.revise("Edited by hand.")
+        self.close()
+        text = rs.fixes(self.task)
+        self.assertIn("No writer revision", text)
+        self.assertIn("Round 2:\n  Q", text)
+        self.assertIn("after:  Edited by hand.", text)
+        self.assertIsNone(rs.read_rounds(self.task)[1]["writerResponse"])
+
+    def test_no_revisions(self):
+        self.report()
+        self.close()
+        self.assertIn("No revisions: the paper is as the writer first drafted it.", rs.fixes(self.task))
+
+    def test_undoing_a_fix_sends_it_back_to_the_writer_once(self):
+        self.report(finding("R1"))
+        self.close()
+        self.writer_fixes("R1", "A fixed answer.")
+        self.report(finding("R1", status="resolved"))
+        self.close()
+        s = self.state()
+        self.assertEqual((s["next"], s["fixed"]), ("done", ["R1"]))
+        self.assertEqual(rs.record_decision(self.task, [], ["R1"], "/exam-papers:decide reject R1"), [])
+        [d] = load_json(os.path.join(self.task, "review", "decisions.json"))["decisions"]
+        self.assertEqual(d["undo"], ["R1"])
+        s = self.state()
+        self.assertEqual((s["next"], s["toRevert"]), ("revise", ["R1"]))
+        self.writer_fixes("R1", "The old answer again.", action="reverted")
+        self.assertEqual(self.state()["toRevert"], [])
+        self.report(finding("R1", status="open", note="Wrong again."))     # rejected: stays closed
+        self.close()
+        self.assertEqual(self.state()["next"], "done")
+        self.assertIn("UNDONE BY YOU  reverted", rs.fixes(self.task))
+
+    def test_rejecting_a_dispute_does_not_revert(self):
+        self.report(finding("R1"))
+        self.close()
+        for text in ("two", "three"):
+            self.writer_fixes("R1", text)
+            self.close()
+        self.assertEqual(self.state()["disputes"], ["R1"])
+        self.assertEqual(rs.record_decision(self.task, [], ["R1"], "/exam-papers:decide reject R1"), [])
+        self.assertEqual(load_json(os.path.join(self.task, "review", "decisions.json"))["decisions"][0]["undo"], [])
+        self.assertEqual(self.state()["next"], "done")
+
+    def test_a_resolved_finding_nobody_fixed_cannot_be_rejected(self):
+        self.report(finding("R1", status="resolved"))
+        self.close()
+        problems = rs.record_decision(self.task, [], ["R1"], "/exam-papers:decide reject R1")
+        self.assertIn("R1 cannot be rejected now", " ".join(problems))
+
+
 class CommandLine(Task):
     def run_main(self, *args):
         buf = io.StringIO()

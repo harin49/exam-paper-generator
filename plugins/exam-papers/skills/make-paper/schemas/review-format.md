@@ -155,7 +155,9 @@ Suggested fix: ...
 ```
 
 One entry per closed review round; `review/rounds/N/` keeps that round's `questions.json` and
-`reviewer-report.json` as they were. A round is identified by its report, questions and the writer's
+`reviewer-report.json` as they were, and the `writer-response.json` of the revision that led to it
+(`writerResponse` is its hash, or null when no new revision did). `review_status.py TASK --fixes`
+builds the final approval's list of every change from these. A round is identified by its report, questions and the writer's
 latest responses together (`key`). Closing refuses a report that drops an earlier finding or changes a
 severity without a `note`. `review_status.py TASK --changes` lists what changed in `questions.json`
 since the last closed round; the reviewer gets it from round 2 on.
@@ -165,14 +167,16 @@ since the last closed round; the reviewer gets it from round 2 on.
 ```json
 { "decisions": [
   { "round": 1, "report": "<sha256 of reviewer-report.json>", "accepted": ["R2"], "rejected": ["R5"],
-    "time": "2026-10-28T10:05:00+00:00", "command": "/exam-papers:decide accept R2 reject R5" }
+    "undo": [], "time": "2026-10-28T10:05:00+00:00", "command": "/exam-papers:decide accept R2 reject R5" }
 ] }
 ```
 
 The user's decisions on open warnings and suggestions, and on disputes (findings still open after
 round 3), one entry per typed command, never rewritten. The hook refuses a decision that leaves a
 listed finding undecided, accepts a finding that is not listed, or rejects one that is neither listed
-nor an open error (the user may overrule the reviewer on an error). A hook also stops Claude and the
+nor an open error (the user may overrule the reviewer on an error) nor a fix the writer made. Rejecting
+a resolved finding the writer fixed undoes the fix: the hook lists it in `undo`, and the writer
+restores the text in the next revision. A hook also stops Claude and the
 subagents from writing the file. Only `R` IDs: a solver mismatch reaches the user
 as a finding (or as a dismissal they can question). A rejected finding stays closed; an accepted one
 is fixed by the writer like an error. From round 3 on, an `accepted` ID in the entry for the current
@@ -194,5 +198,7 @@ round 3), or `done`.
 ```
 
 The writer's answer to each finding it was asked to address, once per ID: `fixed` with the `change`
-it made (specific enough to undo), or `disagree` with its `reason` and evidence, leaving the paper as
-it was. Claude shows it to the user after each revision.
+it made (specific enough to undo), `disagree` with its `reason` and evidence, leaving the paper as
+it was, or `reverted` when the user undid an earlier fix and the writer restored the text. Claude
+shows it to the user after each revision. Closing a round saves the response that led to it in
+`review/rounds/N/writer-response.json`, so every revision is kept for the final approval.

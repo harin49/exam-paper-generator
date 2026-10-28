@@ -6,7 +6,8 @@ here.
 - /exam-papers:approve GATE [TASK] records the approval in that task's approvals.json.
 - /exam-papers:decide accept R2 R4 reject R5 [TASK] records the teacher's decision on the open review
   findings in that task's review/decisions.json (review_status.py checks it: every finding listed to
-  decide is accepted or rejected; an open error may also be rejected).
+  decide is accepted or rejected; an open error may also be rejected, and so may a fix the writer
+  made, which undoes it).
 TASK is a folder under papers/ (its name or its path); without it, the command goes to the one task
 that is waiting for it. If it cannot be recorded, the command is blocked and the reason shown.
 
@@ -121,7 +122,8 @@ def on_decide(event, root, steps):
             folder = w
         else:
             return block(DECIDE_USAGE)
-    task, reason = pick_task(root, folder, waiting_tasks(root, {"decide_fixes", "apply_fixes"}, steps),
+    waiting = waiting_tasks(root, {"decide_fixes", "apply_fixes", "approve_paper"}, steps)
+    task, reason = pick_task(root, folder, waiting,
                              "a decision on review findings", f"/{DECIDE} ...")
     if reason:
         return block(reason)
@@ -132,8 +134,9 @@ def on_decide(event, root, steps):
     if problems:
         return block("Not recorded: " + "; ".join(problems) + ". " + DECIDE_USAGE)
     s = status(task)
+    undo = f"; fixes to undo {', '.join(s['toRevert'])}" if s["toRevert"] else ""
     print(f"Decision recorded by the exam-papers hook for {task} (round {s['round']}): "
-          f"accepted {', '.join(accepted) or 'none'}; rejected {', '.join(rejected) or 'none'}. "
+          f"accepted {', '.join(accepted) or 'none'}; rejected {', '.join(rejected) or 'none'}{undo}. "
           f"Next: {s['next']}. Run next_step.py on that folder and continue.")
     return 0
 

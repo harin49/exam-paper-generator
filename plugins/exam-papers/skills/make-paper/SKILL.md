@@ -72,6 +72,7 @@ There are two places:
 Files that are **not** run in the workflow: `${CLAUDE_SKILL_DIR}/scripts/spec_types.py`,
 `${CLAUDE_SKILL_DIR}/scripts/approvals.py` and `${CLAUDE_SKILL_DIR}/scripts/task_files.py` (libraries
 the other scripts and the plugin's approval hook import) and
+`${CLAUDE_SKILL_DIR}/scripts/number_syllabus.py` (used when a syllabus pack is made) and
 `${CLAUDE_SKILL_DIR}/scripts/validate_concepts.py` (only when the user asks
 you to check a concept list).
 

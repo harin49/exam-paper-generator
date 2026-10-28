@@ -4,16 +4,16 @@
 Usage:
     python3 validate_concepts.py CONCEPTS.json [--json]
 
-The syllabus is the file named in the list's "syllabus" field, relative to the list's folder.
-Section ids are written in the syllabus as [1], [1(i)], [4(ii)] ...
+The syllabus is the file named in the list's "syllabus" field, relative to the list's folder. Its
+points carry ids [S1], [S2], ... in order, added by number_syllabus.py.
 
 Rules (see schemas/concept-list-format.md in this skill):
     C1  fields present with the right types; no unknown fields
     C2  tags are snake_case and unique across the whole list
     C3  kinds is a non-empty list of allowed kinds, without repeats
     C4  maxMarks is a positive number
-    C5  every source is a syllabus section that exists and has no sub-sections
-    C6  every syllabus section without sub-sections has at least one concept (coverage)
+    C5  the syllabus's point ids run S1, S2, ... in order, and every source is one of them
+    C6  every syllabus point has at least one concept, or is listed in notTested with a reason (coverage)
 
 Exit codes: 0 valid, 1 errors, 2 a file could not be read.
 """
@@ -26,20 +26,18 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from spec_types import Kind  # noqa: E402
 from validate_paper_spec import Report, is_int, is_num  # noqa: E402
 
-TOP_KEYS = {"board", "class", "book", "syllabus", "syllabusYear", "status", "chapters", "note"}
+TOP_KEYS = {"board", "class", "book", "syllabus", "syllabusYear", "status", "chapters", "note", "notTested"}
 TOP_REQUIRED = {"board", "class", "book", "syllabus", "status", "chapters"}
 CHAPTER_KEYS = {"title", "concepts"}
 CONCEPT_KEYS = {"tag", "source", "kinds", "maxMarks"}
 STATUSES = {"draft", "approved"}
 TAG_RE = re.compile(r"^[a-z][a-z0-9_]*$")
-SECTION_RE = re.compile(r"\[(\d+(?:\([ivx]+\))?)\]")
+POINT_RE = re.compile(r"\[(S\d+)\]")
 
 
-def syllabus_sections(text):
-    """Section ids in the order they appear, and the subset that have no sub-sections."""
-    ids = list(dict.fromkeys(SECTION_RE.findall(text)))
-    leaves = [i for i in ids if not any(j.startswith(i + "(") for j in ids)]
-    return ids, leaves
+def syllabus_points(text):
+    """The point ids in the order they appear in the syllabus."""
+    return POINT_RE.findall(text)
 
 
 def keys_ok(r, obj, allowed, required, loc):
@@ -70,9 +68,12 @@ def validate(doc, syllabus_text):
         r.error("file", "chapters must be a non-empty object keyed by chapter number", "C1")
         return r
 
-    ids, leaves = syllabus_sections(syllabus_text)
+    ids = syllabus_points(syllabus_text)
     if not ids:
-        r.error("syllabus", "has no section ids like [1] or [4(ii)]", "C5")
+        r.error("syllabus", "has no point ids like [S1]: number it with number_syllabus.py", "C5")
+    elif ids != [f"S{i}" for i in range(1, len(ids) + 1)]:
+        r.error("syllabus", "point ids must run S1, S2, ... once each, in order (number the teacher's "
+                            "original again with number_syllabus.py)", "C5")
     seen_tags, covered = {}, {}
     for ch, entry in chapters.items():
         cloc = f"chapter {ch}"
@@ -119,15 +120,24 @@ def validate(doc, syllabus_text):
             if "source" in c:
                 src = c["source"]
                 if not isinstance(src, str) or src not in ids:
-                    r.error(loc, f"source {json.dumps(src)} is not a section of the syllabus", "C5")
-                elif src not in leaves:
-                    r.error(loc, f"source {src} has sub-sections; point to one of them instead", "C5")
+                    r.error(loc, f"source {json.dumps(src)} is not a point of the syllabus", "C5")
                 else:
                     covered.setdefault(src, []).append(tag)
 
-    for sec in leaves:
-        if sec not in covered:
-            r.error(f"syllabus [{sec}]", "has no concept (not covered)", "C6")
+    not_tested = doc.get("notTested", {})
+    if not isinstance(not_tested, dict):
+        r.error("file", "notTested must be an object: {\"S7\": \"the reason\"}", "C1")
+        not_tested = {}
+    for pid, why in not_tested.items():
+        if pid not in ids:
+            r.error(f"notTested {pid}", "is not a point of the syllabus", "C5")
+        elif not (isinstance(why, str) and why.strip()):
+            r.error(f"notTested {pid}", "needs a reason", "C6")
+        elif pid in covered:
+            r.warn(f"notTested {pid}", f"also has concepts ({', '.join(covered[pid])})", "C6")
+    for pid in dict.fromkeys(ids):
+        if pid not in covered and pid not in not_tested:
+            r.error(f"syllabus [{pid}]", "has no concept and is not listed in notTested (not covered)", "C6")
 
     by_ch = []
     for ch, entry in chapters.items():
@@ -136,7 +146,8 @@ def validate(doc, syllabus_text):
             n_num = sum(1 for c in cs if isinstance(c, dict) and Kind.NUMERICAL in (c.get("kinds") or []))
             by_ch.append(f"ch{ch} {len(cs)} ({n_num} numerical)")
     r.info.append("Concepts per chapter: " + ", ".join(by_ch))
-    r.info.append(f"Syllabus sections covered: {len(covered)} of {len(leaves)}")
+    r.info.append(f"Syllabus points covered: {len(covered)} of {len(set(ids))}; not tested: "
+                  + (", ".join(f"{p} ({w})" for p, w in not_tested.items()) or "none"))
     return r
 
 

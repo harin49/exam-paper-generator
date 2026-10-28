@@ -36,15 +36,19 @@ class ConceptList(unittest.TestCase):
     def test_real_list_is_valid(self):
         self.assertEqual(vc.validate(self.doc, self.syllabus).errors, [])
 
-    def test_syllabus_sections(self):
-        ids, leaves = vc.syllabus_sections(self.syllabus)
-        self.assertIn("3", ids)
-        self.assertNotIn("3", leaves)          # has 3(i)...3(v)
-        self.assertIn("2", leaves)             # no sub-sections
-        self.assertEqual(len(leaves), 22)
+    def test_syllabus_points(self):
+        self.assertEqual(vc.syllabus_points(self.syllabus), [f"S{i}" for i in range(1, 54)])
+
+    def test_points_must_run_in_order(self):
+        self.syllabus = self.syllabus.replace("[S7]", "[S70]")
+        self.assertIn("[C5] syllabus: point ids must run S1, S2, ... once each, in order", self.errors())
+
+    def test_syllabus_without_points(self):
+        r = vc.validate(self.doc, "## 1. Measurements\n\nSome text.\n")
+        self.assertIn("has no point ids like [S1]", " | ".join(r.errors))
 
     def test_duplicate_tag(self):
-        self.doc["chapters"]["5"]["concepts"].append(dict(concept(self.doc, "pascals_law"), source="4(ii)"))
+        self.doc["chapters"]["5"]["concepts"].append(dict(concept(self.doc, "pascals_law"), source="S21"))
         self.assertIn("[C2] chapter 5 'pascals_law': tag is also used in chapter 4", self.errors())
 
     def test_tag_not_snake_case(self):
@@ -64,17 +68,31 @@ class ConceptList(unittest.TestCase):
         self.assertIn("[C4] chapter 4 'pascals_law': maxMarks must be a positive number", self.errors())
 
     def test_unknown_source(self):
-        concept(self.doc, "pascals_law")["source"] = "4(iii)"
-        self.assertIn("[C5] chapter 4 'pascals_law': source \"4(iii)\" is not a section", self.errors())
+        concept(self.doc, "pascals_law")["source"] = "S99"
+        self.assertIn("[C5] chapter 4 'pascals_law': source \"S99\" is not a point of the syllabus", self.errors())
+        concept(self.doc, "pascals_law")["source"] = "4(ii)"                # an old-style section id
+        self.assertIn("source \"4(ii)\" is not a point", self.errors())
 
-    def test_heading_as_source(self):
-        concept(self.doc, "newtons_first_law")["source"] = "3"
-        self.assertIn("source 3 has sub-sections", self.errors())
-
-    def test_uncovered_section(self):
+    def test_uncovered_point(self):
         self.doc["chapters"]["8"]["concepts"] = [c for c in self.doc["chapters"]["8"]["concepts"]
-                                                  if c["source"] != "7(ii)"]
-        self.assertIn("[C6] syllabus [7(ii)]: has no concept (not covered)", self.errors())
+                                                  if c["source"] != "S45"]
+        self.assertIn("[C6] syllabus [S45]: has no concept and is not listed in notTested", self.errors())
+
+    def test_not_tested_points(self):
+        del self.doc["notTested"]["S53"]
+        self.assertIn("[C6] syllabus [S53]: has no concept", self.errors())
+        self.doc["notTested"]["S53"] = " "
+        self.assertIn("[C6] notTested S53: needs a reason", self.errors())
+        self.doc["notTested"]["S99"] = "x"
+        self.assertIn("[C5] notTested S99: is not a point of the syllabus", self.errors())
+        del self.doc["notTested"]["S99"]
+        self.doc["notTested"]["S53"] = "A note."
+        self.doc["notTested"]["S52"] = "Also listed."
+        r = vc.validate(self.doc, self.syllabus)
+        self.assertEqual(r.errors, [])
+        self.assertTrue(any("notTested S52: also has concepts (electromagnet_and_uses)" in w for w in r.warnings))
+        self.doc["notTested"] = []
+        self.assertIn("notTested must be an object", self.errors())
 
     def test_unknown_field(self):
         concept(self.doc, "pascals_law")["level"] = "easy"

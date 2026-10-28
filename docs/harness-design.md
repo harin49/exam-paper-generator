@@ -355,6 +355,24 @@ gate-4 list of automatic fixes (done 2026-10-28).
   `reverted`; a new round reviews the result, and the finding stays closed. Rejecting a dispute is
   not an undo: only a *resolved* fixed finding is reverted.
 
+### D21. Syllabus points get unique ids from a script
+
+- `number_syllabus.py` copies the teacher's syllabus into the pack, inserting `[S1]`, `[S2]`, ...
+  before each paragraph and list item (headings excluded). Nothing else changes.
+- A concept's `source` is a point id; `validate_concepts.py` checks that every point has a concept or
+  is listed in the concept list's `notTested` with a reason (a heading line, a note, a limit such as
+  "Simple numerical problems").
+- This replaced section ids that copied the syllabus's own numbering (`[4(ii)]`), which Claude had to
+  add by judgement: real syllabi reuse numbers (History numbered Civics 1-3 and History 1-8) and use
+  (a)-(d), so the ids had to be invented and the syllabus rewritten, which could drop or change text.
+  Quoting the syllabus instead was considered and dropped: deciding what counts as a "point" for
+  quotes needed tuning (clauses gave 160 points for Physics, most of them limits and repeats), and it
+  meant reworking the validator.
+
+*Why:* a script adds the ids, so no judgement and no risk to the text; coverage is checked per
+paragraph (Physics: 53 points, 6 not tested), finer than the old sections (22). The ids carry no
+meaning, so gate 1 shows each one beside its text.
+
 ### D14. State is a hash ledger plus a run log
 
 - `state.json` in each task folder records every finished step with the SHA-256 hashes of its inputs

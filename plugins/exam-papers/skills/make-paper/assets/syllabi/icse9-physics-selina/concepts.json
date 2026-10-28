@@ -5,13 +5,22 @@
   "syllabus": "syllabus.md",
   "syllabusYear": "2026-2027",
   "status": "approved",
+  "note": "Syllabus: provided by the user on 2026-10-27 (pasted text), kept as given except that a block of garbled characters from copying the equation in 3(iii) was replaced by the equation written out once, and the typo \"eaction\" in 3(iv) corrected to \"reaction\". The list of SI units the syllabus refers to (\"given at the end of this syllabus\") was not in the pasted text. Point ids [S1]-[S53] added by number_syllabus.py. Concepts are organised by Selina book chapter (syllabus section 4 \"Fluids\" is book chapters 4 and 5); each concept's source is the syllabus point it comes from.",
+  "notTested": {
+    "S17": "Heading only: the topic's content is S18.",
+    "S24": "Limits the numericals for S21-S23; encoded in the kinds of archimedes_principle, relative_density and the floatation concepts.",
+    "S28": "Heading only: the topic's content is S29.",
+    "S30": "Heading only: the topic's content is S31-S33.",
+    "S48": "Limits the numericals for S46-S47 (no derivations); encoded in the concepts' kinds.",
+    "S53": "A note on S52, not a topic."
+  },
   "chapters": {
     "1": {
       "title": "Measurements and Experimentation",
       "concepts": [
         {
           "tag": "si_units_and_symbols",
-          "source": "1(i)",
+          "source": "S1",
           "kinds": [
             "theory"
           ],
@@ -19,7 +28,7 @@
         },
         {
           "tag": "fps_cgs_systems",
-          "source": "1(i)",
+          "source": "S1",
           "kinds": [
             "numerical",
             "theory"
@@ -28,7 +37,7 @@
         },
         {
           "tag": "least_count_and_accuracy",
-          "source": "1(ii)",
+          "source": "S3",
           "kinds": [
             "theory"
           ],
@@ -36,7 +45,7 @@
         },
         {
           "tag": "vernier_callipers",
-          "source": "1(ii)",
+          "source": "S2",
           "kinds": [
             "theory"
           ],
@@ -44,7 +53,7 @@
         },
         {
           "tag": "screw_gauge",
-          "source": "1(ii)",
+          "source": "S2",
           "kinds": [
             "theory"
           ],
@@ -52,7 +61,7 @@
         },
         {
           "tag": "zero_error_basic_idea",
-          "source": "1(ii)",
+          "source": "S3",
           "kinds": [
             "theory"
           ],
@@ -60,7 +69,7 @@
         },
         {
           "tag": "simple_pendulum_terms",
-          "source": "1(ii)",
+          "source": "S2",
           "kinds": [
             "theory"
           ],
@@ -68,7 +77,7 @@
         },
         {
           "tag": "pendulum_frequency",
-          "source": "1(ii)",
+          "source": "S3",
           "kinds": [
             "numerical",
             "theory"
@@ -77,7 +86,7 @@
         },
         {
           "tag": "pendulum_time_period_formula",
-          "source": "1(ii)",
+          "source": "S3",
           "kinds": [
             "numerical",
             "theory"
@@ -86,7 +95,7 @@
         },
         {
           "tag": "pendulum_l_t2_graph",
-          "source": "1(ii)",
+          "source": "S3",
           "kinds": [
             "numerical",
             "theory"
@@ -100,7 +109,7 @@
       "concepts": [
         {
           "tag": "scalar_vector_quantities",
-          "source": "2",
+          "source": "S4",
           "kinds": [
             "theory"
           ],
@@ -108,7 +117,7 @@
         },
         {
           "tag": "rest_and_motion",
-          "source": "2",
+          "source": "S5",
           "kinds": [
             "theory"
           ],
@@ -116,7 +125,7 @@
         },
         {
           "tag": "distance_displacement",
-          "source": "2",
+          "source": "S5",
           "kinds": [
             "numerical",
             "theory"
@@ -125,7 +134,7 @@
         },
         {
           "tag": "speed_velocity",
-          "source": "2",
+          "source": "S5",
           "kinds": [
             "numerical",
             "theory"
@@ -134,7 +143,7 @@
         },
         {
           "tag": "acceleration_retardation",
-          "source": "2",
+          "source": "S5",
           "kinds": [
             "numerical",
             "theory"
@@ -143,7 +152,7 @@
         },
         {
           "tag": "distance_time_graph",
-          "source": "2",
+          "source": "S4",
           "kinds": [
             "numerical",
             "theory"
@@ -152,7 +161,7 @@
         },
         {
           "tag": "velocity_time_graph_slope",
-          "source": "2",
+          "source": "S5",
           "kinds": [
             "numerical",
             "theory"
@@ -161,7 +170,7 @@
         },
         {
           "tag": "velocity_time_graph_area",
-          "source": "2",
+          "source": "S4",
           "kinds": [
             "numerical"
           ],
@@ -169,7 +178,7 @@
         },
         {
           "tag": "equations_of_motion_derivation",
-          "source": "2",
+          "source": "S6",
           "kinds": [
             "theory"
           ],
@@ -177,7 +186,7 @@
         },
         {
           "tag": "equations_of_motion_numericals",
-          "source": "2",
+          "source": "S7",
           "kinds": [
             "numerical"
           ],
@@ -190,7 +199,7 @@
       "concepts": [
         {
           "tag": "contact_forces",
-          "source": "3(i)",
+          "source": "S8",
           "kinds": [
             "theory"
           ],
@@ -198,7 +207,7 @@
         },
         {
           "tag": "non_contact_forces",
-          "source": "3(i)",
+          "source": "S9",
           "kinds": [
             "theory"
           ],
@@ -206,7 +215,7 @@
         },
         {
           "tag": "force_units_cgs_si",
-          "source": "3(i)",
+          "source": "S9",
           "kinds": [
             "numerical",
             "theory"
@@ -215,7 +224,7 @@
         },
         {
           "tag": "newtons_first_law",
-          "source": "3(ii)",
+          "source": "S10",
           "kinds": [
             "theory"
           ],
@@ -223,7 +232,7 @@
         },
         {
           "tag": "inertia_examples",
-          "source": "3(ii)",
+          "source": "S11",
           "kinds": [
             "theory"
           ],
@@ -231,7 +240,7 @@
         },
         {
           "tag": "linear_momentum",
-          "source": "3(iii)",
+          "source": "S13",
           "kinds": [
             "numerical",
             "theory"
@@ -240,7 +249,7 @@
         },
         {
           "tag": "newtons_second_law",
-          "source": "3(iii)",
+          "source": "S12",
           "kinds": [
             "theory"
           ],
@@ -248,7 +257,7 @@
         },
         {
           "tag": "force_momentum_numericals",
-          "source": "3(iii)",
+          "source": "S14",
           "kinds": [
             "numerical"
           ],
@@ -256,7 +265,7 @@
         },
         {
           "tag": "newtons_third_law",
-          "source": "3(iv)",
+          "source": "S15",
           "kinds": [
             "theory"
           ],
@@ -264,7 +273,7 @@
         },
         {
           "tag": "action_reaction_pairs",
-          "source": "3(iv)",
+          "source": "S16",
           "kinds": [
             "theory"
           ],
@@ -272,7 +281,7 @@
         },
         {
           "tag": "universal_law_of_gravitation",
-          "source": "3(v)",
+          "source": "S18",
           "kinds": [
             "numerical",
             "theory"
@@ -281,7 +290,7 @@
         },
         {
           "tag": "acceleration_due_to_gravity_free_fall",
-          "source": "3(v)",
+          "source": "S18",
           "kinds": [
             "numerical",
             "theory"
@@ -290,7 +299,7 @@
         },
         {
           "tag": "mass_and_weight",
-          "source": "3(v)",
+          "source": "S18",
           "kinds": [
             "numerical",
             "theory"
@@ -299,7 +308,7 @@
         },
         {
           "tag": "gravitational_units_of_force",
-          "source": "3(v)",
+          "source": "S18",
           "kinds": [
             "numerical",
             "theory"
@@ -313,7 +322,7 @@
       "concepts": [
         {
           "tag": "thrust_and_pressure",
-          "source": "4(i)",
+          "source": "S20",
           "kinds": [
             "numerical",
             "theory"
@@ -322,7 +331,7 @@
         },
         {
           "tag": "liquid_pressure_formula",
-          "source": "4(i)",
+          "source": "S19",
           "kinds": [
             "numerical",
             "theory"
@@ -331,7 +340,7 @@
         },
         {
           "tag": "liquid_pressure_daily_examples",
-          "source": "4(i)",
+          "source": "S20",
           "kinds": [
             "theory"
           ],
@@ -339,7 +348,7 @@
         },
         {
           "tag": "pascals_law",
-          "source": "4(i)",
+          "source": "S20",
           "kinds": [
             "theory"
           ],
@@ -347,7 +356,7 @@
         },
         {
           "tag": "pascals_law_applications",
-          "source": "4(i)",
+          "source": "S20",
           "kinds": [
             "numerical",
             "theory"
@@ -356,7 +365,7 @@
         },
         {
           "tag": "atmospheric_pressure_manifestations",
-          "source": "4(i)",
+          "source": "S20",
           "kinds": [
             "theory"
           ],
@@ -364,7 +373,7 @@
         },
         {
           "tag": "pressure_and_altitude",
-          "source": "4(i)",
+          "source": "S20",
           "kinds": [
             "theory"
           ],
@@ -377,7 +386,7 @@
       "concepts": [
         {
           "tag": "buoyancy_upthrust",
-          "source": "4(ii)",
+          "source": "S22",
           "kinds": [
             "theory"
           ],
@@ -385,7 +394,7 @@
         },
         {
           "tag": "upthrust_vs_weight_cases",
-          "source": "4(ii)",
+          "source": "S22",
           "kinds": [
             "theory"
           ],
@@ -393,7 +402,7 @@
         },
         {
           "tag": "upthrust_properties",
-          "source": "4(ii)",
+          "source": "S22",
           "kinds": [
             "theory"
           ],
@@ -401,7 +410,7 @@
         },
         {
           "tag": "archimedes_principle",
-          "source": "4(ii)",
+          "source": "S21",
           "kinds": [
             "numerical",
             "theory"
@@ -410,7 +419,7 @@
         },
         {
           "tag": "density_and_sinking_floating",
-          "source": "4(ii)",
+          "source": "S22",
           "kinds": [
             "theory"
           ],
@@ -418,7 +427,7 @@
         },
         {
           "tag": "relative_density",
-          "source": "4(ii)",
+          "source": "S23",
           "kinds": [
             "numerical",
             "theory"
@@ -427,7 +436,7 @@
         },
         {
           "tag": "relative_density_determination",
-          "source": "4(ii)",
+          "source": "S23",
           "kinds": [
             "numerical",
             "theory"
@@ -436,7 +445,7 @@
         },
         {
           "tag": "principle_of_floatation",
-          "source": "4(ii)",
+          "source": "S23",
           "kinds": [
             "theory"
           ],
@@ -444,7 +453,7 @@
         },
         {
           "tag": "floating_fraction_immersed",
-          "source": "4(ii)",
+          "source": "S23",
           "kinds": [
             "numerical",
             "theory"
@@ -453,7 +462,7 @@
         },
         {
           "tag": "apparent_weight_floating_body",
-          "source": "4(ii)",
+          "source": "S23",
           "kinds": [
             "theory"
           ],
@@ -461,7 +470,7 @@
         },
         {
           "tag": "floatation_applications",
-          "source": "4(ii)",
+          "source": "S23",
           "kinds": [
             "theory"
           ],
@@ -474,7 +483,7 @@
       "concepts": [
         {
           "tag": "heat_and_temperature",
-          "source": "5(i)",
+          "source": "S25",
           "kinds": [
             "theory"
           ],
@@ -482,7 +491,7 @@
         },
         {
           "tag": "heat_units_joule_calorie",
-          "source": "5(i)",
+          "source": "S26",
           "kinds": [
             "numerical",
             "theory"
@@ -491,7 +500,7 @@
         },
         {
           "tag": "anomalous_expansion_of_water",
-          "source": "5(ii)",
+          "source": "S27",
           "kinds": [
             "theory"
           ],
@@ -499,7 +508,7 @@
         },
         {
           "tag": "hopes_experiment",
-          "source": "5(ii)",
+          "source": "S27",
           "kinds": [
             "theory"
           ],
@@ -507,7 +516,7 @@
         },
         {
           "tag": "anomalous_expansion_consequences",
-          "source": "5(ii)",
+          "source": "S27",
           "kinds": [
             "theory"
           ],
@@ -515,7 +524,7 @@
         },
         {
           "tag": "energy_flow_and_thermodynamics",
-          "source": "5(iii)",
+          "source": "S29",
           "kinds": [
             "theory"
           ],
@@ -523,7 +532,7 @@
         },
         {
           "tag": "electricity_from_energy_sources",
-          "source": "5(iv)",
+          "source": "S31",
           "kinds": [
             "theory"
           ],
@@ -531,7 +540,7 @@
         },
         {
           "tag": "renewable_energy_sources",
-          "source": "5(iv)",
+          "source": "S32",
           "kinds": [
             "theory"
           ],
@@ -539,7 +548,7 @@
         },
         {
           "tag": "non_renewable_energy_sources",
-          "source": "5(iv)",
+          "source": "S33",
           "kinds": [
             "theory"
           ],
@@ -547,7 +556,7 @@
         },
         {
           "tag": "inequitable_energy_use",
-          "source": "5(iv)",
+          "source": "S33",
           "kinds": [
             "theory"
           ],
@@ -555,7 +564,7 @@
         },
         {
           "tag": "greenhouse_effect_global_warming",
-          "source": "5(v)",
+          "source": "S34",
           "kinds": [
             "theory"
           ],
@@ -563,7 +572,7 @@
         },
         {
           "tag": "energy_degradation",
-          "source": "5(v)",
+          "source": "S35",
           "kinds": [
             "theory"
           ],
@@ -576,7 +585,7 @@
       "concepts": [
         {
           "tag": "laws_of_reflection",
-          "source": "6(i)",
+          "source": "S37",
           "kinds": [
             "theory"
           ],
@@ -584,7 +593,7 @@
         },
         {
           "tag": "images_in_parallel_mirrors",
-          "source": "6(i)",
+          "source": "S36",
           "kinds": [
             "theory"
           ],
@@ -592,7 +601,7 @@
         },
         {
           "tag": "images_in_perpendicular_mirrors",
-          "source": "6(i)",
+          "source": "S36",
           "kinds": [
             "theory"
           ],
@@ -600,7 +609,7 @@
         },
         {
           "tag": "plane_mirror_uses",
-          "source": "6(i)",
+          "source": "S37",
           "kinds": [
             "theory"
           ],
@@ -608,7 +617,7 @@
         },
         {
           "tag": "spherical_mirror_terms",
-          "source": "6(ii)",
+          "source": "S39",
           "kinds": [
             "theory"
           ],
@@ -616,7 +625,7 @@
         },
         {
           "tag": "focal_length_radius_relation",
-          "source": "6(ii)",
+          "source": "S40",
           "kinds": [
             "numerical",
             "theory"
@@ -625,7 +634,7 @@
         },
         {
           "tag": "concave_mirror_images",
-          "source": "6(ii)",
+          "source": "S39",
           "kinds": [
             "theory"
           ],
@@ -633,7 +642,7 @@
         },
         {
           "tag": "convex_mirror_images",
-          "source": "6(ii)",
+          "source": "S38",
           "kinds": [
             "theory"
           ],
@@ -641,7 +650,7 @@
         },
         {
           "tag": "mirror_formula_numericals",
-          "source": "6(ii)",
+          "source": "S40",
           "kinds": [
             "numerical"
           ],
@@ -649,7 +658,7 @@
         },
         {
           "tag": "spherical_mirror_uses",
-          "source": "6(ii)",
+          "source": "S41",
           "kinds": [
             "theory"
           ],
@@ -662,7 +671,7 @@
       "concepts": [
         {
           "tag": "sound_needs_medium",
-          "source": "7(i)",
+          "source": "S42",
           "kinds": [
             "theory"
           ],
@@ -670,7 +679,7 @@
         },
         {
           "tag": "wave_terms_v_f_lambda",
-          "source": "7(i)",
+          "source": "S43",
           "kinds": [
             "numerical",
             "theory"
@@ -679,7 +688,7 @@
         },
         {
           "tag": "speed_of_sound_factors",
-          "source": "7(i)",
+          "source": "S43",
           "kinds": [
             "theory"
           ],
@@ -687,7 +696,7 @@
         },
         {
           "tag": "sound_and_light_speed",
-          "source": "7(i)",
+          "source": "S42",
           "kinds": [
             "numerical",
             "theory"
@@ -696,7 +705,7 @@
         },
         {
           "tag": "frequency_ranges",
-          "source": "7(ii)",
+          "source": "S44",
           "kinds": [
             "theory"
           ],
@@ -704,7 +713,7 @@
         },
         {
           "tag": "ultrasound_applications",
-          "source": "7(ii)",
+          "source": "S44",
           "kinds": [
             "theory"
           ],
@@ -712,7 +721,7 @@
         },
         {
           "tag": "ultrasonic_vs_supersonic",
-          "source": "7(ii)",
+          "source": "S45",
           "kinds": [
             "theory"
           ],
@@ -725,7 +734,7 @@
       "concepts": [
         {
           "tag": "dc_sources",
-          "source": "8(i)",
+          "source": "S47",
           "kinds": [
             "theory"
           ],
@@ -733,7 +742,7 @@
         },
         {
           "tag": "current_and_charge",
-          "source": "8(i)",
+          "source": "S46",
           "kinds": [
             "numerical",
             "theory"
@@ -742,7 +751,7 @@
         },
         {
           "tag": "direction_of_current",
-          "source": "8(i)",
+          "source": "S46",
           "kinds": [
             "theory"
           ],
@@ -750,7 +759,7 @@
         },
         {
           "tag": "conductors_insulators",
-          "source": "8(i)",
+          "source": "S46",
           "kinds": [
             "theory"
           ],
@@ -758,7 +767,7 @@
         },
         {
           "tag": "circuit_symbols_and_circuits",
-          "source": "8(i)",
+          "source": "S47",
           "kinds": [
             "theory"
           ],
@@ -766,7 +775,7 @@
         },
         {
           "tag": "current_detection",
-          "source": "8(i)",
+          "source": "S47",
           "kinds": [
             "theory"
           ],
@@ -774,7 +783,7 @@
         },
         {
           "tag": "potential_difference",
-          "source": "8(i)",
+          "source": "S47",
           "kinds": [
             "numerical",
             "theory"
@@ -783,7 +792,7 @@
         },
         {
           "tag": "electricity_saving_initiatives",
-          "source": "8(i)",
+          "source": "S49",
           "kinds": [
             "theory"
           ],
@@ -796,7 +805,7 @@
       "concepts": [
         {
           "tag": "induced_magnetism",
-          "source": "8(ii)",
+          "source": "S50",
           "kinds": [
             "theory"
           ],
@@ -804,7 +813,7 @@
         },
         {
           "tag": "magnetic_field_lines",
-          "source": "8(ii)",
+          "source": "S51",
           "kinds": [
             "theory"
           ],
@@ -812,7 +821,7 @@
         },
         {
           "tag": "earths_magnetic_field",
-          "source": "8(ii)",
+          "source": "S50",
           "kinds": [
             "theory"
           ],
@@ -820,7 +829,7 @@
         },
         {
           "tag": "neutral_points",
-          "source": "8(ii)",
+          "source": "S50",
           "kinds": [
             "theory"
           ],
@@ -828,7 +837,7 @@
         },
         {
           "tag": "electromagnet_and_uses",
-          "source": "8(iii)",
+          "source": "S52",
           "kinds": [
             "theory"
           ],

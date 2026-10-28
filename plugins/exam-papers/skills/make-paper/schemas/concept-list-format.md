@@ -8,18 +8,24 @@ syllabus it is drafted from, and is shared by every paper for that syllabus. Exa
 
 ## How it is made and changed
 
-1. **Drafted once from the syllabus** (`syllabus.md`), roughly one concept per syllabus point, with
+1. **The syllabus is numbered.** `scripts/number_syllabus.py` copies the teacher's syllabus into
+   the pack as `syllabus.md`, inserting a unique id, `[S1]`, `[S2]`, ..., before each point (each
+   paragraph and each list item; headings are not points). Nothing else is changed, and the teacher's
+   own file is left as it is. The ids carry no meaning; they only let concepts point at the text.
+2. **Drafted once from the syllabus** (`syllabus.md`), roughly one concept per syllabus point, with
    tags named from the syllabus wording. Claude drafts; it is never derived again at paper time.
-2. **Checked** with the skill's `scripts/validate_concepts.py` (rules C1–C6 below): every syllabus section
-   has a concept, every concept points to a real section, tags are unique.
-3. **Approved by a teacher**, who checks topics, `kinds` and `maxMarks`, then sets `status` to
+   A point that is only a heading line, a note or a limit on other points ("Simple numerical
+   problems.") goes in `notTested` with the reason, instead of getting a concept.
+3. **Checked** with the skill's `scripts/validate_concepts.py` (rules C1–C6 below): every syllabus point
+   has a concept or a reason in `notTested`, every concept points to a real point, tags are unique.
+4. **Approved by a teacher**, who checks topics, `kinds` and `maxMarks`, then sets `status` to
    `"approved"`. From then on the file is frozen: every paper reads it as it is.
-4. **When the syllabus changes**, the old and new syllabus are compared and only the differences are
+5. **When the syllabus changes**, the old and new syllabus are compared and only the differences are
    proposed (concepts added or removed). Existing tags are never renamed, because older papers and
    blueprints refer to them.
 
 Concepts are organised by **book chapter** (the numbers specs use). The syllabus may number its
-sections differently; each concept's `source` points to its syllabus section.
+sections differently; each concept's `source` is the id of the syllabus point it comes from.
 
 ## Fields
 
@@ -27,10 +33,11 @@ sections differently; each concept's `source` points to its syllabus section.
 {
   "board": "ICSE", "class": 9, "book": "Selina Concise Physics Part I",
   "syllabus": "syllabus.md", "syllabusYear": "2026-2027", "status": "draft",
+  "notTested": { "S17": "Heading only: the topic's content is S18." },
   "chapters": {
     "1": { "title": "Measurements and Experimentation", "concepts": [
-      { "tag": "vernier_callipers", "source": "1(ii)", "kinds": ["theory"], "maxMarks": 3 },
-      { "tag": "pendulum_time_period_formula", "source": "1(ii)", "kinds": ["numerical", "theory"], "maxMarks": 3 }
+      { "tag": "vernier_callipers", "source": "S2", "kinds": ["theory"], "maxMarks": 3 },
+      { "tag": "pendulum_time_period_formula", "source": "S3", "kinds": ["numerical", "theory"], "maxMarks": 3 }
     ] }
   }
 }
@@ -39,13 +46,14 @@ sections differently; each concept's `source` points to its syllabus section.
 | Field | Meaning |
 |---|---|
 | `board`, `class`, `book` | Must match the paper spec's `exam` (checked by rule Q8). |
-| `syllabus` | The syllabus file, relative to this file. Its sections are marked `[1]`, `[1(i)]`, `[4(ii)]`... |
+| `syllabus` | The numbered syllabus file, relative to this file. Its points carry ids `[S1]`, `[S2]`, ... (from `number_syllabus.py`). |
 | `syllabusYear` | Optional: the syllabus year it was drafted from. |
 | `status` | `"draft"` until a teacher approves it, then `"approved"`. |
-| `note` | Optional free text. |
+| `note` | Optional free text (where the syllabus came from, anything changed in it). |
+| `notTested` | Optional: syllabus points with no concept, each with the reason (`{"S17": "Heading only..."}`). Shown to the teacher at approval. |
 | `chapters` | Keyed by book chapter number: `title` and `concepts`. |
 | `tag` | snake_case name, unique across the whole list. Used in blueprints and questions. |
-| `source` | The syllabus section the concept comes from: a section with no sub-sections. |
+| `source` | The id of the syllabus point the concept comes from, e.g. `"S3"`. |
 | `kinds` | Which kinds of question the concept supports: `"numerical"`, `"theory"` or both. Encodes syllabus limits, e.g. "no numerical problems on callipers and screw gauge" makes `vernier_callipers` theory-only. |
 | `maxMarks` | The largest single part (or sub-part) the concept can sensibly carry: 1 for a one-line fact, 2 for a definition or reason, 3 for a short calculation or explanation, 4 for a derivation. |
 
@@ -54,7 +62,7 @@ sections differently; each concept's `source` points to its syllabus section.
 
 ## Rules checked by `validate_concepts.py`
 
-Every message starts with its rule number, e.g. `[C6] syllabus [7(ii)]: has no concept`.
+Every message starts with its rule number, e.g. `[C6] syllabus [S45]: has no concept`.
 
 **Errors:**
 
@@ -62,10 +70,12 @@ Every message starts with its rule number, e.g. `[C6] syllabus [7(ii)]: has no c
 - **C2.** Tags are snake_case and unique across the whole list.
 - **C3.** `kinds` is a non-empty list of allowed kinds, with no repeats.
 - **C4.** `maxMarks` is a positive number.
-- **C5.** Every `source` is a syllabus section that exists and has no sub-sections.
-- **C6.** Every syllabus section without sub-sections has at least one concept (coverage).
+- **C5.** The syllabus's point ids run `S1`, `S2`, ... once each, in order; every `source` and every
+  `notTested` id is one of them.
+- **C6.** Every syllabus point has at least one concept, or is in `notTested` with a reason
+  (coverage). A point in `notTested` that also has concepts is a warning.
 
 **Warning:** C1 also warns while `status` is `"draft"`.
 
 The validator also reports, as information, the number of concepts per chapter (and how many allow
-numerical questions) and how many syllabus sections are covered.
+numerical questions) and how many syllabus points are covered, and which are not tested and why.

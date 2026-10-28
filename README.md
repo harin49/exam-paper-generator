@@ -87,9 +87,10 @@ plugins/exam-papers/                # the plugin: the only part that is installe
     scripts/                        # validate_paper_spec, validate_concepts, make_blueprint,
                                     # check_questions, render, new_paper, extract_paper,
                                     # compare_solutions, next_step, render_review, spec_types,
-                                    # approvals, task_files, review_status
+                                    # approvals, task_files, review_status,
+                                    # number_syllabus
     assets/syllabi/icse9-physics-selina/   # sample pack: syllabus.md, concepts.json (approved)
-docs/harness-design.md              # goal, architecture, decisions D1–D20
+docs/harness-design.md              # goal, architecture, decisions D1–D21
 examples/icse9-physics-ch1-5/       # example paper: spec + draft blueprint
 tests/                              # unit tests; tests/test_data/ holds their fixed data
 requirements.txt, requirements-dev.txt
@@ -157,9 +158,11 @@ requirements.txt, requirements-dev.txt
 - [x] Review loop: up to 3 rounds, errors fixed without asking, warnings and suggestions decided by the
       teacher, disputes after round 3 (`review_status.py`, `review/rounds/`, `review/decisions.json`)
 - [x] Typed decisions on review findings (`/exam-papers:decide`; a hook writes `review/decisions.json`)
+- [x] Syllabus points numbered by a script (`number_syllabus.py`, ids `[S1]`...), coverage per point
+      with `notTested` reasons; the ICSE Physics sample moved to point ids
 - [x] Final approval shows every change made in the review loop (`review_status.py --fixes`), and any
       automatic fix can be undone with `/exam-papers:decide reject ID`
-- [x] Unit tests moved to their own test data (`tests/test_data/`); 364 tests, all passing
+- [x] Unit tests moved to their own test data (`tests/test_data/`); 373 tests, all passing
 - [ ] New example: approve the `icse9-physics-ch1-5` blueprint, write its questions, review, render
 
 Open question: the syllabus includes spherical mirrors (with mirror-formula numericals) and

@@ -97,9 +97,9 @@ plugins/exam-papers/                # the plugin: the only part that is installe
                                     # compare_solutions, next_step, render_review, spec_types,
                                     # approvals, task_files, review_status,
                                     # number_syllabus
-    assets/syllabi/icse9-physics-selina/   # sample pack: syllabus.md, concepts.json (approved)
+    assets/syllabi/icse9-physics-selina/   # sample pack: syllabus.md, concepts.json (approve once copied)
 docs/harness-design.md              # goal, architecture, decisions D1–D21
-examples/icse9-physics-ch1-5/       # example paper: spec + draft blueprint
+examples/icse9-physics-units1-4/    # example paper: spec + draft blueprint
 tests/                              # unit tests; tests/test_data/ holds their fixed data
 requirements.txt, requirements-dev.txt
 ```
@@ -153,7 +153,7 @@ requirements.txt, requirements-dev.txt
 - [x] Concept list redrafted from the syllabus (94 concepts, all 22 syllabus sections covered)
       + `validate_concepts.py` (rules C1–C6)
 - [x] `concepts.json` reviewed and approved by the user (now approved with `/exam-papers:approve concepts`)
-- [x] `make_blueprint.py` + tests; first draft blueprint in `examples/icse9-physics-ch1-5/`
+- [x] `make_blueprint.py` + tests; first draft blueprint in `examples/icse9-physics-units1-4/`
 - [x] `render.py` + tests
 - [x] `SKILL.md` reviewed and approved (user supplies the spec; no clarifying questions for now)
 - [x] Review chain: `extract_paper.py`, `compare_solutions.py`, the blind-solver and reviewer agents
@@ -166,6 +166,8 @@ requirements.txt, requirements-dev.txt
 - [x] Review loop: up to 3 rounds, errors fixed without asking, warnings and suggestions decided by the
       teacher, disputes after round 3 (`review_status.py`, `review/rounds/`, `review/decisions.json`)
 - [x] Typed decisions on review findings (`/exam-papers:decide`; a hook writes `review/decisions.json`)
+- [x] Syllabus units (D11): concept lists and specs use the syllabus's own units (field names kept as
+      `chapters`), the book is optional, the PDFs print "Unit"; the Physics sample has 8 units
 - [x] The spec names its syllabus pack (`exam.syllabusPack`, rule S20); `make_blueprint.py` finds
       `syllabi/<pack>/concepts.json` from it
 - [x] `/exam-papers:make-pack` skill: number the syllabus, draft the concept list, validate, gate 1
@@ -175,8 +177,8 @@ requirements.txt, requirements-dev.txt
       with `notTested` reasons; the ICSE Physics sample moved to point ids
 - [x] Final approval shows every change made in the review loop (`review_status.py --fixes`), and any
       automatic fix can be undone with `/exam-papers:decide reject ID`
-- [x] Unit tests moved to their own test data (`tests/test_data/`); 387 tests, all passing
-- [ ] New example: approve the `icse9-physics-ch1-5` blueprint, write its questions, review, render
+- [x] Unit tests moved to their own test data (`tests/test_data/`); 390 tests, all passing
+- [ ] New example: approve the `icse9-physics-units1-4` blueprint, write its questions, review, render
 
 Open question: the syllabus includes spherical mirrors (with mirror-formula numericals) and
 electromagnets; check whether the book edition covers them (concepts are included for now).

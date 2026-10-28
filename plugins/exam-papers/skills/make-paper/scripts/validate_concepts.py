@@ -27,7 +27,7 @@ from spec_types import Kind  # noqa: E402
 from validate_paper_spec import Report, is_int, is_num  # noqa: E402
 
 TOP_KEYS = {"board", "class", "book", "syllabus", "syllabusYear", "status", "chapters", "note", "notTested"}
-TOP_REQUIRED = {"board", "class", "book", "syllabus", "chapters"}
+TOP_REQUIRED = {"board", "class", "syllabus", "chapters"}
 CHAPTER_KEYS = {"title", "concepts"}
 CONCEPT_KEYS = {"tag", "source", "kinds", "maxMarks"}
 TAG_RE = re.compile(r"^[a-z][a-z0-9_]*$")
@@ -52,7 +52,7 @@ def validate(doc, syllabus_text):
         r.error("file", "must be a JSON object", "C1")
         return r
     keys_ok(r, doc, TOP_KEYS, TOP_REQUIRED, "file")
-    for k in ("board", "book", "syllabus"):
+    for k in ("board", "book", "syllabus"):                  # book is optional
         if k in doc and not (isinstance(doc[k], str) and doc[k].strip()):
             r.error("file", f"{k} must be non-empty text", "C1")
     if "class" in doc and not (is_int(doc["class"]) and doc["class"] > 0):

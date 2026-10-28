@@ -228,6 +228,21 @@ becomes optional information.
 has. Consequence: the existing ICSE Physics list is organised by Selina book chapters (syllabus unit 4
 "Fluids" is book chapters 4 and 5) and has to be moved to syllabus units.
 
+*As built (2026-10-28):*
+
+- The field names stay (`chapters` in concept lists and specs, `chapter` in blueprints and
+  questions, `chapterWeightage` and so on); the formats define a "chapter" as a syllabus unit. This
+  avoided a rename across about 270 references and every existing file. The PDFs and the review
+  report print "Unit".
+- Units are keyed by the syllabus's own numbers. Where a syllabus repeats numbers (History: Civics
+  1-3, History 1-8) or has none, the teacher decides the numbering when the pack is made.
+- Nothing checks a unit against the syllabus text (for example by point range); the teacher checks the
+  grouping at gate 1.
+- `book` is optional in concept lists and specs, and compared only when both name one.
+- The ICSE Physics sample moved from 10 book chapters to the syllabus's 8 units (unit 4 Fluids = book
+  chapters 4-5, unit 8 Electricity and Magnetism = 9-10); the example became
+  `examples/icse9-physics-units1-4/` (book chapters 1-5 are units 1-4).
+
 ### D12. Syllabus packs and papers live in the teacher's workspace
 
 The plugin holds only code, prompts and formats. Everything a teacher makes lives in their workspace

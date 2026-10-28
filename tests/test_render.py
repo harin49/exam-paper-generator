@@ -194,13 +194,13 @@ class Build(unittest.TestCase):
                          "End of Question Paper"):
             self.assertIn(expected, text)
         self.assertNotIn("Marking:", text)           # the paper never shows the scheme
-        self.assertNotIn("Chapter 2", text)          # showChapterNames is false
+        self.assertNotIn("Unit 2", text)             # showChapterNames is false
 
     @unittest.skipUnless(pypdf, "pypdf not installed")
     def test_key_has_answers_and_marking(self):
         self.run_main()
         text = pdf_text(self.paths()[1])
-        for expected in ("Answer Key and Marking Scheme", "Chapters 1–3", "Explanation", "Marking:",
+        for expected in ("Answer Key and Marking Scheme", "Units 1–3", "Explanation", "Marking:",
                          "SECTION C — Long Answer, 6 marks each (any one)", "0.993 m"):
             self.assertIn(expected, text)
 
@@ -219,7 +219,7 @@ class Build(unittest.TestCase):
         self.set_spec(lambda d: d["content"].update(showChapterNames=True))
         self.run_main()
         text = pdf_text(self.paths()[0])
-        self.assertIn("Chapter 2: Motion in One Dimension", text)
+        self.assertIn("Unit 2: Motion in One Dimension", text)
 
     @unittest.skipUnless(pypdf, "pypdf not installed")
     def test_missing_diagram_gets_a_placeholder_and_a_warning(self):

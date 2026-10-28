@@ -4,7 +4,7 @@
   "book": "Selina Concise Physics Part I",
   "syllabus": "syllabus.md",
   "syllabusYear": "2026-2027",
-  "note": "Syllabus: provided by the user on 2026-10-27 (pasted text), kept as given except that a block of garbled characters from copying the equation in 3(iii) was replaced by the equation written out once, and the typo \"eaction\" in 3(iv) corrected to \"reaction\". The list of SI units the syllabus refers to (\"given at the end of this syllabus\") was not in the pasted text. Point ids [S1]-[S53] added by number_syllabus.py. Concepts are organised by Selina book chapter (syllabus section 4 \"Fluids\" is book chapters 4 and 5); each concept's source is the syllabus point it comes from.",
+  "note": "Syllabus: provided by the user on 2026-10-27 (pasted text), kept as given except that a block of garbled characters from copying the equation in 3(iii) was replaced by the equation written out once, and the typo \"eaction\" in 3(iv) corrected to \"reaction\". The list of SI units the syllabus refers to (\"given at the end of this syllabus\") was not in the pasted text. Point ids [S1]-[S53] added by number_syllabus.py. Concepts are organised by the syllabus's own units, 1-8 (the book splits unit 4 \"Fluids\" over chapters 4 and 5, and unit 8 over chapters 9 and 10); each concept's source is the syllabus point it comes from.",
   "notTested": {
     "S17": "Heading only: the topic's content is S18.",
     "S24": "Limits the numericals for S21-S23; encoded in the kinds of archimedes_principle, relative_density and the floatation concepts.",
@@ -317,7 +317,7 @@
       ]
     },
     "4": {
-      "title": "Pressure in Fluids and Atmospheric Pressure",
+      "title": "Fluids",
       "concepts": [
         {
           "tag": "thrust_and_pressure",
@@ -377,12 +377,7 @@
             "theory"
           ],
           "maxMarks": 2
-        }
-      ]
-    },
-    "5": {
-      "title": "Upthrust in Fluids, Archimedes' Principle and Floatation",
-      "concepts": [
+        },
         {
           "tag": "buoyancy_upthrust",
           "source": "S22",
@@ -477,7 +472,7 @@
         }
       ]
     },
-    "6": {
+    "5": {
       "title": "Heat and Energy",
       "concepts": [
         {
@@ -579,8 +574,8 @@
         }
       ]
     },
-    "7": {
-      "title": "Reflection of Light",
+    "6": {
+      "title": "Light",
       "concepts": [
         {
           "tag": "laws_of_reflection",
@@ -665,8 +660,8 @@
         }
       ]
     },
-    "8": {
-      "title": "Propagation of Sound Waves",
+    "7": {
+      "title": "Sound",
       "concepts": [
         {
           "tag": "sound_needs_medium",
@@ -728,8 +723,8 @@
         }
       ]
     },
-    "9": {
-      "title": "Current Electricity",
+    "8": {
+      "title": "Electricity and Magnetism",
       "concepts": [
         {
           "tag": "dc_sources",
@@ -796,12 +791,7 @@
             "theory"
           ],
           "maxMarks": 2
-        }
-      ]
-    },
-    "10": {
-      "title": "Magnetism",
-      "concepts": [
+        },
         {
           "tag": "induced_magnetism",
           "source": "S50",

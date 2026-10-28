@@ -29,8 +29,13 @@ The plugin's make-pack skill (`/exam-papers:make-pack`) walks through steps 1-4.
    proposed (concepts added or removed). Existing tags are never renamed, because older papers and
    blueprints refer to them.
 
-Concepts are organised by **book chapter** (the numbers specs use). The syllabus may number its
-sections differently; each concept's `source` is the id of the syllabus point it comes from.
+Concepts are organised by the **syllabus's own units**, under the field name `chapters` (the field
+keeps its name; a "chapter" in these files is a unit of the syllabus). Each unit is keyed by the
+syllabus's own number for it and titled with its heading, so the ICSE Physics syllabus's unit 4
+"Fluids" is one unit, though the book splits it over two chapters. Where a syllabus repeats numbers
+(for example Civics 1-3 and History 1-8), the teacher decides how the units are numbered. Specs pick
+units by these numbers. The book is optional. Each concept's `source` is the id of the syllabus point
+it comes from.
 
 ## Fields
 
@@ -50,13 +55,13 @@ sections differently; each concept's `source` is the id of the syllabus point it
 
 | Field | Meaning |
 |---|---|
-| `board`, `class`, `book` | Must match the paper spec's `exam` (checked by rule Q8). |
+| `board`, `class`, `book` | Must match the paper spec's `exam` (checked by rule Q8). `book` is optional; it is compared only when both name one. |
 | `syllabus` | The numbered syllabus file, relative to this file. Its points carry ids `[S1]`, `[S2]`, ... (from `number_syllabus.py`). |
 | `syllabusYear` | Optional: the syllabus year it was drafted from. |
 | `status` | No longer used (approval is by the typed command); a list that still has it gets a warning. |
 | `note` | Optional free text (where the syllabus came from, anything changed in it). |
 | `notTested` | Optional: syllabus points with no concept, each with the reason (`{"S17": "Heading only..."}`). Shown to the teacher at approval. |
-| `chapters` | Keyed by book chapter number: `title` and `concepts`. |
+| `chapters` | The syllabus's units, keyed by the syllabus's number for each: `title` (the unit's heading) and `concepts`. |
 | `tag` | snake_case name, unique across the whole list. Used in blueprints and questions. |
 | `source` | The id of the syllabus point the concept comes from, e.g. `"S3"`. |
 | `kinds` | Which kinds of question the concept supports: `"numerical"`, `"theory"` or both. Encodes syllabus limits, e.g. "no numerical problems on callipers and screw gauge" makes `vernier_callipers` theory-only. |
@@ -71,7 +76,7 @@ Every message starts with its rule number, e.g. `[C6] syllabus [S45]: has no con
 
 **Errors:**
 
-- **C1.** `board`, `class`, `book`, `syllabus` and `chapters` are present; every field has the right
+- **C1.** `board`, `class`, `syllabus` and `chapters` are present; every field has the right
   type; no unknown fields.
 - **C2.** Tags are snake_case and unique across the whole list.
 - **C3.** `kinds` is a non-empty list of allowed kinds, with no repeats.

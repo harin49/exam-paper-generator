@@ -5,13 +5,7 @@
     "subject": "Physics",
     "book": "Selina Concise Physics Part I",
     "syllabusPack": "icse9-physics-selina",
-    "chapters": [
-      1,
-      2,
-      3,
-      4,
-      5
-    ]
+    "chapters": [1, 2, 3, 4]
   },
   "pattern": {
     "totalMarks": 50,

@@ -120,7 +120,7 @@ def paper_line(spec):
     try:
         ex = spec["exam"]
         return (f"{ex['subject']} · Class {class_text(ex['class'])} ({ex['board']}) · "
-                f"Chapters {chapter_list(ex['chapters'])} · {spec['pattern']['totalMarks']} marks")
+                f"Units {chapter_list(ex['chapters'])} · {spec['pattern']['totalMarks']} marks")
     except (KeyError, TypeError):
         return ""
 

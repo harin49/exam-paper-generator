@@ -404,7 +404,7 @@ class Renderer:
             return self.P(f"({fmt_marks(m)})", self.st.marks)
 
         if self.spec["content"].get("showChapterNames"):
-            add(self.P(f"<i>Chapter {q['chapter']}: {self.chapter_title(q['chapter'])}</i>", self.st.tag),
+            add(self.P(f"<i>Unit {q['chapter']}: {self.chapter_title(q['chapter'])}</i>", self.st.tag),
                 span=(1, 3))
         if "options" in q:
             add(self.P(q["text"]), mk=bracket(q["marks"]), span=(1, 3))
@@ -507,7 +507,7 @@ class Renderer:
                                 title=f"{ex['subject']} Answer Key and Marking Scheme")
         s = [self.P("Answer Key and Marking Scheme", st.title),
              self.P(f"{ex['subject']} — Class {class_text(ex['class'])} ({ex['board']}) · "
-                    f"Chapters {chapter_list(ex['chapters'])} · Maximum Marks: {fmt_marks(pat['totalMarks'])} · "
+                    f"Units {chapter_list(ex['chapters'])} · Maximum Marks: {fmt_marks(pat['totalMarks'])} · "
                     "For teacher use", st.center),
              Spacer(1, 6)]
         notes = ("<b>General marking notes:</b> Award method marks for correct working even if the final "
@@ -572,7 +572,7 @@ class Renderer:
         from reportlab.platypus import Spacer, Table, TableStyle
         st = self.st
         total = fmt_marks(q["marks"])
-        tags = f"Chapter {q['chapter']}"
+        tags = f"Unit {q['chapter']}"         # spec and question "chapter"s are syllabus units
         title = self.chapter_title(q["chapter"])
         if title:
             tags += f": {title}"

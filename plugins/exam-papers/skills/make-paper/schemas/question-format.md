@@ -30,7 +30,7 @@ Every question has:
 |---|---|---|
 | `number` | integer | Number printed on the paper. |
 | `section` | string | Section id from the spec (`"A"`, `"B"`, ...). |
-| `chapter` | integer | The one chapter the question comes from. Never printed. |
+| `chapter` | integer | The one syllabus unit the question comes from (the concept list's unit number). Printed as "Unit N" only in the key, or next to the question when `showChapterNames` is on. |
 | `concepts` | list of strings | Concept tags from the concept list (at least one). Used to detect overlap. |
 | `marks` | number | Marks for the whole question. Must equal the section's `marksPerQuestion`. |
 

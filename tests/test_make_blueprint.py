@@ -129,7 +129,7 @@ class Blueprint(unittest.TestCase):
                 self.assertEqual(sum(p["marks"] for p in q["parts"]), 10)
 
     def test_mostly_theory_chapters_still_build(self):
-        self.spec["exam"]["chapters"] = [6, 10]
+        self.spec["exam"]["chapters"] = [5]               # Heat and Energy: one numerical concept
         qs, r = self.build()
         self.assertEqual(r.errors, [])
         self.assertTrue(any(w.startswith("[Q12]") for w in r.warnings))   # can't reach 50% numerical
@@ -138,6 +138,14 @@ class Blueprint(unittest.TestCase):
         self.concepts["board"] = "CBSE"
         _, r = self.build()
         self.assertIn("conceptList: is for board \"CBSE\"", " | ".join(r.errors))
+
+    def test_book_compared_only_when_both_name_one(self):
+        del self.spec["exam"]["book"]
+        self.assertEqual(self.build()[1].errors, [])
+        self.spec["exam"]["book"] = "Another Book"
+        self.assertIn("conceptList: is for book", " | ".join(self.build()[1].errors))
+        del self.concepts["book"]
+        self.assertEqual(self.build()[1].errors, [])
 
     def test_chapter_missing_from_concept_list(self):
         del self.concepts["chapters"]["5"]

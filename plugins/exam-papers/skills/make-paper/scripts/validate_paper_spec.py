@@ -126,8 +126,10 @@ def validate(spec):
     exam = need(r, spec, "exam", "", lambda x: isinstance(x, dict), "an object")
     if exam is not None:
         check_keys(r, exam, "exam", "exam")
-        for k in ("board", "subject", "book"):
+        for k in ("board", "subject"):
             need(r, exam, k, "exam", lambda x: isinstance(x, str) and x.strip(), "a non-empty string")
+        if "book" in exam and not (isinstance(exam["book"], str) and exam["book"].strip()):
+            r.error("exam.book", "must be a non-empty string (or left out: the book is optional)", rule="S1")
         need(r, exam, "class", "exam", lambda x: is_int(x) and x > 0, "a positive whole number")
         need(r, exam, "syllabusPack", "exam", lambda x: isinstance(x, str) and PACK_NAME.match(x),
              "the name of the syllabus pack's folder under syllabi/: lower case letters and digits, "

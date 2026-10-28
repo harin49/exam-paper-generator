@@ -98,6 +98,12 @@ class BrokenSpecs(unittest.TestCase):
             "weights": {"1": 50, "2": 50}}
         self.assertIn("no weight for chapter(s) [3]", self.errors())
 
+    def test_book_is_optional(self):
+        del self.spec["exam"]["book"]
+        self.assertEqual(v.validate(self.spec).errors, [])
+        self.spec["exam"]["book"] = " "
+        self.assertIn("exam.book: must be a non-empty string", self.errors())
+
     def test_syllabus_pack_is_required_and_well_formed(self):
         del self.spec["exam"]["syllabusPack"]
         self.assertIn("[S20] exam.syllabusPack: is required", self.errors())

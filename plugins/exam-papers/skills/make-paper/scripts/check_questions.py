@@ -560,7 +560,7 @@ def read_concept_list(r, concepts, spec):
     if spec is not None:
         exam = spec.get("exam", {})
         for k in ("board", "class", "book"):
-            if k in concepts and concepts[k] != exam.get(k):
+            if k in concepts and (k in exam or k != "book") and concepts[k] != exam.get(k):
                 r.error("conceptList", f"is for {k} {show(concepts[k])} but the spec says "
                                        f"{show(exam.get(k))}", "Q8")
     tags = {}

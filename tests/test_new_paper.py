@@ -14,7 +14,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "plugins", "exam-papers", "skills", "make-paper", "scripts"))
 import new_paper  # noqa: E402
 
-SPEC = os.path.join(ROOT, "examples", "icse9-physics-ch1-5", "spec.json")
+SPEC = os.path.join(ROOT, "examples", "icse9-physics-units1-4", "spec.json")
 
 
 class Names(unittest.TestCase):

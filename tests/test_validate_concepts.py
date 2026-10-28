@@ -74,7 +74,7 @@ class ConceptList(unittest.TestCase):
         self.assertIn("source \"4(ii)\" is not a point", self.errors())
 
     def test_uncovered_point(self):
-        self.doc["chapters"]["8"]["concepts"] = [c for c in self.doc["chapters"]["8"]["concepts"]
+        self.doc["chapters"]["7"]["concepts"] = [c for c in self.doc["chapters"]["7"]["concepts"]
                                                   if c["source"] != "S45"]
         self.assertIn("[C6] syllabus [S45]: has no concept and is not listed in notTested", self.errors())
 
@@ -97,6 +97,10 @@ class ConceptList(unittest.TestCase):
     def test_unknown_field(self):
         concept(self.doc, "pascals_law")["level"] = "easy"
         self.assertIn("unknown field 'level'", self.errors())
+
+    def test_book_is_optional(self):
+        del self.doc["book"]
+        self.assertEqual(vc.validate(self.doc, self.syllabus).errors, [])
 
     def test_status_is_ignored_with_a_warning(self):
         self.assertEqual(vc.validate(self.doc, self.syllabus).warnings, [])

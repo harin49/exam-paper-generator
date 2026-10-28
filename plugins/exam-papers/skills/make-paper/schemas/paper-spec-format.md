@@ -17,9 +17,9 @@ the skill's `scripts/spec_types.py`.
 | `board` | text | e.g. `"ICSE"` |
 | `class` | whole number | e.g. `9` |
 | `subject` | text | e.g. `"Physics"` |
-| `book` | text | e.g. `"Selina Concise Physics Part I"` |
+| `book` | text, optional | e.g. `"Selina Concise Physics Part I"`; if given, it must match the concept list's |
 | `syllabusPack` | text | The syllabus pack the paper is made from: its folder name under `syllabi/` in the workspace, e.g. `"icse9-physics-selina"`. Its approved concept list decides what may be asked. |
-| `chapters` | list of chapter numbers | The chapters the paper may draw from. |
+| `chapters` | list of unit numbers | The syllabus units the paper may draw from, by the numbers the concept list gives them. (Every "chapter" in a spec is a syllabus unit; the PDFs print "Unit".) |
 
 ## `pattern`: sections and marks
 

@@ -65,7 +65,7 @@ class SkillMd(unittest.TestCase):
         # Pasting an agent file into a general-purpose subagent drops its tool limits.
         for text in (TEXT, WORKFLOW):
             self.assertNotIn("full text of", text)
-        for name in ("blind-solver", "reviewer"):
+        for name in ("writer", "blind-solver", "reviewer"):
             self.assertIn(f"`exam-papers:{name}` subagent by its type", TEXT)
             self.assertIn(f"exam-papers:{name} subagent by its type", WORKFLOW)
 
@@ -77,17 +77,24 @@ class AgentFiles(unittest.TestCase):
         self.assertEqual(re.findall(r"`[\w/.-]+\.(?:md|py)`", text), [])
 
     def test_agent_tools_are_limited(self):
-        for name in ("blind-solver", "reviewer"):
+        tools = {"blind-solver": "Read, Write, Bash", "reviewer": "Read, Write, Bash",
+                 "writer": "Read, Write, Edit, Bash"}
+        for name, allowed in tools.items():
             with open(os.path.join(AGENTS, f"{name}.md"), encoding="utf-8") as f:
                 head = f.read().split("---")[1]
             self.assertIn(f"name: {name}", head)
-            self.assertIn("tools: Read, Write, Bash", head, name)
+            self.assertIn(f"tools: {allowed}\n", head, name)
+        self.assertEqual(sorted(f[:-3] for f in os.listdir(AGENTS)), sorted(tools))
 
     def test_agents_name_no_repo_paths(self):
         # Agents run from the teacher's workspace; they get every path in their prompt.
-        for name in ("blind-solver", "reviewer"):
+        for name in ("writer", "blind-solver", "reviewer"):
             with open(os.path.join(AGENTS, f"{name}.md"), encoding="utf-8") as f:
                 self.assertEqual(re.findall(r"\bskill/\w+/", f.read()), [], name)
+
+    def test_main_claude_never_writes_the_questions(self):
+        self.assertIn("Never write or edit\n  `questions.json` yourself", TEXT)
+        self.assertNotIn('"by": "claude", "waitsForUser": false, "run": "Write', WORKFLOW)
 
 
 class Manifests(unittest.TestCase):

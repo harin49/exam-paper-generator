@@ -1,12 +1,14 @@
 {
-  "description": "exam-papers: record the teacher's typed approvals, and keep everyone else out of approvals.json (D6).",
+  "description": "exam-papers: record the teacher's typed approvals, keep everyone else out of approvals.json (D6), and limit what the blind solver and the writer can see (D13).",
   "hooks": {
     "UserPromptExpansion": [
       { "hooks": [ { "type": "command", "command": "python3", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/approve.py"] } ] }
     ],
     "PreToolUse": [
       { "matcher": "Write|Edit|MultiEdit|NotebookEdit|Bash",
-        "hooks": [ { "type": "command", "command": "python3", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/approve.py"] } ] }
+        "hooks": [ { "type": "command", "command": "python3", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/approve.py"] } ] },
+      { "matcher": "Read|Grep|Glob|Write|Edit|MultiEdit|NotebookEdit|Bash",
+        "hooks": [ { "type": "command", "command": "python3", "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/guard_agents.py"] } ] }
     ]
   }
 }

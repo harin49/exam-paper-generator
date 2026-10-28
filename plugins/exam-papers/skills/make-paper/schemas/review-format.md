@@ -17,7 +17,7 @@ questions.json ─────────────────────�
                                                       ▼
                                           review/compare-output.txt
 questions.json + spec + concept list + syllabus + compare output ──reviewer──▶ review/reviewer-report.json ──render_review.py──▶ review/reviewer-report.html
-review/reviewer-report.html + compare output ──user decides──▶ review/fixes.json
+review/reviewer-report.html ──user decides──▶ review/fixes.json ──writer──▶ review/writer-response.json
 ```
 
 ## `review/solver-input.json` (written by `extract_paper.py`)
@@ -109,6 +109,10 @@ checks it and writes the HTML report beside it. Nobody writes or edits the HTML 
       "problem": "The key gives 4 N but the force is 40 N.",
       "evidence": "F = ma = 8 × 5 = 40 N.",
       "suggestedFix": "Change the answer and the computed value to 40 N." }
+  ],
+  "dismissed": [
+    { "mismatch": "[V1] Q5: the solver chose (d) but the key says (b)",
+      "reason": "The key is right; the solver took g as 9.8 m/s² instead of the spec's 10." }
   ]
 }
 ```
@@ -121,10 +125,12 @@ checks it and writes the HTML report beside it. Nobody writes or edits the HTML 
 | `problem` | What is wrong. |
 | `evidence` | A quotation or a calculation. |
 | `suggestedFix` | A specific fix. |
+| `dismissed` | Optional. The solver's mismatches (`[V1]`-`[V6]` lines from the comparison) that the reviewer judged not to be problems in the paper, each with `mismatch` (the line) and `reason`. Every mismatch is either quoted in a finding's evidence or listed here. |
 
 - Plain text only (no markup); a line break is kept.
 - Findings are ordered errors first, then warnings, then suggestions.
 - If there is nothing to report, the file is `{ "findings": [] }`.
+- The writer never sees the comparison: findings are how it learns of a real mismatch.
 - `render_review.py` refuses a file that breaks these rules (exit code 1) and writes nothing. It also
   prints the findings as plain text, which is what Claude shows the user verbatim:
 
@@ -141,9 +147,25 @@ Suggested fix: ...
 ## `review/fixes.json` (written by Claude from the user's answer)
 
 ```json
-{ "accepted": ["R1", "R5", "V1 Q7"], "rejected": ["R12"] }
+{ "accepted": ["R1", "R5"], "rejected": ["R12"] }
 ```
 
-The user's decision on the reviewer's findings and the comparison's mismatches: which to fix and
-which to leave. `accepted` is an empty list if they want no changes. Only accepted fixes are applied to
+The user's decision on the reviewer's findings: which to fix and which to leave. Only `R` IDs: a
+solver mismatch reaches the user as a finding (or as a dismissal they can question). `accepted` is an
+empty list if they want no changes. The writer applies only the accepted findings to
 `questions.json`; `next_step.py` then sends the paper back through the check and the blind solver.
+
+## `review/writer-response.json` (written by the writer)
+
+```json
+{ "responses": [
+  { "id": "R1", "action": "fixed", "location": "Q18(b)",
+    "change": "Answer and computed value changed from 4 N to 40 N; marking item 2 updated." },
+  { "id": "R4", "action": "disagree", "location": "Q7(a)",
+    "reason": "The data is sufficient: the mass is given in the stem (2 kg)." }
+] }
+```
+
+The writer's answer to each finding it was asked to address, once per ID: `fixed` with the `change`
+it made (specific enough to undo), or `disagree` with its `reason` and evidence, leaving the paper as
+it was. Claude shows it to the user after each revision.

@@ -48,6 +48,23 @@ class Check(unittest.TestCase):
         self.assertIn("finding 2: problem must be non-empty text",
                       self.broken(lambda d: d["findings"][1].update(problem=" ")))
 
+    def test_dismissed_mismatches(self):
+        doc = dict(copy.deepcopy(FINDINGS), dismissed=[
+            {"mismatch": "[V1] Q5: the solver chose (d) but the key says (b)", "reason": "The solver used g = 9.8."}])
+        self.assertEqual(rr.check(doc), [])
+        self.assertEqual(rr.check({"findings": [], "dismissed": []}), [])
+        self.assertTrue(rr.check({"findings": [], "dismissed": {}}))
+        self.assertIn("dismissed 1: must have exactly the fields mismatch and reason",
+                      rr.check({"findings": [], "dismissed": [{"mismatch": "x"}]}))
+        self.assertIn("dismissed 1: mismatch and reason must be non-empty text",
+                      rr.check({"findings": [], "dismissed": [{"mismatch": "x", "reason": ""}]}))
+        text = rr.text_report(doc["findings"], doc["dismissed"])
+        self.assertIn("## Solver mismatches dismissed by the reviewer\n- [V1] Q5", text)
+        self.assertIn("Reason: The solver used g = 9.8.", text)
+        page = rr.html_report(doc["findings"], {}, doc["dismissed"])
+        self.assertIn("Solver mismatches dismissed", page)
+        self.assertNotIn("Solver mismatches dismissed", rr.html_report(doc["findings"], {}))
+
     def test_ids_run_in_order(self):
         self.assertIn("finding 2: id must be R2, not 'R3'",
                       self.broken(lambda d: d["findings"][1].update(id="R3")))

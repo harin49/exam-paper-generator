@@ -19,7 +19,9 @@ shown to the user verbatim.
 Rules checked before anything is written:
     every finding has exactly the fields id, severity, location, problem, evidence, suggestedFix,
     each a non-empty string; severity is error, warning or suggestion; ids run R1, R2, ... in order;
-    errors come first, then warnings, then suggestions.
+    errors come first, then warnings, then suggestions. The optional "dismissed" list holds the
+    solver's mismatches the reviewer judged not to be problems in the paper, each with exactly the
+    fields mismatch and reason, both non-empty strings.
 
 Exit codes:
     0  the HTML was written (or was already up to date, or --print)
@@ -37,6 +39,7 @@ from render import chapter_list, class_text  # noqa: E402
 SEVERITIES = ["error", "warning", "suggestion"]
 FIELDS = ["id", "severity", "location", "problem", "evidence", "suggestedFix"]
 LABELS = [("problem", "Problem"), ("evidence", "Evidence"), ("suggestedFix", "Suggested fix")]
+DISMISSED_FIELDS = ["mismatch", "reason"]
 
 
 def load(path):
@@ -46,8 +49,9 @@ def load(path):
 
 def check(doc):
     """List of problems with the findings file (empty when it is valid)."""
-    if not isinstance(doc, dict) or set(doc) != {"findings"} or not isinstance(doc["findings"], list):
-        return ['the file must be an object with one field, "findings", holding a list']
+    if (not isinstance(doc, dict) or "findings" not in doc or not set(doc) <= {"findings", "dismissed"}
+            or not isinstance(doc["findings"], list) or not isinstance(doc.get("dismissed", []), list)):
+        return ['the file must be an object with a "findings" list and, optionally, a "dismissed" list']
     errors, last = [], 0
     for i, f in enumerate(doc["findings"], 1):
         where = f"finding {i}"
@@ -72,6 +76,12 @@ def check(doc):
                           "then suggestions)")
         else:
             last = SEVERITIES.index(sev)
+    for i, d in enumerate(doc.get("dismissed", []), 1):
+        where = f"dismissed {i}"
+        if not isinstance(d, dict) or set(d) != set(DISMISSED_FIELDS):
+            errors.append(f"{where}: must have exactly the fields mismatch and reason")
+        elif not all(isinstance(d[k], str) and d[k].strip() for k in DISMISSED_FIELDS):
+            errors.append(f"{where}: mismatch and reason must be non-empty text")
     return errors
 
 
@@ -83,11 +93,14 @@ def counts_line(findings):
     return f"Findings: {len(findings)} ({', '.join(parts)})"
 
 
-def text_report(findings):
+def text_report(findings, dismissed=()):
     lines = ["# Review of questions.json", counts_line(findings)]
     for f in findings:
         lines += ["", f"## {f['id']}  {f['location']}  {f['severity']}"]
         lines += [f"{label}: {f[key]}" for key, label in LABELS]
+    if dismissed:
+        lines += ["", "## Solver mismatches dismissed by the reviewer"]
+        lines += [f"- {d['mismatch']}\n  Reason: {d['reason']}" for d in dismissed]
     return "\n".join(lines)
 
 
@@ -142,13 +155,18 @@ padding:2px 8px}
 dl{margin:0;display:grid;grid-template-columns:120px 1fr;gap:8px 16px}
 dt{color:var(--muted);font-size:14px;font-weight:600;padding-top:1px}
 dd{margin:0;overflow-wrap:anywhere}
+.dismissed{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px;
+margin:28px 0 0}
+.dismissed h2{font-size:18px;margin:0 0 10px}
+.dismissed li{margin:0 0 10px;overflow-wrap:anywhere}
+.dismissed .why{color:var(--muted)}
 .none{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px 20px}
 @media (max-width:560px){dl{grid-template-columns:1fr;gap:2px}dd{margin-bottom:10px}}
 @media print{body{background:#fff}main{padding:0}.finding{border-color:#ccc}}
 """
 
 
-def html_report(findings, spec):
+def html_report(findings, spec, dismissed=()):
     n = {s: sum(f["severity"] == s for f in findings) for s in SEVERITIES}
     chips = "".join(f'<span class="chip {s}">{n[s]} {s}{"" if n[s] == 1 else "s"}</span>'
                     for s in SEVERITIES)
@@ -160,6 +178,10 @@ def html_report(findings, spec):
                      f'<span class="badge {f["severity"]}">{f["severity"]}</span>'
                      f'<span class="loc">{esc(f["location"])}</span></div><dl>{rows}</dl></section>')
     body = "".join(cards) or '<p class="none">The reviewer found nothing to report.</p>'
+    if dismissed:
+        items = "".join(f'<li>{esc(d["mismatch"])}<br><span class="why">Reason: {esc(d["reason"])}</span></li>'
+                        for d in dismissed)
+        body += f'<section class="dismissed"><h2>Solver mismatches dismissed</h2><ul>{items}</ul></section>'
     paper = paper_line(spec)
     return f"""<!doctype html>
 <html lang="en">
@@ -208,8 +230,9 @@ def main(argv):
         for e in errors:
             print(f"  - {e}")
         return 1
+    dismissed = doc.get("dismissed", [])
     if print_only:
-        print(text_report(doc["findings"]))
+        print(text_report(doc["findings"], dismissed))
         return 0
     spec_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(path))), "spec.json")
     try:
@@ -217,7 +240,7 @@ def main(argv):
     except (OSError, ValueError):
         spec = {}
     out = out or os.path.splitext(path)[0] + ".html"
-    page = html_report(doc["findings"], spec)
+    page = html_report(doc["findings"], spec, dismissed)
     try:
         with open(out, encoding="utf-8") as f:
             unchanged = f.read() == page
@@ -226,7 +249,7 @@ def main(argv):
     if not unchanged:
         with open(out, "w", encoding="utf-8") as f:
             f.write(page)
-    print(text_report(doc["findings"]))
+    print(text_report(doc["findings"], dismissed))
     print(f"\n{out} is already up to date" if unchanged else f"\nWrote {out}")
     return 0
 

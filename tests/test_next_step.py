@@ -126,6 +126,12 @@ class NextStep(unittest.TestCase):
         self.add("review/fixes.json", {"accepted": accepted, "rejected": []})
         self.done("decide_fixes")
 
+    def apply_fixes(self):
+        """The writer edits the questions and answers each finding."""
+        self.edit("questions.json")
+        self.add("review/writer-response.json", {"responses": []})
+        self.done("apply_fixes")
+
     def approve_paper(self):
         self.assertEqual(self.next_id(), "approve_paper")
         self.approve("paper")
@@ -234,8 +240,9 @@ class NextStep(unittest.TestCase):
         self.first_review_round()
         self.decide(["R1"])
         self.assertEqual(self.next_id(), "apply_fixes")
-        self.edit("questions.json")                           # the fixes are applied
-        self.done("apply_fixes")
+        self.edit("questions.json")
+        self.assertIn("writer-response.json missing", ns.record_done(self.task, STEPS, "apply_fixes"))
+        self.apply_fixes()
         self.assertEqual(self.next_id(), "extract_paper")
         self.review_round()
         self.assertEqual(self.next_id(), "approve_paper")      # the reviewer does not run again
@@ -243,16 +250,14 @@ class NextStep(unittest.TestCase):
     def test_mismatches_after_fixes_go_back_to_the_user(self):
         self.first_review_round()
         self.decide(["R1"])
-        self.edit("questions.json")
-        self.done("apply_fixes")
+        self.apply_fixes()
         self.review_round("MISMATCHES:\n  - [V2] Q7(b)\n\nResult: 1 MISMATCH(ES)\n")
         self.assertEqual(self.next_id(), "decide_fixes")
 
     def test_editing_questions_by_hand_after_fixes_does_not_apply_them_again(self):
         self.first_review_round()
         self.decide(["R1"])
-        self.edit("questions.json")
-        self.done("apply_fixes")
+        self.apply_fixes()
         self.review_round()
         self.edit("questions.json")                           # the teacher's own edit
         self.assertEqual(self.next_id(), "extract_paper")

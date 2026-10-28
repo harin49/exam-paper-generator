@@ -45,9 +45,9 @@
       "id": "draft_questions",
       "skillStep": "3",
       "title": "Draft questions.json and its diagrams",
-      "by": "claude",
+      "by": "subagent",
       "waitsForUser": false,
-      "run": "Write TASK/questions.json from the approved blueprint (and TASK/make_diagrams.py with its images).",
+      "run": "Start the exam-papers:writer subagent by its type (the plugin's agents/writer.md; never pasted into a general-purpose subagent) in draft mode, with the paths SKILL.md step 3 lists. It writes TASK/questions.json (and TASK/make_diagrams.py with its images) and runs the check itself. Wait for it to finish. Never write or edit questions.json yourself.",
       "done": {"exists": "questions.json"}
     },
     {
@@ -57,7 +57,7 @@
       "by": "script",
       "waitsForUser": false,
       "run": "python3 \"${CLAUDE_SKILL_DIR}/scripts/check_questions.py\" TASK/questions.json",
-      "note": "Fix every error and rerun until it passes.",
+      "note": "The writer ran this before handing back, so it should pass. If it fails, show the errors verbatim and ask the user; do not fix them yourself.",
       "done": {"passes": "scripts/check_questions.py", "args": ["questions.json"]}
     },
     {
@@ -131,11 +131,11 @@
       "id": "apply_fixes",
       "skillStep": "5.5",
       "title": "Apply the accepted fixes",
-      "by": "claude",
+      "by": "subagent",
       "waitsForUser": false,
-      "run": "Edit TASK/questions.json for the accepted fixes only. next_step.py then sends you back through the check and the blind solver.",
+      "run": "Start the exam-papers:writer subagent by its type in revise mode, with the accepted IDs from TASK/review/fixes.json, the user's instructions, and the paths SKILL.md step 5.5 lists. Wait for it to finish, then show the user TASK/review/writer-response.json. next_step.py then sends the paper back through the check and the blind solver.",
       "inputs": ["review/fixes.json"],
-      "outputs": ["questions.json"],
+      "outputs": ["questions.json", "review/writer-response.json"],
       "done": {"any": [
         {"empty": "review/fixes.json", "field": "accepted"},
         {"recorded": ["review/fixes.json"]}

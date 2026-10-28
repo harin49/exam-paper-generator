@@ -1,5 +1,5 @@
-"""Tests for the plugin's approval hook (hooks/approve.py), run as Claude Code runs it: a separate
-process given the hook's JSON on stdin. Run from the project root:
+"""Tests for the plugin's hooks (hooks/approve.py, hooks/guard_agents.py), each run as Claude Code
+runs it: a separate process given the hook's JSON on stdin. Run from the project root:
     python3 -m unittest discover tests
 """
 import json
@@ -135,6 +135,44 @@ class Guard(Hook):
         self.assertIsNone(self.tool("Bash", command="ls 2>&1"))
 
 
+class AgentGuard(unittest.TestCase):
+    """hooks/guard_agents.py, run as a separate process like the approval hook."""
+
+    def call(self, agent_type, tool, **tool_input):
+        event = {"hook_event_name": "PreToolUse", "tool_name": tool, "tool_input": tool_input}
+        if agent_type:
+            event.update(agent_id="a1", agent_type=agent_type)
+        run = subprocess.run([sys.executable, os.path.join(PLUGIN, "hooks", "guard_agents.py")],
+                             input=json.dumps(event), capture_output=True, text=True)
+        self.assertEqual(run.returncode, 0, run.stderr)
+        return json.loads(run.stdout)["hookSpecificOutput"]["permissionDecision"] if run.stdout.strip() else None
+
+    def test_solver_sees_only_the_blind_paper(self):
+        solver = "exam-papers:blind-solver"
+        self.assertIsNone(self.call(solver, "Read", file_path="/t/review/solver-input.json"))
+        self.assertIsNone(self.call(solver, "Write", file_path="/t/review/solver-answers.json", content="{}"))
+        self.assertIsNone(self.call(solver, "Bash", command="python3 -c 'print(8*5)'"))
+        self.assertEqual(self.call(solver, "Read", file_path="/t/questions.json"), "deny")
+        self.assertEqual(self.call(solver, "Read", file_path="/t/review/compare-output.txt"), "deny")
+        self.assertEqual(self.call(solver, "Write", file_path="/t/questions.json", content=""), "deny")
+        self.assertEqual(self.call(solver, "Bash", command="cat ../questions.json"), "deny")
+        self.assertEqual(self.call(solver, "Grep", pattern="answer", path="/t"), "deny")
+
+    def test_writer_never_sees_the_solver(self):
+        writer = "exam-papers:writer"
+        self.assertIsNone(self.call(writer, "Read", file_path="/t/review/reviewer-report.json"))
+        self.assertIsNone(self.call(writer, "Edit", file_path="/t/questions.json", old_string="a", new_string="b"))
+        self.assertEqual(self.call(writer, "Read", file_path="/t/review/solver-answers.json"), "deny")
+        self.assertEqual(self.call(writer, "Read", file_path="/t/review/compare-output.txt"), "deny")
+        self.assertEqual(self.call(writer, "Bash", command="cat review/compare-output.txt"), "deny")
+        self.assertEqual(self.call(writer, "Write", file_path="/t/blueprint.json", content=""), "deny")
+
+    def test_main_claude_and_the_reviewer_are_not_limited(self):
+        for agent in (None, "exam-papers:reviewer"):
+            self.assertIsNone(self.call(agent, "Read", file_path="/t/review/solver-answers.json"))
+            self.assertIsNone(self.call(agent, "Read", file_path="/t/questions.json"))
+
+
 class PluginFiles(unittest.TestCase):
     def test_hooks_run_scripts_that_exist(self):
         doc = load_json(os.path.join(PLUGIN, "hooks", "hooks.json"))
@@ -143,6 +181,7 @@ class PluginFiles(unittest.TestCase):
         for a in args:
             self.assertTrue(os.path.isfile(a.replace("${CLAUDE_PLUGIN_ROOT}", PLUGIN)), a)
         self.assertEqual(set(doc["hooks"]), {"UserPromptExpansion", "PreToolUse"})
+        self.assertIn("${CLAUDE_PLUGIN_ROOT}/hooks/guard_agents.py", args)
 
     def test_approve_command_cannot_be_run_by_claude(self):
         with open(os.path.join(PLUGIN, "commands", "approve.md"), encoding="utf-8") as f:

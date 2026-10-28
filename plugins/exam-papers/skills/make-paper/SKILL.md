@@ -27,6 +27,8 @@ the user provides. Scripts decide the structure and check the result; you write 
   when the user types `/exam-papers:approve blueprint` or `/exam-papers:approve paper`; a hook then
   records it in `TASK/approvals.json`. Ask the user to type the command. Never write, edit or copy
   `approvals.json` (a hook blocks it), and never treat "approved" in chat as an approval.
+- **The writer subagent writes the questions; you orchestrate.** Never write or edit
+  `questions.json` yourself, even for a small fix: start the writer in revise mode.
 - **Show script and reviewer output verbatim** when it contains errors or findings. Do not summarise
   them away, and do not change anything because of them until the user has seen them.
 - **Refer to scripts by file name** (`check_questions.py`), not "the checker".
@@ -75,11 +77,11 @@ you to check a concept list).
 | What | Exact path |
 |---|---|
 | Spec format and template | `${CLAUDE_SKILL_DIR}/schemas/paper-spec-format.md`, `${CLAUDE_SKILL_DIR}/schemas/paper-spec.template.json` |
-| Question format (read before step 3) | `${CLAUDE_SKILL_DIR}/schemas/question-format.md` |
+| Question format (the writer reads it; you need it to explain a finding) | `${CLAUDE_SKILL_DIR}/schemas/question-format.md` |
 | Review file formats | `${CLAUDE_SKILL_DIR}/schemas/review-format.md` |
 | Concept list format | `${CLAUDE_SKILL_DIR}/schemas/concept-list-format.md` |
 | Sample pack: ICSE Class 9 Physics (Selina) | `${CLAUDE_SKILL_DIR}/assets/syllabi/icse9-physics-selina/` |
-| Blind solver and reviewer | the plugin's agents `exam-papers:blind-solver` and `exam-papers:reviewer` |
+| Writer, blind solver and reviewer | the plugin's agents `exam-papers:writer`, `exam-papers:blind-solver` and `exam-papers:reviewer` |
 
 ## Order of work
 
@@ -154,33 +156,18 @@ the spec is what changes (rerun the script); never hand-edit slots.
 `make_blueprint.py` will not overwrite an approved blueprint without `--force`; do not use `--force`
 unless the user asks for it.
 
-### 3. Draft `questions.json`
+### 3. Draft `questions.json` (writer subagent)
 
-Read `${CLAUDE_SKILL_DIR}/schemas/question-format.md`, then write `TASK/questions.json` from the approved blueprint.
-Its `spec` field is `spec.json` and its `conceptList` field is the relative path from `TASK` to the
-concept list (copy it from `TASK/blueprint.json`). For every question:
+Start the `exam-papers:writer` subagent by its type (never paste its instructions into a
+general-purpose subagent) in **draft** mode. Its prompt gives these paths, each written out in full:
+`TASK/blueprint.json`, `TASK/spec.json`, `PACK/concepts.json`, `PACK/syllabus.md`,
+`${CLAUDE_SKILL_DIR}/schemas/question-format.md`, the script
+`${CLAUDE_SKILL_DIR}/scripts/check_questions.py`, and the output `TASK/questions.json`. The writer
+writes the questions, answers, marking and diagrams (`TASK/make_diagrams.py` and its images) and runs
+the check itself until it passes. Wait for it to finish.
 
-- Copy `number`, `section`, `chapter`, `concepts`, `marks`, and every part's `label`, `marks`,
-  `kind`, `difficulty` and `concept` exactly from the blueprint (rule Q15). Add the wording.
-- `text`/`stem`: clear, self-contained, at the level of the class and book. Test only the part's
-  `concept`, within its `kind`. Do not go beyond the syllabus (`PACK/syllabus.md`).
-- `answer`: the model answer with working; `marking`: items that add up to the part's marks.
-- Every numerical part and numerical MCQ has `computed`: an `expression` using plain numbers
-  (spec constants as numbers) and the `value` it gives. Compute with a script, not in your head.
-  Mark a value `"working": true` when the marking scheme checks it but the question does not ask
-  for it (e.g. converting 72 km h<sup>−1</sup> to 20 m s<sup>−1</sup> on the way to a distance).
-- MCQs: one correct option, placed at the letter the blueprint's `correctOption` gives (rule Q15);
-  in a numerical MCQ it starts with the computed value (rule Q4). Wrong options should be real mistakes (a unit slip, an inverted ratio);
-  `explanation` says why the answer is right and why the tempting wrong options are wrong.
-- Use only the text markup in the format doc. Use the spec's constants. Respect the spec's
-  `diagrams` setting.
-- Use clean numbers. A question must be solvable from the paper alone.
-- **Diagrams:** draw each with a small matplotlib script saved as `TASK/make_diagrams.py`, save each
-  PNG in `TASK` beside `questions.json`, and name it in the question's `diagram` (paper) or
-  `answerDiagram` (key), with a `description` that says exactly what it shows.
-- Do not repeat a concept across questions beyond what the blueprint already assigns.
-
-Write the file one section at a time.
+You never write or edit `TASK/questions.json` yourself: the writer does, in draft mode here and in
+revise mode at step 5.5.
 
 ### 4. Check
 
@@ -188,8 +175,9 @@ Write the file one section at a time.
 python3 "${CLAUDE_SKILL_DIR}/scripts/check_questions.py" TASK/questions.json
 ```
 
-Exit code 1: fix every error (`[Q...]`) and rerun until it passes. Exit code 0: show the user the
-warnings.
+The writer ran this before handing back, so it should pass (exit code 0): show the user the warnings.
+If it fails (exit code 1), show the errors verbatim and ask the user how to go on; do not fix them
+yourself.
 
 ### 5. Review
 
@@ -226,11 +214,21 @@ Two independent checks; neither edits `questions.json`. File formats:
    and show that output to the user verbatim, then send them `TASK/review/reviewer-report.html`.
    Exit code 1 means the reviewer's file breaks the format: tell the user, and do not fix it yourself.
    The reviewer runs once, before the first fix decision.
-5. **Fix (approval point).** Ask the user which findings and mismatches to fix, and write their answer
-   to `TASK/review/fixes.json` as `{"accepted": ["R1", ...], "rejected": ["R12", ...]}` (an empty
-   `accepted` list if they want none). Apply only the accepted fixes to `TASK/questions.json`. Any
-   change sends the paper back through steps 4 and 5.1-5.3 (`next_step.py` prints them in turn); if
-   the new comparison finds mismatches, the user decides again.
+5. **Fix (approval point).** Ask the user which findings to fix, and write their answer to
+   `TASK/review/fixes.json` as `{"accepted": ["R1", ...], "rejected": ["R12", ...]}` (an empty
+   `accepted` list if they want none). Only `R` IDs: the reviewer has turned every solver mismatch
+   into a finding or listed it as dismissed; if the user disagrees with a dismissal, say so and ask
+   them how to proceed. Then start the `exam-papers:writer` subagent by its type in **revise** mode.
+   Its prompt gives the accepted IDs, any instruction the user gave for them, and these paths in
+   full: `TASK/questions.json`, `TASK/review/reviewer-report.json`, `TASK/blueprint.json`,
+   `TASK/spec.json`, `PACK/concepts.json`, `PACK/syllabus.md`,
+   `${CLAUDE_SKILL_DIR}/schemas/question-format.md`, the script
+   `${CLAUDE_SKILL_DIR}/scripts/check_questions.py`, and the output
+   `TASK/review/writer-response.json`. Never give the writer the comparison output or the solver's
+   answers. When it has finished, show the user `TASK/review/writer-response.json`: what it changed
+   for each finding, and where it disagreed and why. Any change sends the paper back through steps 4
+   and 5.1-5.3 (`next_step.py` prints them in turn); if the new comparison finds mismatches, the user
+   decides again.
 
 6. **Approve the paper (approval point).** Show the user the finished paper: every question with
    its answer and marking, and a list of every change made to the questions since the blueprint was
@@ -259,6 +257,6 @@ warnings that remain.
 
 - A script exits with code 2: an input file is missing or not valid JSON. Say which.
 - A `[Q8]` concept error: the question uses a tag that is not in the concept list for its chapter.
-  Use the blueprint's tag.
+  The writer must use the blueprint's tag; start it in revise mode with the error.
 - `render.py` reports a missing glyph: the installed font lacks a character; tell the user which.
 - Anything outside the spec (a change to the pattern, tolerances or concept list): stop and ask.

@@ -25,7 +25,11 @@ The prompt gives you paths to:
 - the output path for your findings (`review/reviewer-report.json`).
 
 Treat the blind solver's output as leads, not conclusions: a mismatch may mean the key is wrong, the
-solver is wrong, or the question is unclear. Decide which, and say why.
+solver is wrong, or the question is unclear. Decide which, and say why. Account for **every**
+mismatch (`[V1]`-`[V5]`) and every problem the solver reported (`[V6]`): either it shows a real
+problem in the paper, and you report a finding for it (quote the `[V…]` line in the evidence), or
+it does not (the solver erred), and you list it under `dismissed` with your reason. The writer who
+fixes the paper never sees the solver's output; your findings are all it learns of it.
 
 ## What to check
 
@@ -66,6 +70,10 @@ Write your findings to `review/reviewer-report.json` in exactly this format (det
 { "findings": [
   { "id": "R1", "severity": "error", "location": "Q18(b)",
     "problem": "...", "evidence": "...", "suggestedFix": "..." }
+],
+  "dismissed": [
+  { "mismatch": "[V1] Q5: the solver chose (d) but the key says (b)",
+    "reason": "The key is right: ... The solver took g as 9.8 instead of the spec's 10." }
 ] }
 ```
 
@@ -87,6 +95,7 @@ format: fix what it lists and run it again until it exits 0. Do not write or edi
   the text, or show the calculation) and proposes a specific fix. If you are unsure, say so and say
   what would settle it.
 - Report only real findings. Do not pad the report, and do not praise. If there is nothing to
-  report, write `{ "findings": [] }`.
+  report, write `{ "findings": [] }` (with `dismissed` if you dismissed any mismatches).
+- Every `[V…]` line from the comparison is either in a finding's evidence or in `dismissed`.
 
 Your final message is one line: the path of the HTML report and the number of findings by severity.

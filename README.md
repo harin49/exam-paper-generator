@@ -47,13 +47,13 @@ file's hash, in `TASK/approvals.json`, and editing an approved file voids its ap
    list: one slot per question part (chapter, marks, kind, difficulty, concept, MCQ answer letter). It
    first checks the concept list against its syllabus (`validate_concepts.py`, rules C1–C6). The user
    approves the blueprint.
-3. **Draft**: Claude writes `questions.json` from the approved blueprint (wording only).
+3. **Draft**: the writer subagent writes `questions.json` from the approved blueprint (wording only).
 4. **Check**: `check_questions.py` runs hard rules (block) and soft rules (warn), Q1–Q15.
 5. **Review**: `extract_paper.py` writes the paper without answers; the `exam-papers:blind-solver`
    agent solves it; `compare_solutions.py` compares its answers with the key (rules V1–V6); the
    `exam-papers:reviewer` agent writes its findings as JSON and runs `render_review.py`, which makes
    an HTML report. Reports are shown verbatim.
-6. **Fix**: apply only the fixes the user accepts.
+6. **Fix**: the writer subagent applies only the findings the user accepts and answers each one.
 7. **Build**: `render.py questions.json` renders the question paper and the answer key into the task
    folder. It runs `check_questions.py` first and refuses to build if a hard rule fails.
 
@@ -70,9 +70,10 @@ paper, plus a 50-mark spec for the blueprint generator), never `examples/` or ge
 .claude-plugin/marketplace.json     # makes this repo a marketplace listing the plugin
 plugins/exam-papers/                # the plugin: the only part that is installed
   .claude-plugin/plugin.json
-  agents/                           # blind-solver.md, reviewer.md (the two review subagents)
+  agents/                           # writer.md (drafts and revises), blind-solver.md, reviewer.md
   commands/approve.md               # /exam-papers:approve blueprint|paper (typed by the teacher)
-  hooks/                            # hooks.json + approve.py: record typed approvals, guard approvals.json
+  hooks/                            # hooks.json; approve.py (typed approvals, guards approvals.json);
+                                    # guard_agents.py (what the solver and the writer may see)
   skills/make-paper/
     SKILL.md                        # main workflow
     workflow.json                   # the steps in order: who does each, approval points, when done
@@ -83,7 +84,7 @@ plugins/exam-papers/                # the plugin: the only part that is installe
                                     # compare_solutions, next_step, render_review, spec_types,
                                     # approvals, task_files
     assets/syllabi/icse9-physics-selina/   # sample pack: syllabus.md, concepts.json (approved)
-docs/harness-design.md              # goal, architecture, decisions D1–D19
+docs/harness-design.md              # goal, architecture, decisions D1–D20
 examples/icse9-physics-ch1-5/       # example paper: spec + draft blueprint
 tests/                              # unit tests; tests/test_data/ holds their fixed data
 requirements.txt, requirements-dev.txt
@@ -146,7 +147,9 @@ requirements.txt, requirements-dev.txt
 - [x] `workflow.json` + `next_step.py`: one step at a time, in a fixed order, checked against the task folder
 - [x] State by content hashes (`state.json`, `run.jsonl`, `next_step.py --done`) instead of file times
 - [x] Typed approvals for the blueprint and the final paper (`/exam-papers:approve`, hooks, `approvals.json`)
-- [x] Unit tests moved to their own test data (`tests/test_data/`); 321 tests, all passing
+- [x] Writer subagent drafts and revises the questions; hooks keep the solver blind and the writer
+      away from the solver's answers; the reviewer judges every solver mismatch
+- [x] Unit tests moved to their own test data (`tests/test_data/`); 326 tests, all passing
 - [ ] New example: approve the `icse9-physics-ch1-5` blueprint, write its questions, review, render
 
 Open question: the syllabus includes spherical mirrors (with mirror-formula numericals) and

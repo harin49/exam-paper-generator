@@ -272,6 +272,39 @@ findings.
 *Why:* clear roles and smaller contexts, and each role's tools and file access can be set separately
 (the writer never needs the solver's answers; the solver never sees the key).
 
+### D20. How the review loop runs (settles D1–D3 and D13 in detail)
+
+- **The reviewer judges every solver mismatch.** Each `[V…]` line becomes a finding with a severity,
+  or goes in the report's `dismissed` list with a reason. The loop then deals only in `R` findings,
+  and the writer never needs the solver's output.
+- **Rounds 2 and 3:** the reviewer gets its previous findings, the writer's responses and what
+  changed. It marks each previous finding `resolved` or `open` and reviews only the changed parts
+  for new problems. Finding IDs stay the same across rounds, so "still open after round 3" is exact.
+- **The writer runs `check_questions.py` itself** and fixes structural errors before handing back;
+  script failures never count as a review round. The workflow's check step only confirms it.
+- **The writer answers each finding** in `review/writer-response.json`: `fixed` with the change, or
+  `disagree` with its evidence. Its "disagree" is the writer's side of a dispute (D3).
+- **Gate 3 is a typed command,** `/exam-papers:decide accept R2 R4 reject R5`, recorded by a hook
+  against the hash of that round's reviewer report and refused while any open warning, suggestion
+  or dispute is left undecided. Reasons and instructions for the writer are given in chat.
+- **Disputes after round 3** are settled with the same command: `accept` gives the writer one more
+  round with the teacher's instruction; `reject` leaves the paper as it is. To fix it themselves,
+  the teacher edits `questions.json`, then rejects the finding.
+- **Automatic fixes stay visible (D2):** every change the writer makes without asking is listed at
+  gate 4; the teacher can ask in chat for any to be undone (a reversal is not an approval).
+- **Rounds are counted from `run.jsonl`** (how many times the reviewer step was recorded done).
+- **Guards:** a `PreToolUse` hook (`hooks/guard_agents.py`) uses `agent_type` to keep the blind
+  solver to the blind paper (`solver-input.json` in, `solver-answers.json` out) and the writer away
+  from the solver's answers and the comparison, and from the blueprint.
+
+*Why:* bounded rounds with stable finding IDs make the cap in D3 checkable; typed decisions keep
+D6's rule that only the teacher's own commands create trust; the writer learning only from findings
+keeps the solver's mistakes out of the key.
+
+*Built in four pieces:* (1) the writer agent, the guards and mismatch triage (done 2026-10-28);
+(2) the reviewer every round, `review_status.py` and the loop in `workflow.json`; (3) the typed
+`/exam-papers:decide`, replacing `fixes.json`; (4) the gate-4 list of automatic fixes.
+
 ### D14. State is a hash ledger plus a run log
 
 - `state.json` in each task folder records every finished step with the SHA-256 hashes of its inputs

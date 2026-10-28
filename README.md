@@ -54,7 +54,8 @@ file's hash, in `TASK/approvals.json`, and editing an approved file voids its ap
    `exam-papers:reviewer` agent writes its findings as JSON and runs `render_review.py`, which makes
    an HTML report. Reports are shown verbatim.
 6. **Fix (loop)**: `review_status.py` closes each round and says what is next. The writer fixes open
-   errors without asking; the teacher decides warnings and suggestions; after round 3, anything still
+   errors without asking; the teacher decides warnings and suggestions by typing
+   `/exam-papers:decide accept … reject …`; after round 3, anything still
    open comes to the teacher as a dispute. Each revision goes through steps 4–5 again.
 7. **Build**: `render.py questions.json` renders the question paper and the answer key into the task
    folder. It runs `check_questions.py` first and refuses to build if a hard rule fails.
@@ -73,8 +74,10 @@ paper, plus a 50-mark spec for the blueprint generator), never `examples/` or ge
 plugins/exam-papers/                # the plugin: the only part that is installed
   .claude-plugin/plugin.json
   agents/                           # writer.md (drafts and revises), blind-solver.md, reviewer.md
-  commands/approve.md               # /exam-papers:approve blueprint|paper (typed by the teacher)
-  hooks/                            # hooks.json; approve.py (typed approvals, guards approvals.json);
+  commands/                         # approve.md: /exam-papers:approve blueprint|paper;
+                                    # decide.md: /exam-papers:decide accept … reject … (typed by the teacher)
+  hooks/                            # hooks.json; approve.py (typed approvals and decisions, guards
+                                    # approvals.json and decisions.json);
                                     # guard_agents.py (what the solver and the writer may see)
   skills/make-paper/
     SKILL.md                        # main workflow
@@ -153,7 +156,8 @@ requirements.txt, requirements-dev.txt
       away from the solver's answers; the reviewer judges every solver mismatch
 - [x] Review loop: up to 3 rounds, errors fixed without asking, warnings and suggestions decided by the
       teacher, disputes after round 3 (`review_status.py`, `review/rounds/`, `review/decisions.json`)
-- [x] Unit tests moved to their own test data (`tests/test_data/`); 348 tests, all passing
+- [x] Typed decisions on review findings (`/exam-papers:decide`; a hook writes `review/decisions.json`)
+- [x] Unit tests moved to their own test data (`tests/test_data/`); 357 tests, all passing
 - [ ] New example: approve the `icse9-physics-ch1-5` blueprint, write its questions, review, render
 
 Open question: the syllabus includes spherical mirrors (with mirror-formula numericals) and

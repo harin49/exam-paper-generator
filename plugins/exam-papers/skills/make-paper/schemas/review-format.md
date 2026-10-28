@@ -160,16 +160,20 @@ latest responses together (`key`). Closing refuses a report that drops an earlie
 severity without a `note`. `review_status.py TASK --changes` lists what changed in `questions.json`
 since the last closed round; the reviewer gets it from round 2 on.
 
-## `review/decisions.json` (written by Claude from the user's answer; by a hook from piece 3 on)
+## `review/decisions.json` (written only by the plugin's hook, when the user types `/exam-papers:decide`)
 
 ```json
 { "decisions": [
-  { "round": 1, "report": "<sha256 of reviewer-report.json>", "accepted": ["R2"], "rejected": ["R5"] }
+  { "round": 1, "report": "<sha256 of reviewer-report.json>", "accepted": ["R2"], "rejected": ["R5"],
+    "time": "2026-10-28T10:05:00+00:00", "command": "/exam-papers:decide accept R2 reject R5" }
 ] }
 ```
 
 The user's decisions on open warnings and suggestions, and on disputes (findings still open after
-round 3), one entry per decision, never rewritten. Only `R` IDs: a solver mismatch reaches the user
+round 3), one entry per typed command, never rewritten. The hook refuses a decision that leaves a
+listed finding undecided, accepts a finding that is not listed, or rejects one that is neither listed
+nor an open error (the user may overrule the reviewer on an error). A hook also stops Claude and the
+subagents from writing the file. Only `R` IDs: a solver mismatch reaches the user
 as a finding (or as a dismissal they can question). A rejected finding stays closed; an accepted one
 is fixed by the writer like an error. From round 3 on, an `accepted` ID in the entry for the current
 round gives the writer one more round for it.

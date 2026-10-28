@@ -11,8 +11,9 @@ TASK is the paper's task folder. The files it reads, all in TASK/review/:
     reviewer-report.json   the reviewer's findings, every one so far with its status (review-format.md)
     rounds.json            the closed rounds: {"rounds": [{"round", "key", "report", "questions", "time"}]}
     rounds/N/              round N's questions.json and reviewer-report.json, as they were reviewed
-    decisions.json         the teacher's decisions: {"decisions": [{"round", "report", "accepted",
-                           "rejected", ...}]}; "round" is the closed round decided on (it settles
+    decisions.json         the teacher's decisions, written only by the plugin's hook when the teacher
+                           types /exam-papers:decide: {"decisions": [{"round", "report", "accepted",
+                           "rejected", "time", "command"}]}; "round" is the closed round decided on (it settles
                            that round's disputes), "report" the SHA-256 of its report (for the record)
 
 With no option it prints the status: the round, the open findings, what the teacher has to decide,
@@ -171,6 +172,59 @@ def status(task):
             "resolved": [f["id"] for f in findings if f["status"] == "resolved"],
             "rejected": sorted((i for i, v in verdict.items() if v == "rejected"), key=lambda i: int(i[1:])),
             "toDecide": to_decide, "disputes": disputes, "toAddress": to_address}
+
+
+def decision_problems(s, findings, accepted, rejected):
+    """What is wrong with a decision on the status s (empty when it can be recorded). Every finding
+    listed to decide must be accepted or rejected; an open error may also be rejected (the teacher
+    overrules the reviewer); nothing else may be decided."""
+    problems = []
+    listed = s["toDecide"] + s["disputes"]
+    open_errors = s["open"]["error"]
+    known = {f["id"] for f in findings}
+    unknown = sorted(set(accepted + rejected) - known, key=lambda i: (len(i), i))
+    if unknown:
+        problems.append(f"no finding {', '.join(unknown)} in the report")
+    both = sorted(set(accepted) & set(rejected))
+    if both:
+        problems.append(f"{', '.join(both)} both accepted and rejected")
+    bad_accept = [i for i in accepted if i in known and i not in listed]
+    if bad_accept:
+        problems.append(f"{', '.join(bad_accept)} cannot be accepted now (only the findings listed to "
+                        "decide; errors are fixed without asking)")
+    bad_reject = [i for i in rejected if i in known and i not in listed and i not in open_errors]
+    if bad_reject:
+        problems.append(f"{', '.join(bad_reject)} cannot be rejected now (only the findings listed to "
+                        "decide, and open errors)")
+    missing = [i for i in listed if i not in accepted and i not in rejected]
+    if missing:
+        problems.append(f"decide every listed finding at once; still undecided: {', '.join(missing)}")
+    if not accepted and not rejected:
+        problems.append("nothing decided")
+    return problems
+
+
+def record_decision(task, accepted, rejected, command):
+    """Append the teacher's decision on the current round. Only the decide hook calls this.
+    Returns the problems that stopped it (empty when it was recorded)."""
+    s = status(task)
+    if s["next"] not in ("decide", "revise"):
+        return [f"the paper is not waiting for a decision (next: {s['next']})"]
+    problems = decision_problems(s, read_report(task)["findings"], accepted, rejected)
+    if problems:
+        return problems
+    path = os.path.join(task, DECISIONS)
+    doc = load(path) if os.path.isfile(path) else {"decisions": []}
+    entry = {"round": s["round"], "report": file_hash(os.path.join(task, REPORT)),
+             "accepted": accepted, "rejected": rejected, "time": now(), "command": command}
+    doc["decisions"].append(entry)
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(doc, f, indent=2)
+        f.write("\n")
+    os.replace(tmp, path)
+    log_event(task, "decided", round=s["round"], accepted=accepted, rejected=rejected)
+    return []
 
 
 def close_round(task):

@@ -23,10 +23,12 @@ the user provides. Scripts decide the structure and check the result; you write 
   record it with the `--done` command `next_step.py` prints, report the step briefly, then run
   `next_step.py` again. Stop and wait at the approval points (spec errors, blueprint, decisions on
   findings, final paper).
-- **Approvals come only from the user typing them.** The blueprint and the final paper are approved
-  when the user types `/exam-papers:approve blueprint` or `/exam-papers:approve paper`; a hook then
-  records it in `TASK/approvals.json`. Ask the user to type the command. Never write, edit or copy
-  `approvals.json` (a hook blocks it), and never treat "approved" in chat as an approval.
+- **Approvals and decisions come only from the user typing them.** The blueprint and the final paper
+  are approved when the user types `/exam-papers:approve blueprint` or `/exam-papers:approve paper`,
+  and review findings are decided with `/exam-papers:decide accept ... reject ...`; a hook records
+  them in `TASK/approvals.json` and `TASK/review/decisions.json`. Ask the user to type the command.
+  Never write, edit or copy either file (a hook blocks it), and never treat "approved" or a decision
+  in chat as recorded.
 - **The writer subagent writes the questions; you orchestrate.** Never write or edit
   `questions.json` yourself, even for a small fix: start the writer in revise mode.
 - **Show script and reviewer output verbatim** when it contains errors or findings. Do not summarise
@@ -233,16 +235,20 @@ File formats: `${CLAUDE_SKILL_DIR}/schemas/review-format.md`. Everything goes in
    finding or changed a severity without a note: show the message, and start the reviewer again with
    it. Then run `review_status.py TASK` and show its summary to the user.
 6. **Decide (approval point, only when the summary lists something under "Teacher to decide" or
-   "Disputes").** Errors are not asked about: the writer fixes them. Ask the user to accept or reject
-   each listed warning and suggestion. A dispute is a finding still open after round 3: show the
-   reviewer's finding and the writer's response side by side; `accept` gives the writer one more
-   round (ask for the user's instruction), `reject` leaves the paper as it is (to fix it themselves,
-   the user edits `questions.json` and rejects it). Add their decision to
-   `TASK/review/decisions.json` (`{"decisions": [...]}`, one entry per decision) as
-   `{"round": N, "report": "<sha256 of reviewer-report.json>", "accepted": [...], "rejected": [...]}`.
-   Only `R` IDs: the reviewer has turned every solver mismatch into a finding or listed it as
-   dismissed; if the user disagrees with a dismissal, say so and ask how to proceed. A rejected
-   finding stays closed for good; an accepted one is fixed by the writer like an error.
+   "Disputes").** Errors are not asked about: the writer fixes them. Show each listed warning and
+   suggestion. A dispute is a finding still open after round 3: show the reviewer's finding and the
+   writer's response side by side; `accept` gives the writer one more round (ask for the user's
+   instruction), `reject` leaves the paper as it is (to fix it themselves, the user edits
+   `questions.json` and rejects it). Then ask the user to type their decision, covering every listed
+   finding at once, for example
+   `/exam-papers:decide accept R2 R4 reject R5`, and wait. A hook checks it and records it in
+   `TASK/review/decisions.json`; never write that file yourself (a hook blocks it), and never treat a
+   decision given in chat as recorded. Reasons and instructions stay in chat: pass the instructions
+   to the writer. Only `R` IDs: the reviewer has turned every solver mismatch into a finding or listed
+   it as dismissed; if the user disagrees with a dismissal, say so and ask how to proceed. A rejected
+   finding stays closed for good; an accepted one is fixed by the writer like an error. The user may
+   also reject an open error they think the reviewer got wrong (`/exam-papers:decide reject R1`),
+   even while the writer is due to fix it.
 7. **Revise (writer, no approval needed).** When the summary lists IDs under "Writer to address",
    start the `exam-papers:writer` subagent by its type in **revise** mode. Its prompt gives those
    IDs, any instruction the user gave for them, and these paths in full: `TASK/questions.json`,

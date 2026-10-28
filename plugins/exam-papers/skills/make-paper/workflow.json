@@ -123,7 +123,7 @@
       "title": "The user decides on the open findings",
       "by": "user",
       "waitsForUser": true,
-      "run": "Run python3 \"${CLAUDE_SKILL_DIR}/scripts/review_status.py\" TASK and show it verbatim. Ask the user to decide each finding it lists under 'Teacher to decide' and 'Disputes' (accept or reject), then add their decision to TASK/review/decisions.json as SKILL.md step 5.6 says.",
+      "run": "Run python3 \"${CLAUDE_SKILL_DIR}/scripts/review_status.py\" TASK and show it verbatim, with the findings it lists under 'Teacher to decide' and 'Disputes' (SKILL.md step 5.6). Ask the user to type /exam-papers:decide accept ... reject ... covering each of them, and wait. Never write decisions.json yourself.",
       "done": {"passes": "scripts/review_status.py", "args": ["."], "flags": ["--not", "decide"]}
     },
     {

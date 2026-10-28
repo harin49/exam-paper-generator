@@ -305,8 +305,8 @@ keeps the solver's mistakes out of the key.
 
 *Built in four pieces:* (1) the writer agent, the guards and mismatch triage (done 2026-10-28);
 (2) the reviewer every round, `review_status.py` and the loop in `workflow.json` (done 2026-10-28);
-(3) the typed `/exam-papers:decide`, writing `review/decisions.json`; (4) the gate-4 list of
-automatic fixes.
+(3) the typed `/exam-papers:decide`, writing `review/decisions.json` (done 2026-10-28); (4) the
+gate-4 list of automatic fixes.
 
 *As built in piece 2:*
 
@@ -326,6 +326,18 @@ automatic fixes.
   teacher's edit after the loop is a new round, and at the cap anything flagged in it is a dispute.
 - `next_step.py` gained `flags` and `reads` for `passes` conditions, and a `recorded` input that was
   missing when recorded counts as unchanged while it is still missing.
+
+*As built in piece 3:*
+
+- `/exam-papers:decide accept R2 R4 reject R5 [FOLDER]` (`commands/decide.md`, not runnable by
+  Claude) is recorded by the same hook as approvals (`hooks/approve.py`), through
+  `review_status.record_decision`. It goes to the one paper waiting at `decide_fixes` or
+  `apply_fixes`, or the named folder.
+- One command decides every finding listed under "Teacher to decide" and "Disputes"; the hook blocks
+  it, naming the missing IDs, until all are covered. Only listed findings can be accepted; listed
+  findings and open errors can be rejected, so the teacher can overrule the reviewer on an error even
+  while the writer is due to fix it.
+- The guard that protects `approvals.json` now protects `decisions.json` the same way.
 
 ### D14. State is a hash ledger plus a run log
 

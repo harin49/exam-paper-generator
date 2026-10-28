@@ -2,6 +2,8 @@
 runs it: a separate process given the hook's JSON on stdin. Run from the project root:
     python3 -m unittest discover tests
 """
+import contextlib
+import io
 import json
 import os
 import re
@@ -18,7 +20,8 @@ sys.path.insert(0, os.path.join(PLUGIN, "skills", "make-paper", "scripts"))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from helpers import TEST_DATA, load_json  # noqa: E402
 import next_step as ns  # noqa: E402
-from approvals import is_approved, read_approvals  # noqa: E402
+from approvals import is_approved, read_approvals, record_approval  # noqa: E402
+import review_status as rs  # noqa: E402
 
 STEPS = ns.read_workflow(ns.WORKFLOW)
 
@@ -112,6 +115,104 @@ class Approve(Hook):
         self.assertFalse(is_approved(folder, "blueprint"))
 
 
+class Decide(Hook):
+    def finding(self, rid, severity):
+        return {"id": rid, "severity": severity, "status": "open", "location": "Q1", "problem": "p",
+                "evidence": "e", "suggestedFix": "f"}
+
+    def task_after_review(self, *findings, name="icse-9-physics"):
+        """A paper whose first review round is closed, with these findings."""
+        folder = os.path.join(self.root, "papers", name)
+        os.makedirs(os.path.join(folder, "review"))
+        for f in ("spec.json", "blueprint.json", "concepts.json", "questions.json"):
+            shutil.copy(os.path.join(TEST_DATA, f), folder)
+
+        def write(path, doc):
+            with open(os.path.join(folder, path), "w", encoding="utf-8") as fh:
+                fh.write(doc if isinstance(doc, str) else json.dumps(doc))
+        self.assertIsNone(ns.record_done(folder, STEPS, "make_blueprint"))
+        record_approval(folder, "blueprint", "/exam-papers:approve blueprint")
+        for path, step in (("review/solver-input.json", "extract_paper"),
+                           ("review/solver-answers.json", "blind_solver"),
+                           ("review/compare-output.txt", "compare_solutions")):
+            write(path, "{}")
+            self.assertIsNone(ns.record_done(folder, STEPS, step))
+        write("review/reviewer-report.json", {"findings": [self.finding(*f) for f in findings]})
+        write("review/reviewer-report.html", "<!doctype html>")
+        self.assertIsNone(ns.record_done(folder, STEPS, "reviewer"))
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(rs.close_round(folder), 0)
+        return folder
+
+    def typed(self, args, **extra):
+        return self.run_hook(dict({"hook_event_name": "UserPromptExpansion",
+                                   "prompt": f"/exam-papers:decide {args}".strip(),
+                                   "command_name": "exam-papers:decide", "command_source": "plugin",
+                                   "cwd": self.root}, **extra))
+
+    def blocked(self, out):
+        doc = json.loads(out)
+        self.assertEqual(doc["decision"], "block")
+        return doc["reason"]
+
+    def decisions(self, folder):
+        path = os.path.join(folder, "review", "decisions.json")
+        return load_json(path)["decisions"] if os.path.isfile(path) else []
+
+    def test_records_a_full_decision(self):
+        folder = self.task_after_review(("R1", "error"), ("R2", "warning"), ("R3", "suggestion"))
+        self.assertEqual(ns.next_step(folder, STEPS)[1]["id"], "decide_fixes")
+        out = self.typed("accept R2 reject R3")
+        self.assertIn("Decision recorded", out)
+        self.assertIn("Next: revise", out)
+        [d] = self.decisions(folder)
+        self.assertEqual((d["round"], d["accepted"], d["rejected"], d["command"]),
+                         (1, ["R2"], ["R3"], "/exam-papers:decide accept R2 reject R3"))
+        self.assertEqual(ns.next_step(folder, STEPS)[1]["id"], "apply_fixes")
+        with open(os.path.join(folder, "run.jsonl"), encoding="utf-8") as f:
+            self.assertEqual([json.loads(x)["event"] for x in f][-1], "decided")
+
+    def test_every_listed_finding_must_be_decided(self):
+        folder = self.task_after_review(("R1", "warning"), ("R2", "suggestion"))
+        self.assertIn("still undecided: R2", self.blocked(self.typed("accept R1")))
+        self.assertEqual(self.decisions(folder), [])
+
+    def test_errors_can_be_rejected_but_not_accepted(self):
+        folder = self.task_after_review(("R1", "error"), ("R2", "warning"))
+        self.assertIn("R1 cannot be accepted now", self.blocked(self.typed("accept R1 R2")))
+        self.assertIn("Decision recorded", self.typed("reject R1 accept R2"))
+        self.assertEqual(rs.status(folder)["toAddress"], ["R2"])
+
+    def test_an_error_can_be_rejected_while_the_writer_is_due(self):
+        folder = self.task_after_review(("R1", "error"))
+        self.assertEqual(ns.next_step(folder, STEPS)[1]["id"], "apply_fixes")
+        self.assertIn("Decision recorded", self.typed("reject R1"))
+        self.assertEqual(ns.next_step(folder, STEPS)[1]["id"], "approve_paper")
+
+    def test_unknown_and_contradictory_findings_are_blocked(self):
+        self.task_after_review(("R1", "warning"))
+        self.assertIn("no finding R9", self.blocked(self.typed("accept R1 reject R9")))
+        self.assertIn("R1 both accepted and rejected", self.blocked(self.typed("accept R1 reject R1")))
+
+    def test_bad_syntax_shows_the_usage(self):
+        self.task_after_review(("R1", "warning"))
+        for args in ("", "R1", "accept", "maybe R1", "accept R1 extra words"):
+            self.assertIn("Type /exam-papers:decide", self.blocked(self.typed(args)), args)
+
+    def test_no_paper_waiting_and_several_waiting(self):
+        self.assertIn("No paper", self.blocked(self.typed("accept R1")))
+        self.task_after_review(("R1", "warning"), name="a")
+        b = self.task_after_review(("R1", "warning"), name="b")
+        self.assertIn("a, b", self.blocked(self.typed("accept R1")))
+        self.assertIn("Decision recorded", self.typed("accept R1 b"))
+        self.assertEqual(len(self.decisions(b)), 1)
+
+    def test_a_subagent_cannot_decide(self):
+        folder = self.task_after_review(("R1", "warning"))
+        self.assertIn("teacher types", self.blocked(self.typed("accept R1", agent_id="a1")))
+        self.assertEqual(self.decisions(folder), [])
+
+
 class Guard(Hook):
     def tool(self, name, **tool_input):
         out = self.run_hook({"hook_event_name": "PreToolUse", "tool_name": name, "tool_input": tool_input})
@@ -129,6 +230,11 @@ class Guard(Hook):
     def test_bash_that_mentions_approvals_is_denied(self):
         self.assertEqual(self.tool("Bash", command="echo [] > papers/x/approvals.json"), "deny")
         self.assertEqual(self.tool("Bash", command="cat papers/x/approvals.json 2>&1"), "deny")
+
+    def test_decisions_are_guarded_too(self):
+        path = os.path.join(self.root, "papers", "x", "review", "decisions.json")
+        self.assertEqual(self.tool("Write", file_path=path, content="{}"), "deny")
+        self.assertEqual(self.tool("Bash", command="cat papers/x/review/decisions.json"), "deny")
 
     def test_other_files_and_commands_are_allowed(self):
         self.assertIsNone(self.tool("Write", file_path=os.path.join(self.root, "questions.json"), content=""))
@@ -183,10 +289,12 @@ class PluginFiles(unittest.TestCase):
         self.assertEqual(set(doc["hooks"]), {"UserPromptExpansion", "PreToolUse"})
         self.assertIn("${CLAUDE_PLUGIN_ROOT}/hooks/guard_agents.py", args)
 
-    def test_approve_command_cannot_be_run_by_claude(self):
-        with open(os.path.join(PLUGIN, "commands", "approve.md"), encoding="utf-8") as f:
-            head = f.read().split("---")[1]
-        self.assertIn("disable-model-invocation: true", head)
+    def test_typed_commands_cannot_be_run_by_claude(self):
+        self.assertEqual(sorted(os.listdir(os.path.join(PLUGIN, "commands"))), ["approve.md", "decide.md"])
+        for name in ("approve.md", "decide.md"):
+            with open(os.path.join(PLUGIN, "commands", name), encoding="utf-8") as f:
+                head = f.read().split("---")[1]
+            self.assertIn("disable-model-invocation: true", head, name)
 
     def test_every_approval_gate_in_the_workflow_has_a_step_id_the_hook_finds(self):
         gates = re.findall(r'"approved": "(\w+)"', json.dumps(STEPS))

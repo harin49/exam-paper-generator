@@ -4,7 +4,8 @@
 Usage:
     python3 number_syllabus.py SYLLABUS OUT [--force]
 
-SYLLABUS is the teacher's syllabus (Markdown or plain text), which is not changed. OUT gets the same
+SYLLABUS is the teacher's syllabus (Markdown or plain text), which is not changed. OUT (usually
+syllabi/<pack>/syllabus.md; its folder is made if needed) gets the same
 text with "[Sn] " inserted at the start of each point, in order. A point is a paragraph (lines between
 blank lines) or a list item ("- ", "* ", "+ " or "1. " at a line start); headings ("#" lines) are not
 points. Nothing else is changed, so OUT minus its ids is the teacher's text.
@@ -76,6 +77,7 @@ def main(argv):
         print(f"{src} has no text to number.")
         return 1
     try:
+        os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
         with open(out, "w", encoding="utf-8") as f:
             f.write(numbered)
     except OSError as e:

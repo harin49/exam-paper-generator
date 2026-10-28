@@ -8,6 +8,8 @@ syllabus it is drafted from, and is shared by every paper for that syllabus. Exa
 
 ## How it is made and changed
 
+The plugin's make-pack skill (`/exam-papers:make-pack`) walks through steps 1-4.
+
 1. **The syllabus is numbered.** `scripts/number_syllabus.py` copies the teacher's syllabus into
    the pack as `syllabus.md`, inserting a unique id, `[S1]`, `[S2]`, ..., before each point (each
    paragraph and each list item; headings are not points). Nothing else is changed, and the teacher's

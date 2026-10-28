@@ -72,6 +72,11 @@ class CommandLine(unittest.TestCase):
         with open(self.src, encoding="utf-8") as f:
             self.assertEqual(f.read(), TEXT)                           # the teacher's file is untouched
 
+    def test_makes_the_pack_folder(self):
+        out = os.path.join(self.tmp, "syllabi", "icse9-civics-selina", "syllabus.md")
+        self.assertEqual(self.run_main(self.src, out)[0], 0)
+        self.assertTrue(os.path.isfile(out))
+
     def test_refuses_to_overwrite_or_renumber(self):
         self.run_main(self.src, self.out)
         self.assertEqual(self.run_main(self.src, self.out)[0], 1)

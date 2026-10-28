@@ -22,14 +22,20 @@ effect after `/reload-plugins` or in the next session. The plugin needs Python 3
 
 Work in a folder of your own (the **workspace**), not in this repo. It holds:
 
-- `syllabi/<pack>/`: a syllabus (`syllabus.md`) and its approved concept list (`concepts.json`). A
-  sample pack, ICSE Class 9 Physics (Selina), ships with the skill and is copied in on request.
+- `syllabi/<pack>/`: a syllabus with numbered points (`syllabus.md`), its concept list
+  (`concepts.json`) and your approval of it (`approvals.json`). A sample pack, ICSE Class 9 Physics
+  (Selina), ships with the skill and is copied in on request.
 - `papers/<task>/`: one folder per paper, `papers/<board>-<class>-<subject>-<date>/`, made by
   `new_paper.py`; it holds the spec, blueprint, questions, review files and both PDFs. An existing
   folder is never reused (a second paper on the same day gets `-2`).
 
-Give Claude your `spec.json` (format and template in the skill's `schemas/`) and invoke
-`/exam-papers:make-paper`.
+To add a syllabus, give Claude the syllabus file (Markdown or text) and invoke
+`/exam-papers:make-pack`: it numbers the syllabus's points (`number_syllabus.py`), drafts the concept
+list, checks it (`validate_concepts.py`) and asks you to approve it by typing
+`/exam-papers:approve concepts`.
+
+To make a paper, give Claude your `spec.json` (format and template in the make-paper skill's
+`schemas/`) and invoke `/exam-papers:make-paper`.
 
 ## Workflow
 
@@ -79,6 +85,7 @@ plugins/exam-papers/                # the plugin: the only part that is installe
   hooks/                            # hooks.json; approve.py (typed approvals and decisions, guards
                                     # approvals.json and decisions.json);
                                     # guard_agents.py (what the solver and the writer may see)
+  skills/make-pack/SKILL.md         # turns a syllabus into a syllabus pack (uses make-paper's scripts)
   skills/make-paper/
     SKILL.md                        # main workflow
     workflow.json                   # the steps in order: who does each, approval points, when done
@@ -158,13 +165,14 @@ requirements.txt, requirements-dev.txt
 - [x] Review loop: up to 3 rounds, errors fixed without asking, warnings and suggestions decided by the
       teacher, disputes after round 3 (`review_status.py`, `review/rounds/`, `review/decisions.json`)
 - [x] Typed decisions on review findings (`/exam-papers:decide`; a hook writes `review/decisions.json`)
+- [x] `/exam-papers:make-pack` skill: number the syllabus, draft the concept list, validate, gate 1
 - [x] Gate 1: a pack's concept list is approved by typing `/exam-papers:approve concepts` (validated,
       hash-bound); `make_blueprint.py` refuses an unapproved list
 - [x] Syllabus points numbered by a script (`number_syllabus.py`, ids `[S1]`...), coverage per point
       with `notTested` reasons; the ICSE Physics sample moved to point ids
 - [x] Final approval shows every change made in the review loop (`review_status.py --fixes`), and any
       automatic fix can be undone with `/exam-papers:decide reject ID`
-- [x] Unit tests moved to their own test data (`tests/test_data/`); 379 tests, all passing
+- [x] Unit tests moved to their own test data (`tests/test_data/`); 384 tests, all passing
 - [ ] New example: approve the `icse9-physics-ch1-5` blueprint, write its questions, review, render
 
 Open question: the syllabus includes spherical mirrors (with mirror-formula numericals) and

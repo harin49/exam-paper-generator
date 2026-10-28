@@ -433,8 +433,9 @@ metrics and golden papers show whether a change made things better or worse.
 
 ### D19. Plugin name, repo layout, sample pack and dev loading
 
-- **Name:** `exam-papers`. It is permanent and prefixes everything: the skill is
-  `/exam-papers:make-paper`, the agents are `exam-papers:blind-solver` and `exam-papers:reviewer`, and
+- **Name:** `exam-papers`. It is permanent and prefixes everything: the skills are
+  `/exam-papers:make-paper` and `/exam-papers:make-pack` (a short skill that makes a syllabus pack
+  with make-paper's scripts; no workflow file, since a pack is made once), the agents are `exam-papers:blind-solver` and `exam-papers:reviewer`, and
   the approve command will be `/exam-papers:approve`.
 - **Layout:** the repo is a marketplace (`.claude-plugin/marketplace.json`) listing one plugin,
   `plugins/exam-papers/`. Tests, docs and examples stay in the repo and are not installed.

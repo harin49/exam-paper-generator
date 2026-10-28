@@ -70,6 +70,32 @@ class SkillMd(unittest.TestCase):
             self.assertIn(f"exam-papers:{name} subagent by its type", WORKFLOW)
 
 
+class MakePack(unittest.TestCase):
+    """The make-pack skill names make-paper's scripts and formats as ${CLAUDE_SKILL_DIR}/../make-paper/..."""
+
+    def setUp(self):
+        self.dir = os.path.join(PLUGIN, "skills", "make-pack")
+        with open(os.path.join(self.dir, "SKILL.md"), encoding="utf-8") as f:
+            self.text = f.read()
+
+    def test_frontmatter_name_matches_the_folder(self):
+        self.assertIn("\nname: make-pack\n", self.text.split("---")[1] + "\n")
+
+    def test_every_named_file_exists(self):
+        paths = re.findall(r"\$\{CLAUDE_SKILL_DIR\}/([\w./-]+)", self.text)
+        self.assertTrue(paths)
+        missing = [p for p in sorted(set(paths)) if not os.path.exists(os.path.join(self.dir, p))]
+        self.assertEqual(missing, [])
+
+    def test_runs_only_the_pack_scripts(self):
+        cmds = re.findall(r'python3 "\$\{CLAUDE_SKILL_DIR\}/\.\./make-paper/scripts/(\w+\.py)"', self.text)
+        self.assertEqual(sorted(set(cmds)), ["number_syllabus.py", "validate_concepts.py"])
+        self.assertIn("/exam-papers:approve concepts", self.text)
+
+    def test_make_paper_points_to_it(self):
+        self.assertIn("/exam-papers:make-pack", TEXT)
+
+
 class AgentFiles(unittest.TestCase):
     def test_blind_solver_prompt_names_no_other_file(self):
         with open(os.path.join(AGENTS, "blind-solver.md"), encoding="utf-8") as f:

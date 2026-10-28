@@ -72,7 +72,7 @@ There are two places:
 Files that are **not** run in the workflow: `${CLAUDE_SKILL_DIR}/scripts/spec_types.py`,
 `${CLAUDE_SKILL_DIR}/scripts/approvals.py` and `${CLAUDE_SKILL_DIR}/scripts/task_files.py` (libraries
 the other scripts and the plugin's approval hook import) and
-`${CLAUDE_SKILL_DIR}/scripts/number_syllabus.py` (used when a syllabus pack is made) and
+`${CLAUDE_SKILL_DIR}/scripts/number_syllabus.py` (used by the make-pack skill) and
 `${CLAUDE_SKILL_DIR}/scripts/validate_concepts.py` (only when the user asks
 you to check a concept list).
 
@@ -133,8 +133,9 @@ read. To carry on with an earlier paper, use its existing `TASK` and skip this s
 Find the syllabus pack for the spec's board, class, subject and book under `syllabi/` in the
 workspace: that folder is `PACK`. If there is none, look for a matching sample pack under
 `${CLAUDE_SKILL_DIR}/assets/syllabi/`; if one matches, ask the user whether to copy it into
-`syllabi/`, and copy it only on their yes. If there is no pack at all, stop: a concept list must be
-drafted and approved before a paper can be made.
+`syllabi/`, and copy it only on their yes. If there is no pack at all, a concept list must be drafted
+and approved before a paper can be made: tell the user, ask for their syllabus, and make the pack
+with the make-pack skill (`/exam-papers:make-pack`); then come back to this step.
 
 The pack's concept list must be approved as it is now (gate 1); `make_blueprint.py` refuses one that
 is not. If `PACK/approvals.json` has no approval of it (always so for a newly copied sample), run

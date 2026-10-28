@@ -292,7 +292,9 @@ findings.
   the teacher edits `questions.json`, then rejects the finding.
 - **Automatic fixes stay visible (D2):** every change the writer makes without asking is listed at
   gate 4; the teacher can ask in chat for any to be undone (a reversal is not an approval).
-- **Rounds are counted from `run.jsonl`** (how many times the reviewer step was recorded done).
+- **Rounds are counted from `review/rounds.json`**, which `review_status.py --close-round` appends to
+  after each review (it also saves the round's questions and report in `review/rounds/N/`). This
+  replaced "count from `run.jsonl`": a repeated `--done` could double-count there.
 - **Guards:** a `PreToolUse` hook (`hooks/guard_agents.py`) uses `agent_type` to keep the blind
   solver to the blind paper (`solver-input.json` in, `solver-answers.json` out) and the writer away
   from the solver's answers and the comparison, and from the blueprint.
@@ -302,8 +304,28 @@ D6's rule that only the teacher's own commands create trust; the writer learning
 keeps the solver's mistakes out of the key.
 
 *Built in four pieces:* (1) the writer agent, the guards and mismatch triage (done 2026-10-28);
-(2) the reviewer every round, `review_status.py` and the loop in `workflow.json`; (3) the typed
-`/exam-papers:decide`, replacing `fixes.json`; (4) the gate-4 list of automatic fixes.
+(2) the reviewer every round, `review_status.py` and the loop in `workflow.json` (done 2026-10-28);
+(3) the typed `/exam-papers:decide`, writing `review/decisions.json`; (4) the gate-4 list of
+automatic fixes.
+
+*As built in piece 2:*
+
+- `review_status.py TASK` says what is next: `close` (a review not yet closed as a round),
+  `decide` (gate 3), `revise` (the writer, without asking) or `done`. The workflow steps
+  `close_round`, `decide_fixes` and `apply_fixes` are done when it says they are not needed, so the
+  loop comes from conditions; no step jumps back.
+- **A round is identified by the report, `questions.json` and `writer-response.json` together.** A
+  report can repeat word for word (no findings twice, or a writer who changed nothing); keyed on the
+  report alone, such a round never closed and the paper could reach gate 4 with an error open.
+- **A decision is tied to its round number,** not the report's hash: a dispute accepted in round 3
+  gives exactly one more round, even if round 4's report repeats round 3's.
+- `fixes.json` became `review/decisions.json`: one entry per decision, `{round, report, accepted,
+  rejected}`. Claude writes it until piece 3, when the decide hook takes over in the same format.
+- The reviewer may change a finding's severity, with a `note`; after an automatic round the teacher
+  sees the status summary and the writer's responses, and the loop goes on without waiting; a
+  teacher's edit after the loop is a new round, and at the cap anything flagged in it is a dispute.
+- `next_step.py` gained `flags` and `reads` for `passes` conditions, and a `recorded` input that was
+  missing when recorded counts as unchanged while it is still missing.
 
 ### D14. State is a hash ledger plus a run log
 

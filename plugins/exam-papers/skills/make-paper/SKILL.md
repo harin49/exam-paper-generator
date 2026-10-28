@@ -21,8 +21,8 @@ the user provides. Scripts decide the structure and check the result; you write 
   a step, read ahead for it or prepare it while a script or subagent from an earlier step is still
   running. Wait for each subagent to finish before doing anything else. When a step has finished,
   record it with the `--done` command `next_step.py` prints, report the step briefly, then run
-  `next_step.py` again. Stop and wait at the approval points (spec errors, blueprint, fixes, final
-  paper).
+  `next_step.py` again. Stop and wait at the approval points (spec errors, blueprint, decisions on
+  findings, final paper).
 - **Approvals come only from the user typing them.** The blueprint and the final paper are approved
   when the user types `/exam-papers:approve blueprint` or `/exam-papers:approve paper`; a hook then
   records it in `TASK/approvals.json`. Ask the user to type the command. Never write, edit or copy
@@ -64,6 +64,7 @@ There are two places:
 | 5.1 | `${CLAUDE_SKILL_DIR}/scripts/extract_paper.py` | Makes the paper with no answers for the blind solver | `TASK/review/solver-input.json` |
 | 5.3 | `${CLAUDE_SKILL_DIR}/scripts/compare_solutions.py` | Compares the solver's answers with the key (rules V1-V6) | `TASK/review/compare-output.txt` |
 | 5.4 | `${CLAUDE_SKILL_DIR}/scripts/render_review.py` | Checks the reviewer's findings and makes the HTML report (run by the reviewer; `--print` shows the findings again and writes nothing) | `TASK/review/reviewer-report.html` |
+| 5.5-5.7 | `${CLAUDE_SKILL_DIR}/scripts/review_status.py` | Closes each review round and says what happens next (`--changes`: what changed since the last round) | `TASK/review/rounds.json`, `TASK/review/rounds/N/` |
 | 6 | `${CLAUDE_SKILL_DIR}/scripts/render.py` | Builds the question paper and answer key PDFs | two PDFs in `TASK` |
 
 Files that are **not** run in the workflow: `${CLAUDE_SKILL_DIR}/scripts/spec_types.py`,
@@ -179,10 +180,13 @@ The writer ran this before handing back, so it should pass (exit code 0): show t
 If it fails (exit code 1), show the errors verbatim and ask the user how to go on; do not fix them
 yourself.
 
-### 5. Review
+### 5. Review (a loop of up to 3 rounds)
 
-Two independent checks; neither edits `questions.json`. File formats:
-`${CLAUDE_SKILL_DIR}/schemas/review-format.md`. Everything goes in `TASK/review/`.
+Each round: the blind paper, the blind solver, the comparison, the reviewer, then closing the round.
+`review_status.py` then says what happens next: the user decides (gate 3), the writer revises
+(automatically, for errors and accepted findings), or the paper is ready for approval. `next_step.py`
+prints each step in turn; the loop comes from the steps' conditions, never from you skipping ahead.
+File formats: `${CLAUDE_SKILL_DIR}/schemas/review-format.md`. Everything goes in `TASK/review/`.
 
 1. **Prepare the blind paper.**
    ```
@@ -200,43 +204,63 @@ Two independent checks; neither edits `questions.json`. File formats:
    Exit code 1 means mismatches (`[V1]`-`[V5]`), not a failure of the script. The output also lists
    problems the solver reported (`[V6]`) and the theory parts side by side. Show it to the user
    verbatim.
-4. **Reviewer.** Start the `exam-papers:reviewer` subagent by its type (never paste its
-   instructions into a general-purpose subagent). Its prompt gives these paths, each written out in
-   full: `TASK/questions.json`, `TASK/spec.json`, `PACK/concepts.json`, `PACK/syllabus.md`,
+4. **Reviewer (every round).** Start the `exam-papers:reviewer` subagent by its type (never paste
+   its instructions into a general-purpose subagent). Its prompt gives these paths, each written out
+   in full: `TASK/questions.json`, `TASK/spec.json`, `PACK/concepts.json`, `PACK/syllabus.md`,
    `${CLAUDE_SKILL_DIR}/schemas/question-format.md`, `${CLAUDE_SKILL_DIR}/schemas/review-format.md`,
    the script `${CLAUDE_SKILL_DIR}/scripts/render_review.py`, and the output path
-   `TASK/review/reviewer-report.json`; also paste in the full output of step 3. The reviewer writes
-   its findings to that file and runs `render_review.py` on it, which writes
-   `TASK/review/reviewer-report.html`. When it has finished, print the findings with
+   `TASK/review/reviewer-report.json`; also paste in the full output of step 3. From round 2 on
+   (`TASK/review/rounds.json` lists the closed rounds; N is the last), it also gets
+   `TASK/review/rounds/N/reviewer-report.json` (its previous report),
+   `TASK/review/writer-response.json`, `TASK/review/decisions.json` if there is one, and the output
+   of
+   ```
+   python3 "${CLAUDE_SKILL_DIR}/scripts/review_status.py" TASK --changes
+   ```
+   pasted in: what changed since round N. The reviewer writes its findings, every earlier one with
+   its status, and runs `render_review.py` on them, which writes `TASK/review/reviewer-report.html`.
+   When it has finished, print the findings with
    ```
    python3 "${CLAUDE_SKILL_DIR}/scripts/render_review.py" TASK/review/reviewer-report.json --print
    ```
    and show that output to the user verbatim, then send them `TASK/review/reviewer-report.html`.
    Exit code 1 means the reviewer's file breaks the format: tell the user, and do not fix it yourself.
-   The reviewer runs once, before the first fix decision.
-5. **Fix (approval point).** Ask the user which findings to fix, and write their answer to
-   `TASK/review/fixes.json` as `{"accepted": ["R1", ...], "rejected": ["R12", ...]}` (an empty
-   `accepted` list if they want none). Only `R` IDs: the reviewer has turned every solver mismatch
-   into a finding or listed it as dismissed; if the user disagrees with a dismissal, say so and ask
-   them how to proceed. Then start the `exam-papers:writer` subagent by its type in **revise** mode.
-   Its prompt gives the accepted IDs, any instruction the user gave for them, and these paths in
-   full: `TASK/questions.json`, `TASK/review/reviewer-report.json`, `TASK/blueprint.json`,
-   `TASK/spec.json`, `PACK/concepts.json`, `PACK/syllabus.md`,
-   `${CLAUDE_SKILL_DIR}/schemas/question-format.md`, the script
-   `${CLAUDE_SKILL_DIR}/scripts/check_questions.py`, and the output
+5. **Close the round.**
+   ```
+   python3 "${CLAUDE_SKILL_DIR}/scripts/review_status.py" TASK --close-round
+   ```
+   It saves the round in `TASK/review/rounds/N/`. Exit code 1 means the report dropped an earlier
+   finding or changed a severity without a note: show the message, and start the reviewer again with
+   it. Then run `review_status.py TASK` and show its summary to the user.
+6. **Decide (approval point, only when the summary lists something under "Teacher to decide" or
+   "Disputes").** Errors are not asked about: the writer fixes them. Ask the user to accept or reject
+   each listed warning and suggestion. A dispute is a finding still open after round 3: show the
+   reviewer's finding and the writer's response side by side; `accept` gives the writer one more
+   round (ask for the user's instruction), `reject` leaves the paper as it is (to fix it themselves,
+   the user edits `questions.json` and rejects it). Add their decision to
+   `TASK/review/decisions.json` (`{"decisions": [...]}`, one entry per decision) as
+   `{"round": N, "report": "<sha256 of reviewer-report.json>", "accepted": [...], "rejected": [...]}`.
+   Only `R` IDs: the reviewer has turned every solver mismatch into a finding or listed it as
+   dismissed; if the user disagrees with a dismissal, say so and ask how to proceed. A rejected
+   finding stays closed for good; an accepted one is fixed by the writer like an error.
+7. **Revise (writer, no approval needed).** When the summary lists IDs under "Writer to address",
+   start the `exam-papers:writer` subagent by its type in **revise** mode. Its prompt gives those
+   IDs, any instruction the user gave for them, and these paths in full: `TASK/questions.json`,
+   `TASK/review/reviewer-report.json`, `TASK/blueprint.json`, `TASK/spec.json`,
+   `PACK/concepts.json`, `PACK/syllabus.md`, `${CLAUDE_SKILL_DIR}/schemas/question-format.md`, the
+   script `${CLAUDE_SKILL_DIR}/scripts/check_questions.py`, and the output
    `TASK/review/writer-response.json`. Never give the writer the comparison output or the solver's
-   answers. When it has finished, show the user `TASK/review/writer-response.json`: what it changed
-   for each finding, and where it disagreed and why. Any change sends the paper back through steps 4
-   and 5.1-5.3 (`next_step.py` prints them in turn); if the new comparison finds mismatches, the user
-   decides again.
-
-6. **Approve the paper (approval point).** Show the user the finished paper: every question with
-   its answer and marking, and a list of every change made to the questions since the blueprint was
-   approved (the accepted fixes). Ask them to type `/exam-papers:approve paper`, and wait. Any later
-   change to `TASK/questions.json` voids this approval and sends the paper back through the checks.
+   answers. When it has finished, show the user `TASK/review/writer-response.json` and carry on
+   without waiting: the next round starts (the user can interrupt at any time).
+8. **Approve the paper (approval point).** When nothing is open, show the user the finished paper:
+   every question with its answer and marking, and a list of every change made to the questions
+   since the blueprint was approved (the writer's responses in each round). Ask them to type
+   `/exam-papers:approve paper`, and wait. Any later change to `TASK/questions.json` voids this
+   approval and starts a new review round; the 3-round cap still applies, so anything the reviewer
+   flags in it comes to the user as a dispute.
 
 A mismatch is not proof that the key is wrong: the solver may be wrong, or the question unclear.
-Work out which with the user.
+The reviewer works out which; if the user doubts its call, discuss it with them.
 
 ### 6. Build
 

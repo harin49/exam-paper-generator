@@ -17,7 +17,7 @@ questions.json ─────────────────────�
                                                       ▼
                                           review/compare-output.txt
 questions.json + spec + concept list + syllabus + compare output ──reviewer──▶ review/reviewer-report.json ──render_review.py──▶ review/reviewer-report.html
-review/reviewer-report.html ──user decides──▶ review/fixes.json ──writer──▶ review/writer-response.json
+review_status.py ──user decides──▶ review/decisions.json; errors and accepted findings ──writer──▶ review/writer-response.json ──▶ next round
 ```
 
 ## `review/solver-input.json` (written by `extract_paper.py`)
@@ -105,7 +105,7 @@ checks it and writes the HTML report beside it. Nobody writes or edits the HTML 
 ```json
 {
   "findings": [
-    { "id": "R1", "severity": "error", "location": "Q18(b)",
+    { "id": "R1", "severity": "error", "status": "open", "location": "Q18(b)",
       "problem": "The key gives 4 N but the force is 40 N.",
       "evidence": "F = ma = 8 × 5 = 40 N.",
       "suggestedFix": "Change the answer and the computed value to 40 N." }
@@ -119,16 +119,18 @@ checks it and writes the HTML report beside it. Nobody writes or edits the HTML 
 
 | Field | Meaning |
 |---|---|
-| `id` | `R1`, `R2`, ... in order. |
+| `id` | `R1`, `R2`, ... in order. A later round keeps every earlier finding with its ID and numbers new ones after them. |
 | `severity` | `error`: the key is wrong, or the question cannot be answered or has more than one correct answer. `warning`: unclear wording, outside the syllabus or book level, tagged difficulty does not fit, a marking scheme that does not match the answer. `suggestion`: an improvement that does not affect correctness. |
+| `status` | `open` or `resolved`. Round 1: all `open`. Later rounds: the reviewer marks each earlier finding. |
 | `location` | Where it is, e.g. `Q21(b)(ii)` (several: `Q6 and Q17(b)`). |
 | `problem` | What is wrong. |
 | `evidence` | A quotation or a calculation. |
 | `suggestedFix` | A specific fix. |
+| `note` | Optional. Why a finding was resolved or is still open, or why its severity changed (required when it changed). |
 | `dismissed` | Optional. The solver's mismatches (`[V1]`-`[V6]` lines from the comparison) that the reviewer judged not to be problems in the paper, each with `mismatch` (the line) and `reason`. Every mismatch is either quoted in a finding's evidence or listed here. |
 
 - Plain text only (no markup); a line break is kept.
-- Findings are ordered errors first, then warnings, then suggestions.
+- Findings are in ID order. `render_review.py` displays open findings first, by severity.
 - If there is nothing to report, the file is `{ "findings": [] }`.
 - The writer never sees the comparison: findings are how it learns of a real mismatch.
 - `render_review.py` refuses a file that breaks these rules (exit code 1) and writes nothing. It also
@@ -144,16 +146,37 @@ Evidence: ...
 Suggested fix: ...
 ```
 
-## `review/fixes.json` (written by Claude from the user's answer)
+## `review/rounds.json` and `review/rounds/N/` (written by `review_status.py --close-round`)
 
 ```json
-{ "accepted": ["R1", "R5"], "rejected": ["R12"] }
+{ "rounds": [
+  { "round": 1, "key": "...", "report": "<sha256>", "questions": "<sha256>", "time": "..." }
+] }
 ```
 
-The user's decision on the reviewer's findings: which to fix and which to leave. Only `R` IDs: a
-solver mismatch reaches the user as a finding (or as a dismissal they can question). `accepted` is an
-empty list if they want no changes. The writer applies only the accepted findings to
-`questions.json`; `next_step.py` then sends the paper back through the check and the blind solver.
+One entry per closed review round; `review/rounds/N/` keeps that round's `questions.json` and
+`reviewer-report.json` as they were. A round is identified by its report, questions and the writer's
+latest responses together (`key`). Closing refuses a report that drops an earlier finding or changes a
+severity without a `note`. `review_status.py TASK --changes` lists what changed in `questions.json`
+since the last closed round; the reviewer gets it from round 2 on.
+
+## `review/decisions.json` (written by Claude from the user's answer; by a hook from piece 3 on)
+
+```json
+{ "decisions": [
+  { "round": 1, "report": "<sha256 of reviewer-report.json>", "accepted": ["R2"], "rejected": ["R5"] }
+] }
+```
+
+The user's decisions on open warnings and suggestions, and on disputes (findings still open after
+round 3), one entry per decision, never rewritten. Only `R` IDs: a solver mismatch reaches the user
+as a finding (or as a dismissal they can question). A rejected finding stays closed; an accepted one
+is fixed by the writer like an error. From round 3 on, an `accepted` ID in the entry for the current
+round gives the writer one more round for it.
+
+`review_status.py TASK` reads the report, the rounds and the decisions and says what is next:
+`decide` (gate 3), `revise` (the writer, without asking: open errors and accepted findings before
+round 3), or `done`.
 
 ## `review/writer-response.json` (written by the writer)
 

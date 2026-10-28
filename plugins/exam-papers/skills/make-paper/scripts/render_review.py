@@ -17,9 +17,10 @@ The findings are also printed as plain text, in the order and wording of the fil
 shown to the user verbatim.
 
 Rules checked before anything is written:
-    every finding has exactly the fields id, severity, location, problem, evidence, suggestedFix,
-    each a non-empty string; severity is error, warning or suggestion; ids run R1, R2, ... in order;
-    errors come first, then warnings, then suggestions. The optional "dismissed" list holds the
+    every finding has the fields id, severity, status, location, problem, evidence, suggestedFix,
+    each a non-empty string, and may have a note; severity is error, warning or suggestion; status is
+    open or resolved; ids run R1, R2, ... in order (a later round keeps every earlier finding and
+    numbers new ones after them). The display lists open findings first, by severity. The optional "dismissed" list holds the
     solver's mismatches the reviewer judged not to be problems in the paper, each with exactly the
     fields mismatch and reason, both non-empty strings.
 
@@ -37,8 +38,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from render import chapter_list, class_text  # noqa: E402
 
 SEVERITIES = ["error", "warning", "suggestion"]
-FIELDS = ["id", "severity", "location", "problem", "evidence", "suggestedFix"]
-LABELS = [("problem", "Problem"), ("evidence", "Evidence"), ("suggestedFix", "Suggested fix")]
+STATUSES = ["open", "resolved"]
+FIELDS = ["id", "severity", "status", "location", "problem", "evidence", "suggestedFix"]
+OPTIONAL = ["note"]
+LABELS = [("problem", "Problem"), ("evidence", "Evidence"), ("suggestedFix", "Suggested fix"),
+          ("note", "Note")]
 DISMISSED_FIELDS = ["mismatch", "reason"]
 
 
@@ -52,18 +56,18 @@ def check(doc):
     if (not isinstance(doc, dict) or "findings" not in doc or not set(doc) <= {"findings", "dismissed"}
             or not isinstance(doc["findings"], list) or not isinstance(doc.get("dismissed", []), list)):
         return ['the file must be an object with a "findings" list and, optionally, a "dismissed" list']
-    errors, last = [], 0
+    errors = []
     for i, f in enumerate(doc["findings"], 1):
         where = f"finding {i}"
         if not isinstance(f, dict):
             errors.append(f"{where}: must be an object")
             continue
-        missing, unknown = [k for k in FIELDS if k not in f], sorted(set(f) - set(FIELDS))
+        missing, unknown = [k for k in FIELDS if k not in f], sorted(set(f) - set(FIELDS) - set(OPTIONAL))
         if missing:
             errors.append(f"{where}: missing {', '.join(missing)}")
         if unknown:
             errors.append(f"{where}: unknown field {', '.join(unknown)}")
-        for k in FIELDS:
+        for k in FIELDS + OPTIONAL:
             if k in f and not (isinstance(f[k], str) and f[k].strip()):
                 errors.append(f"{where}: {k} must be non-empty text")
         if f.get("id") != f"R{i}":
@@ -71,11 +75,8 @@ def check(doc):
         sev = f.get("severity")
         if sev not in SEVERITIES:
             errors.append(f"{where}: severity must be error, warning or suggestion, not {sev!r}")
-        elif SEVERITIES.index(sev) < last:
-            errors.append(f"{where}: {sev} comes after a less severe finding (errors, then warnings, "
-                          "then suggestions)")
-        else:
-            last = SEVERITIES.index(sev)
+        if f.get("status") not in STATUSES:
+            errors.append(f"{where}: status must be open or resolved, not {f.get('status')!r}")
     for i, d in enumerate(doc.get("dismissed", []), 1):
         where = f"dismissed {i}"
         if not isinstance(d, dict) or set(d) != set(DISMISSED_FIELDS):
@@ -85,19 +86,30 @@ def check(doc):
     return errors
 
 
+def display_order(findings):
+    """Open findings first, then resolved; each by severity, then by ID."""
+    return sorted(findings, key=lambda f: (STATUSES.index(f["status"]), SEVERITIES.index(f["severity"]),
+                                           int(f["id"][1:])))
+
+
+def open_counts(findings):
+    return {s: sum(f["severity"] == s and f["status"] == "open" for f in findings) for s in SEVERITIES}
+
+
 def counts_line(findings):
     if not findings:
         return "Findings: none"
-    n = {s: sum(f["severity"] == s for f in findings) for s in SEVERITIES}
+    n = open_counts(findings)
     parts = [f"{n[s]} {s}{'' if n[s] == 1 else 's'}" for s in SEVERITIES]
-    return f"Findings: {len(findings)} ({', '.join(parts)})"
+    resolved = sum(f["status"] == "resolved" for f in findings)
+    return f"Findings: {len(findings)} (open: {', '.join(parts)}; resolved: {resolved})"
 
 
 def text_report(findings, dismissed=()):
     lines = ["# Review of questions.json", counts_line(findings)]
-    for f in findings:
-        lines += ["", f"## {f['id']}  {f['location']}  {f['severity']}"]
-        lines += [f"{label}: {f[key]}" for key, label in LABELS]
+    for f in display_order(findings):
+        lines += ["", f"## {f['id']}  {f['location']}  {f['severity']}  ({f['status']})"]
+        lines += [f"{label}: {f[key]}" for key, label in LABELS if key in f]
     if dismissed:
         lines += ["", "## Solver mismatches dismissed by the reviewer"]
         lines += [f"- {d['mismatch']}\n  Reason: {d['reason']}" for d in dismissed]
@@ -144,6 +156,8 @@ border-radius:10px;padding:18px 20px;margin:0 0 14px;break-inside:avoid}
 .finding.error{border-left-color:var(--error)}
 .finding.warning{border-left-color:var(--warning)}
 .finding.suggestion{border-left-color:var(--suggestion)}
+.finding.resolved{opacity:.6;border-left-color:var(--line)}
+.state{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
 .head{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:0 0 12px}
 .id{font-weight:700;font-size:18px}
 .badge{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border-radius:6px;
@@ -167,15 +181,19 @@ margin:28px 0 0}
 
 
 def html_report(findings, spec, dismissed=()):
-    n = {s: sum(f["severity"] == s for f in findings) for s in SEVERITIES}
-    chips = "".join(f'<span class="chip {s}">{n[s]} {s}{"" if n[s] == 1 else "s"}</span>'
+    n = open_counts(findings)
+    chips = "".join(f'<span class="chip {s}">{n[s]} open {s}{"" if n[s] == 1 else "s"}</span>'
                     for s in SEVERITIES)
+    resolved = sum(f["status"] == "resolved" for f in findings)
+    if resolved:
+        chips += f'<span class="chip">{resolved} resolved</span>'
     cards = []
-    for f in findings:
-        rows = "".join(f"<dt>{label}</dt><dd>{esc(f[key])}</dd>" for key, label in LABELS)
-        cards.append(f'<section class="finding {f["severity"]}" id="{f["id"]}">'
+    for f in display_order(findings):
+        rows = "".join(f"<dt>{label}</dt><dd>{esc(f[key])}</dd>" for key, label in LABELS if key in f)
+        cards.append(f'<section class="finding {f["severity"]} {f["status"]}" id="{f["id"]}">'
                      f'<div class="head"><span class="id">{f["id"]}</span>'
                      f'<span class="badge {f["severity"]}">{f["severity"]}</span>'
+                     f'<span class="state">{f["status"]}</span>'
                      f'<span class="loc">{esc(f["location"])}</span></div><dl>{rows}</dl></section>')
     body = "".join(cards) or '<p class="none">The reviewer found nothing to report.</p>'
     if dismissed:

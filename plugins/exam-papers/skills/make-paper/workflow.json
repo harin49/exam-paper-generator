@@ -97,57 +97,56 @@
     {
       "id": "reviewer",
       "skillStep": "5.4",
-      "title": "Independent reviewer",
+      "title": "Reviewer subagent checks the paper",
       "by": "subagent",
       "waitsForUser": false,
-      "run": "Start the exam-papers:reviewer subagent by its type (the plugin's agents/reviewer.md; never pasted into a general-purpose subagent) with the paths SKILL.md step 5.4 lists; output TASK/review/reviewer-report.json (it makes TASK/review/reviewer-report.html). Wait for it to finish, then print the findings with python3 \"${CLAUDE_SKILL_DIR}/scripts/render_review.py\" TASK/review/reviewer-report.json --print, show them verbatim and send the user the HTML report.",
-      "note": "The reviewer runs once, before the first fix decision; later rounds only rerun the blind solver.",
-      "inputs": ["review/compare-output.txt"],
+      "run": "Start the exam-papers:reviewer subagent by its type (the plugin's agents/reviewer.md; never pasted into a general-purpose subagent) with the paths SKILL.md step 5.4 lists (from round 2 on, also the previous round's report and questions, the writer's responses and the output of review_status.py TASK --changes); output TASK/review/reviewer-report.json (it makes TASK/review/reviewer-report.html). Wait for it to finish, then print the findings with python3 \"${CLAUDE_SKILL_DIR}/scripts/render_review.py\" TASK/review/reviewer-report.json --print, show them verbatim and send the user the HTML report.",
+      "note": "The reviewer runs every round. In rounds 2 and 3 it re-checks its earlier findings and reviews only what changed.",
+      "inputs": ["review/compare-output.txt", "questions.json", "review/writer-response.json"],
       "outputs": ["review/reviewer-report.json", "review/reviewer-report.html"],
-      "done": {"any": [
-        {"recorded": ["review/compare-output.txt"]},
-        {"exists": "review/fixes.json"}
-      ]}
+      "done": {"recorded": ["review/compare-output.txt", "questions.json", "review/writer-response.json"]}
+    },
+    {
+      "id": "close_round",
+      "skillStep": "5.5",
+      "title": "Close the review round",
+      "by": "script",
+      "waitsForUser": false,
+      "run": "python3 \"${CLAUDE_SKILL_DIR}/scripts/review_status.py\" TASK --close-round",
+      "note": "Exit code 1: the report drops an earlier finding or changes a severity without a note. Show the message and start the reviewer again with it; do not edit the report yourself.",
+      "done": {"passes": "scripts/review_status.py", "args": ["."], "flags": ["--not", "close"],
+               "reads": ["review/reviewer-report.json", "questions.json", "review/writer-response.json"]}
     },
     {
       "id": "decide_fixes",
-      "skillStep": "5.5",
-      "title": "The user decides which fixes to apply",
+      "skillStep": "5.6",
+      "title": "The user decides on the open findings",
       "by": "user",
       "waitsForUser": true,
-      "run": "Ask the user which findings and mismatches to fix, then write their answer to TASK/review/fixes.json: {\"accepted\": [\"R1\", ...], \"rejected\": [...]}.",
-      "note": "Also asked again when a later comparison finds mismatches.",
-      "inputs": ["review/reviewer-report.html", "review/compare-output.txt"],
-      "outputs": ["review/fixes.json"],
-      "done": {"all": [
-        {"recorded": ["review/reviewer-report.html"]},
-        {"any": [
-          {"recorded": ["review/compare-output.txt"]},
-          {"contains": "review/compare-output.txt", "text": "Result: NO MISMATCHES"}
-        ]}
-      ]}
+      "run": "Run python3 \"${CLAUDE_SKILL_DIR}/scripts/review_status.py\" TASK and show it verbatim. Ask the user to decide each finding it lists under 'Teacher to decide' and 'Disputes' (accept or reject), then add their decision to TASK/review/decisions.json as SKILL.md step 5.6 says.",
+      "done": {"passes": "scripts/review_status.py", "args": ["."], "flags": ["--not", "decide"]}
     },
     {
       "id": "apply_fixes",
-      "skillStep": "5.5",
-      "title": "Apply the accepted fixes",
+      "skillStep": "5.7",
+      "title": "The writer addresses the findings",
       "by": "subagent",
       "waitsForUser": false,
-      "run": "Start the exam-papers:writer subagent by its type in revise mode, with the accepted IDs from TASK/review/fixes.json, the user's instructions, and the paths SKILL.md step 5.5 lists. Wait for it to finish, then show the user TASK/review/writer-response.json. next_step.py then sends the paper back through the check and the blind solver.",
-      "inputs": ["review/fixes.json"],
+      "run": "Run python3 \"${CLAUDE_SKILL_DIR}/scripts/review_status.py\" TASK and show it. Start the exam-papers:writer subagent by its type in revise mode, with the IDs under 'Writer to address', the user's instructions for them, and the paths SKILL.md step 5.7 lists. Wait for it to finish, then show the user TASK/review/writer-response.json and carry on without waiting. next_step.py then sends the paper through the next review round.",
+      "inputs": ["review/reviewer-report.json", "review/decisions.json", "review/rounds.json"],
       "outputs": ["questions.json", "review/writer-response.json"],
       "done": {"any": [
-        {"empty": "review/fixes.json", "field": "accepted"},
-        {"recorded": ["review/fixes.json"]}
+        {"passes": "scripts/review_status.py", "args": ["."], "flags": ["--not", "revise"]},
+        {"recorded": ["review/reviewer-report.json", "review/decisions.json", "review/rounds.json"]}
       ]}
     },
     {
       "id": "approve_paper",
-      "skillStep": "5.6",
+      "skillStep": "5.8",
       "title": "Approve the final paper",
       "by": "user",
       "waitsForUser": true,
-      "run": "Show the final paper as SKILL.md step 5.6 says, then ask the user to type /exam-papers:approve paper, and wait. Never write approvals.json.",
+      "run": "Show the final paper as SKILL.md step 5.8 says, then ask the user to type /exam-papers:approve paper, and wait. Never write approvals.json.",
       "done": {"approved": "paper"}
     },
     {

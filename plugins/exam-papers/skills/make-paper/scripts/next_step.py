@@ -24,9 +24,13 @@ is next again. Contents decide this, never file times, so copying the folder cha
 render.py uses for the spec):
     {"exists": PATH}                              the file exists
     {"recorded": [PATH, ...]}                     the step was recorded with --done, each PATH (one of
-                                                  the step's "inputs") still has the hash it had then,
-                                                  and every one of the step's "outputs" exists
-    {"passes": SCRIPT, "args": [PATH, ...]}       the script (relative to this skill's folder) exits 0
+                                                  the step's "inputs") still has the hash it had then
+                                                  (or is still missing, if it was missing then), and
+                                                  every one of the step's "outputs" exists
+    {"passes": SCRIPT, "args": [PATH, ...],       the script (relative to this skill's folder) exits 0;
+     "flags": [TEXT, ...], "reads": [PATH, ...]}  flags (optional) go after the paths ("." is TASK);
+                                                  reads (optional) names the files the script reads
+                                                  beyond its args (used by --done, see record_done)
     {"approved": GATE}                            the teacher approved GATE's file (approvals.py) and
                                                   the file has not changed since
     {"equals": PATH, "field": F, "value": V}      JSON file PATH has field F equal to V
@@ -134,7 +138,8 @@ class Task:
             return any(self.holds(c, step) for c in cond["any"])
         if "never" in cond:
             return False
-        read = [cond[k] for k in ("exists", "equals", "empty", "contains") if k in cond] + cond.get("args", [])
+        read = ([cond[k] for k in ("exists", "equals", "empty", "contains") if k in cond]
+                + cond.get("args", []) + cond.get("reads", []))
         if "approved" in cond:
             if cond["approved"] not in GATES:
                 raise WorkflowError(f"unknown gate in {cond!r}: one of {', '.join(GATES)}")
@@ -148,12 +153,13 @@ class Task:
             if record is None or not all(os.path.isfile(self.path(o)) for o in step["outputs"]):
                 return False
             now = self.hashes([p for p in cond["recorded"] if p not in self.ignore])
-            return all(record["inputs"].get(p) == h and h is not None for p, h in now.items())
+            return all(p in record["inputs"] and record["inputs"][p] == h for p, h in now.items())
         if "passes" in cond:
             args = [os.path.abspath(self.path(a)) for a in cond.get("args", [])]
-            if not all(os.path.isfile(a) for a in args):
+            if not all(os.path.exists(a) for a in args):
                 return False
-            run = subprocess.run([sys.executable, os.path.join(SKILL_DIR, cond["passes"]), *args],
+            run = subprocess.run([sys.executable, os.path.join(SKILL_DIR, cond["passes"]), *args,
+                                  *cond.get("flags", [])],
                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             return run.returncode == 0
         if "approved" in cond:

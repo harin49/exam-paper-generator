@@ -23,7 +23,8 @@ SOLVER_READS = {"solver-input.json", "solver-answers.json"}
 SOLVER_WRITES = {"solver-answers.json"}
 # Files that hold the key, the plan or the review, which the solver must not reach through Bash.
 SOLVER_BASH_BLOCKED = ("questions.json", "blueprint.json", "reviewer-report", "compare-output",
-                       "writer-response", "fixes.json", "make_diagrams", "state.json", "run.jsonl")
+                       "writer-response", "decisions.json", "rounds", "make_diagrams", "state.json",
+                       "run.jsonl")
 WRITER_HIDDEN = ("solver-answers.json", "compare-output.txt")
 WRITER_FIXED = {"blueprint.json"}
 

@@ -17,6 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from helpers import TEST_DATA, load_json  # noqa: E402
 import next_step as ns  # noqa: E402
 from approvals import record_approval  # noqa: E402
+import review_status as rs  # noqa: E402
 from render import output_names  # noqa: E402
 
 STEPS = ns.read_workflow(ns.WORKFLOW)
@@ -107,29 +108,47 @@ class NextStep(unittest.TestCase):
         self.make_blueprint()
         self.add("questions.json")
 
-    def review_round(self, compare="Result: NO MISMATCHES\n"):
-        self.add("review/solver-input.json", {})
-        self.done("extract_paper")
+    def finding(self, rid, severity="error", status="open"):
+        return {"id": rid, "severity": severity, "status": status, "location": "Q1",
+                "problem": "p", "evidence": "e", "suggestedFix": "f"}
+
+    def review_round(self, findings=(), compare="Result: NO MISMATCHES\n"):
+        """One round: the blind paper, the solver, the comparison, the reviewer, closing the round."""
+        self.add("review/solver-input.json", {"questions": [], "round": len(self.closed())})
+        if self.next_id() == "extract_paper":
+            self.done("extract_paper")
         self.add("review/solver-answers.json", {})
-        self.done("blind_solver")
+        if self.next_id() == "blind_solver":
+            self.done("blind_solver")
         self.add("review/compare-output.txt", compare)
         self.done("compare_solutions")
-
-    def first_review_round(self, compare="Result: NO MISMATCHES\n"):
-        self.ready_for_review()
-        self.review_round(compare)
-        self.add("review/reviewer-report.json", {})
+        self.assertEqual(self.next_id(), "reviewer")
+        self.add("review/reviewer-report.json", {"findings": list(findings)})
         self.add("review/reviewer-report.html", "<!doctype html>")
         self.done("reviewer")
+        self.assertEqual(self.next_id(), "close_round")
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(rs.close_round(self.task), 0)
 
-    def decide(self, accepted):
-        self.add("review/fixes.json", {"accepted": accepted, "rejected": []})
-        self.done("decide_fixes")
+    def closed(self):
+        return rs.read_rounds(self.task)
+
+    def first_review_round(self, findings=()):
+        self.ready_for_review()
+        self.review_round(findings)
+
+    def decide(self, accepted=(), rejected=()):
+        """The teacher's decision on the current report (written by Claude until piece 3)."""
+        path = os.path.join(self.task, "review", "decisions.json")
+        doc = load_json(path) if os.path.isfile(path) else {"decisions": []}
+        doc["decisions"].append({"round": len(self.closed()), "accepted": list(accepted), "rejected": list(rejected),
+                                 "report": ns.file_hash(os.path.join(self.task, "review", "reviewer-report.json"))})
+        self.add("review/decisions.json", doc)
 
     def apply_fixes(self):
         """The writer edits the questions and answers each finding."""
         self.edit("questions.json")
-        self.add("review/writer-response.json", {"responses": []})
+        self.add("review/writer-response.json", {"responses": [], "n": len(self.closed())})
         self.done("apply_fixes")
 
     def approve_paper(self):
@@ -197,14 +216,17 @@ class NextStep(unittest.TestCase):
         self.add("review/compare-output.txt", "Result: NO MISMATCHES\n")
         self.done("compare_solutions")
         self.assertEqual(self.next_id(), "reviewer")
-        self.add("review/reviewer-report.json", {})
+        self.add("review/reviewer-report.json", {"findings": [self.finding("R1", "warning")]})
         self.add("review/reviewer-report.html", "<!doctype html>")
         self.done("reviewer")
+        self.assertEqual(self.next_id(), "close_round")
+        with contextlib.redirect_stdout(io.StringIO()):
+            rs.close_round(self.task)
         self.assertEqual(self.next_id(), "decide_fixes")
 
     def test_file_times_do_not_matter(self):
         # A copy, a checkout or a re-save changes file times; only contents count.
-        self.first_review_round()
+        self.first_review_round([self.finding("R1", "warning")])
         for root, _, files in os.walk(self.task):
             for f in files:
                 os.utime(os.path.join(root, f), (1_000_000_000, 1_000_000_000))
@@ -213,66 +235,81 @@ class NextStep(unittest.TestCase):
         self.assertEqual(self.next_id(), "decide_fixes")
         self.assertEqual(ns.next_step(copy, STEPS)[1]["id"], "decide_fixes")
 
-    def test_rewriting_the_review_html_unchanged_keeps_the_decision(self):
-        # The bug that started D14: re-printing the findings sent a finished paper back to 5.5.
+    def test_a_clean_review_goes_to_the_final_approval(self):
         self.first_review_round()
-        self.decide([])
-        self.add("review/reviewer-report.html", "<!doctype html>")
-        self.assertEqual(self.next_id(), "approve_paper")
-
-    def test_the_build_waits_for_the_fix_decision(self):
-        # The order this run went wrong in once: PDFs built while the review was unfinished.
-        self.first_review_round()
-        self.build_pdfs()
-        self.assertEqual(self.next_id(), "decide_fixes")
-        self.assertIn("decide_fixes", ns.record_done(self.task, STEPS, "render"))
-
-    def test_no_fixes_accepted_goes_straight_to_the_build(self):
-        self.first_review_round()
-        self.decide([])
         self.approve_paper()
         self.assertEqual(self.next_id(), "render")
         self.build_pdfs()
         self.done("render")
         self.assertEqual(self.next_id(), "deliver")
 
-    def test_accepted_fixes_send_the_paper_back_through_the_blind_solver(self):
-        self.first_review_round()
-        self.decide(["R1"])
-        self.assertEqual(self.next_id(), "apply_fixes")
-        self.edit("questions.json")
-        self.assertIn("writer-response.json missing", ns.record_done(self.task, STEPS, "apply_fixes"))
-        self.apply_fixes()
-        self.assertEqual(self.next_id(), "extract_paper")
-        self.review_round()
-        self.assertEqual(self.next_id(), "approve_paper")      # the reviewer does not run again
-
-    def test_mismatches_after_fixes_go_back_to_the_user(self):
-        self.first_review_round()
-        self.decide(["R1"])
-        self.apply_fixes()
-        self.review_round("MISMATCHES:\n  - [V2] Q7(b)\n\nResult: 1 MISMATCH(ES)\n")
-        self.assertEqual(self.next_id(), "decide_fixes")
-
-    def test_editing_questions_by_hand_after_fixes_does_not_apply_them_again(self):
-        self.first_review_round()
-        self.decide(["R1"])
-        self.apply_fixes()
-        self.review_round()
-        self.edit("questions.json")                           # the teacher's own edit
-        self.assertEqual(self.next_id(), "extract_paper")
-        self.review_round()
+    def test_rewriting_the_review_html_unchanged_keeps_the_decision(self):
+        # The bug that started D14: re-printing the findings sent a finished paper back to 5.5.
+        self.first_review_round([self.finding("R1", "warning")])
+        self.decide(rejected=["R1"])
+        self.add("review/reviewer-report.html", "<!doctype html>")
         self.assertEqual(self.next_id(), "approve_paper")
 
-    def test_editing_questions_after_the_build_needs_a_rebuild(self):
+    def test_the_build_waits_for_the_fix_decision(self):
+        # The order this run went wrong in once: PDFs built while the review was unfinished.
+        self.first_review_round([self.finding("R1", "suggestion")])
+        self.build_pdfs()
+        self.assertEqual(self.next_id(), "decide_fixes")
+        self.assertIn("decide_fixes", ns.record_done(self.task, STEPS, "render"))
+
+    def test_errors_go_to_the_writer_without_asking(self):
+        self.first_review_round([self.finding("R1", "error")])
+        self.assertEqual(self.next_id(), "apply_fixes")
+        self.apply_fixes()
+        self.assertEqual(self.next_id(), "extract_paper")          # round 2 starts
+        self.review_round([self.finding("R1", "error", "resolved")])
+        self.assertEqual(len(self.closed()), 2)
+        self.assertEqual(self.next_id(), "approve_paper")
+
+    def test_accepted_warnings_are_revised_and_rejected_ones_stay_closed(self):
+        self.first_review_round([self.finding("R1", "warning"), self.finding("R2", "suggestion")])
+        self.decide(accepted=["R1"], rejected=["R2"])
+        self.assertEqual(self.next_id(), "apply_fixes")
+        self.apply_fixes()
+        self.review_round([self.finding("R1", "warning", "resolved"), self.finding("R2", "suggestion")])
+        self.assertEqual(self.next_id(), "approve_paper")
+
+    def test_a_writer_who_changes_nothing_still_gets_a_new_review(self):
+        self.first_review_round([self.finding("R1", "error")])
+        self.add("review/writer-response.json", {"responses": [{"id": "R1", "action": "disagree"}]})
+        self.done("apply_fixes")                                   # questions.json unchanged
+        self.assertEqual(self.next_id(), "reviewer")
+
+    def test_findings_still_open_after_round_3_go_to_the_teacher(self):
+        self.first_review_round([self.finding("R1", "error")])
+        for _ in range(2):
+            self.apply_fixes()
+            self.review_round([self.finding("R1", "error")])
+        self.assertEqual(len(self.closed()), 3)
+        self.assertEqual(self.next_id(), "decide_fixes")           # a dispute, not another revision
+        self.decide(accepted=["R1"])                               # one more round, with an instruction
+        self.assertEqual(self.next_id(), "apply_fixes")
+        self.apply_fixes()
+        self.review_round([self.finding("R1", "error")])
+        self.assertEqual(self.next_id(), "decide_fixes")           # still open: back to the teacher
+        self.decide(rejected=["R1"])
+        self.assertEqual(self.next_id(), "approve_paper")
+
+    def test_a_new_warning_in_round_2_needs_a_decision(self):
+        self.first_review_round([self.finding("R1", "error")])
+        self.apply_fixes()
+        self.review_round([self.finding("R1", "error", "resolved"), self.finding("R2", "warning")])
+        self.assertEqual(self.next_id(), "decide_fixes")
+
+    def test_editing_questions_after_the_build_needs_a_new_round(self):
         self.first_review_round()
-        self.decide([])
         self.approve_paper()
         self.build_pdfs()
         self.done("render")
         self.edit("questions.json")
         self.assertEqual(self.next_id(), "extract_paper")
         self.review_round()
+        self.assertEqual(len(self.closed()), 2)
         self.assertEqual(self.next_id(), "approve_paper")      # the old approval no longer counts
 
 

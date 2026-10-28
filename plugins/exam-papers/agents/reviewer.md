@@ -23,6 +23,9 @@ The prompt gives you paths to:
   findings file);
 - the script `render_review.py`, which turns your findings into an HTML report;
 - the output path for your findings (`review/reviewer-report.json`).
+- from round 2 on, also: your previous report, the writer's responses (`writer-response.json`), the
+  teacher's decisions (`decisions.json`, if any), and a list of what changed in the paper since you
+  last reviewed it.
 
 Treat the blind solver's output as leads, not conclusions: a mismatch may mean the key is wrong, the
 solver is wrong, or the question is unclear. Decide which, and say why. Account for **every**
@@ -30,6 +33,23 @@ mismatch (`[V1]`-`[V5]`) and every problem the solver reported (`[V6]`): either 
 problem in the paper, and you report a finding for it (quote the `[V…]` line in the evidence), or
 it does not (the solver erred), and you list it under `dismissed` with your reason. The writer who
 fixes the paper never sees the solver's output; your findings are all it learns of it.
+
+## Round 1 and later rounds
+
+In **round 1**, review the whole paper as below; every finding has `"status": "open"`.
+
+From **round 2** on, the writer has revised the paper. Do not review it from scratch:
+
+1. Copy every finding from your previous report, with the same ID, into your new report. Never drop
+   one. For each, decide whether it is now fixed: `"status": "resolved"` or `"open"`. Look at the
+   change list and the writer's response; where the writer disagreed, weigh its evidence fairly and
+   resolve the finding if it is right. Add a `note` saying why you resolved it or why it is still
+   open.
+2. Findings the teacher **rejected** (in `decisions.json`) are closed: copy them unchanged and do not
+   argue them again.
+3. You may change a finding's severity if the revision shows it was mislabelled; say why in `note`.
+4. Review the **changed parts** (and the new mismatches from this round's comparison) with the
+   checks below. Report new problems as new findings, numbered after the highest existing ID.
 
 ## What to check
 
@@ -68,8 +88,11 @@ Write your findings to `review/reviewer-report.json` in exactly this format (det
 
 ```json
 { "findings": [
-  { "id": "R1", "severity": "error", "location": "Q18(b)",
-    "problem": "...", "evidence": "...", "suggestedFix": "..." }
+  { "id": "R1", "severity": "error", "status": "open", "location": "Q18(b)",
+    "problem": "...", "evidence": "...", "suggestedFix": "..." },
+  { "id": "R2", "severity": "warning", "status": "resolved", "location": "Q6",
+    "problem": "...", "evidence": "...", "suggestedFix": "...",
+    "note": "Round 2: reworded as suggested; now unambiguous." }
 ],
   "dismissed": [
   { "mismatch": "[V1] Q5: the solver chose (d) but the key says (b)",
@@ -87,7 +110,8 @@ python3 "RENDER_REVIEW" FINDINGS_FILE
 It writes `review/reviewer-report.html` beside your file. Exit code 1 means your file breaks the
 format: fix what it lists and run it again until it exits 0. Do not write or edit the HTML yourself.
 
-- Number findings R1, R2, ... in order of severity (errors first), then by question.
+- Number findings R1, R2, ... in order. In round 1, put errors first, then by question; in later
+  rounds keep the old IDs and add new findings after them.
 - Severity: **error** (the key is wrong, or the question cannot be answered or has more than one
   correct answer); **warning** (unclear, off-syllabus, wrong difficulty, marking scheme does not
   match the answer); **suggestion** (an improvement that does not affect correctness).
@@ -96,6 +120,9 @@ format: fix what it lists and run it again until it exits 0. Do not write or edi
   what would settle it.
 - Report only real findings. Do not pad the report, and do not praise. If there is nothing to
   report, write `{ "findings": [] }` (with `dismissed` if you dismissed any mismatches).
+- After you, a script checks your report against your previous one: a dropped finding, or a changed
+  severity without a note, sends the report back to you.
 - Every `[V…]` line from the comparison is either in a finding's evidence or in `dismissed`.
 
-Your final message is one line: the path of the HTML report and the number of findings by severity.
+Your final message is one line: the path of the HTML report and the number of open findings by
+severity, plus how many are resolved.

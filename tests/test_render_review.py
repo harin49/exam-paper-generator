@@ -18,11 +18,11 @@ from helpers import TEST_DATA  # noqa: E402
 import render_review as rr  # noqa: E402
 
 FINDINGS = {"findings": [
-    {"id": "R1", "severity": "error", "location": "Q18(b)", "problem": "The key gives 4 N.",
+    {"id": "R1", "severity": "error", "status": "open", "location": "Q18(b)", "problem": "The key gives 4 N.",
      "evidence": "F = ma = 8 × 5 = 40 N.", "suggestedFix": "Change the answer to 40 N."},
-    {"id": "R2", "severity": "warning", "location": "Q6 and Q17(b)", "problem": "Same idea twice.",
+    {"id": "R2", "severity": "warning", "status": "open", "location": "Q6 and Q17(b)", "problem": "Same idea twice.",
      "evidence": "Q6: \"rest\"\nQ17(b): \"rest\"", "suggestedFix": "Reword Q17(b)."},
-    {"id": "R3", "severity": "suggestion", "location": "Q3", "problem": "Options <a> & <b> overlap.",
+    {"id": "R3", "severity": "suggestion", "status": "open", "location": "Q3", "problem": "Options <a> & <b> overlap.",
      "evidence": "\"least count\" and \"Vernier constant\".", "suggestedFix": "Use \"parallax error\"."},
 ]}
 
@@ -69,25 +69,45 @@ class Check(unittest.TestCase):
         self.assertIn("finding 2: id must be R2, not 'R3'",
                       self.broken(lambda d: d["findings"][1].update(id="R3")))
 
-    def test_severity_values_and_order(self):
+    def test_severity_and_status_values(self):
         self.assertIn("finding 1: severity must be error, warning or suggestion, not 'major'",
                       self.broken(lambda d: d["findings"][0].update(severity="major")))
-        errs = self.broken(lambda d: d["findings"][2].update(severity="error"))
-        self.assertTrue(any("finding 3: error comes after a less severe finding" in e for e in errs), errs)
+        self.assertIn("finding 2: status must be open or resolved, not 'fixed'",
+                      self.broken(lambda d: d["findings"][1].update(status="fixed")))
+        self.assertIn("finding 1: missing status", self.broken(lambda d: d["findings"][0].pop("status")))
+
+    def test_any_severity_order_and_an_optional_note(self):
+        # A later round keeps IDs, so an error can follow a suggestion (R4 found in round 2).
+        self.assertEqual(self.broken(lambda d: d["findings"][2].update(severity="error")), [])
+        self.assertEqual(self.broken(lambda d: d["findings"][0].update(note="Fixed in round 2.")), [])
+        self.assertIn("finding 1: note must be non-empty text",
+                      self.broken(lambda d: d["findings"][0].update(note="")))
 
 
 class Output(unittest.TestCase):
     def test_text_report_keeps_the_wording(self):
         text = rr.text_report(FINDINGS["findings"])
         self.assertTrue(text.startswith("# Review of questions.json\n"
-                                        "Findings: 3 (1 error, 1 warning, 1 suggestion)\n"))
-        self.assertIn("## R2  Q6 and Q17(b)  warning\nProblem: Same idea twice.", text)
+                                        "Findings: 3 (open: 1 error, 1 warning, 1 suggestion; resolved: 0)\n"))
+        self.assertIn("## R2  Q6 and Q17(b)  warning  (open)\nProblem: Same idea twice.", text)
         self.assertIn("Suggested fix: Change the answer to 40 N.", text)
         self.assertEqual(rr.text_report([]), "# Review of questions.json\nFindings: none")
 
     def test_counts_are_pluralised(self):
         two = [dict(FINDINGS["findings"][1], id="R1"), dict(FINDINGS["findings"][1], id="R2")]
-        self.assertEqual(rr.counts_line(two), "Findings: 2 (0 errors, 2 warnings, 0 suggestions)")
+        self.assertEqual(rr.counts_line(two), "Findings: 2 (open: 0 errors, 2 warnings, 0 suggestions; resolved: 0)")
+
+    def test_open_findings_come_first_by_severity(self):
+        found = copy.deepcopy(FINDINGS["findings"])
+        found[0].update(status="resolved", note="Fixed in round 2.")
+        found.append(dict(found[1], id="R4", severity="error", status="open"))
+        text = rr.text_report(found)
+        order = [line.split()[1] for line in text.splitlines() if line.startswith("## ")]
+        self.assertEqual(order, ["R4", "R2", "R3", "R1"])
+        self.assertIn("Note: Fixed in round 2.", text)
+        page = rr.html_report(found, {})
+        self.assertIn('<span class="chip">1 resolved</span>', page)
+        self.assertLess(page.index('id="R4"'), page.index('id="R1"'))
 
     def test_html_escapes_text_and_shows_every_finding(self):
         page = rr.html_report(FINDINGS["findings"], {})
@@ -97,7 +117,7 @@ class Output(unittest.TestCase):
         self.assertIn("Options &lt;a&gt; &amp; &lt;b&gt; overlap.", page)
         self.assertNotIn("<a>", page)
         self.assertIn("Q6: &quot;rest&quot;<br>Q17(b)", page)              # line breaks kept
-        self.assertIn('<span class="chip error">1 error</span>', page)
+        self.assertIn('<span class="chip error">1 open error</span>', page)
         self.assertIn("prefers-color-scheme:dark", page)
 
     def test_html_with_no_findings(self):
@@ -135,7 +155,7 @@ class CommandLine(unittest.TestCase):
     def test_writes_html_beside_the_findings_and_prints_them(self):
         code, out = self.run_main(self.path)
         self.assertEqual(code, 0, out)
-        self.assertIn("## R1  Q18(b)  error", out)
+        self.assertIn("## R1  Q18(b)  error  (open)", out)
         self.assertIn(f"Wrote {self.html}", out)
         with open(self.html, encoding="utf-8") as f:
             page = f.read()
@@ -169,7 +189,7 @@ class CommandLine(unittest.TestCase):
     def test_print_writes_nothing(self):
         code, out = self.run_main(self.path, "--print")
         self.assertEqual(code, 0, out)
-        self.assertIn("## R1  Q18(b)  error", out)
+        self.assertIn("## R1  Q18(b)  error  (open)", out)
         self.assertFalse(os.path.exists(self.html))
 
     def test_print_still_checks_the_format(self):

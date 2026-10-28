@@ -78,6 +78,10 @@ say why, with your evidence. Then write `writer-response.json`:
 Every listed ID appears exactly once. `change` says what changed, specifically enough for the teacher
 to undo it; `reason` gives your evidence.
 
+Each revision writes a fresh `writer-response.json` for the IDs it was given. The reviewer then
+re-checks your work. A finding you disagreed with may stay open; after three rounds the teacher
+settles it, with your reason and the reviewer's side by side, so make your reason specific.
+
 ## Before you finish (both modes)
 
 Run the check and fix every error it reports, until it passes:

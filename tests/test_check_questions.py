@@ -14,6 +14,7 @@ sys.path.insert(0, os.path.join(ROOT, "plugins", "exam-papers", "skills", "make-
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from helpers import TEST_DATA  # noqa: E402
 import check_questions as cq  # noqa: E402
+from approvals import record_approval  # noqa: E402
 
 EXAMPLE = TEST_DATA
 CONCEPTS = os.path.join(EXAMPLE, "concepts.json")
@@ -95,9 +96,9 @@ class BlueprintMatch(unittest.TestCase):
         q(self.qdoc, 7)["parts"][1]["label"] = "c"
         self.assertIn("Q7(b): label is \"c\" but the blueprint says \"b\"", self.errors())
 
-    def test_draft_blueprint_rejected(self):
-        self.bdoc["status"] = "draft"
-        self.assertIn("questions may only be written from an approved blueprint", self.errors())
+    def test_unapproved_blueprint_rejected(self):
+        errors = " | ".join(cq.check(self.qdoc, self.bdoc, blueprint_approved=False).errors)
+        self.assertIn("questions may only be written from an approved blueprint", errors)
 
     def test_different_spec(self):
         self.qdoc["spec"] = "other-spec.json"
@@ -118,6 +119,7 @@ class CommandLine(unittest.TestCase):
         os.makedirs(self.dir)
         for name in ("questions.json", "blueprint.json", "spec.json", "concepts.json"):
             shutil.copy(os.path.join(EXAMPLE, name), self.dir)
+        record_approval(self.dir, "blueprint", "/exam-papers:approve blueprint")
         self.qpath = os.path.join(self.dir, "questions.json")
 
     def tearDown(self):
@@ -134,6 +136,15 @@ class CommandLine(unittest.TestCase):
         q(doc, 12)["chapter"] = 5
         with open(self.qpath, "w", encoding="utf-8") as f:
             json.dump(doc, f)
+        self.assertEqual(self.run_main(), 1)
+
+    def test_unapproved_blueprint_fails(self):
+        os.remove(os.path.join(self.dir, "approvals.json"))
+        self.assertEqual(self.run_main(), 1)
+
+    def test_edited_blueprint_fails(self):
+        with open(os.path.join(self.dir, "blueprint.json"), "a", encoding="utf-8") as f:
+            f.write("\n")
         self.assertEqual(self.run_main(), 1)
 
     def test_missing_spec(self):

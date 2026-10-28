@@ -120,7 +120,7 @@ makes Cowork refuse the whole plugin).
 
 ### D6. Approvals come only from a command the teacher types
 
-The teacher approves by typing a command such as `/exam:approve blueprint`. A `UserPromptExpansion`
+The teacher approves by typing a command such as `/exam-papers:approve blueprint`. A `UserPromptExpansion`
 hook (code that runs when a command the user typed expands, before Claude sees it) records the approval
 in the task's `approvals.json`: which gate, which file, the file's SHA-256 hash and the time. It records
 only when `command_name` is the plugin's approve command, `command_source` is `"plugin"` and there is
@@ -135,7 +135,7 @@ sequenceDiagram
     participant A as approvals.json
     participant C as Claude
     participant P as PreToolUse hook
-    T->>H: /exam:approve blueprint
+    T->>H: /exam-papers:approve blueprint
     H->>A: gate, file, sha256, time
     C->>P: write approvals.json?
     P-->>C: blocked
@@ -149,11 +149,26 @@ the teacher saw.
 *Not `UserPromptSubmit`* (the first version of D6): it also fires for subagent hand-backs, messages
 from other sessions and scheduled tasks, with nothing in its input saying which. The probe showed a
 subagent's reply arriving through it as `<agent-message …>` text, so a hook that read approvals from
-`UserPromptSubmit` could be fooled by a subagent that writes `/exam:approve` in its reply.
+`UserPromptSubmit` could be fooled by a subagent that writes `/exam-papers:approve` in its reply.
 
 *Limit:* this guards against mistakes, not a determined adversary. A `PreToolUse` hook can match
 `Write`/`Edit` on the file exactly, but a Bash command can only be pattern-matched, so a creative
 command could still slip through.
+
+*As built (2026-10-28):*
+
+- The command is `/exam-papers:approve GATE [FOLDER]` (`commands/approve.md`, with
+  `disable-model-invocation: true` so Claude cannot run it as a skill). The hook is
+  `hooks/approve.py`; the skill's `approvals.py` reads and writes the records.
+- Without FOLDER, the hook records the approval in the one paper under `papers/` whose next step
+  (`next_step.py`) is that gate. With none or several waiting, it blocks the command and says why.
+- The gate's file holds no approval field (the blueprint's `status` is gone): `approvals.json` is the
+  only record. `workflow.json` checks it with `{"approved": GATE}`; `make_blueprint.py` and
+  `check_questions.py` read it too. The latest record for a gate is the one that counts.
+- The guard denies `Write`, `Edit`, `MultiEdit` and `NotebookEdit` of any file named
+  `approvals.json`, and every Bash command that mentions the name (reading uses the Read tool), so
+  the probe's `2>&1` false alarm cannot happen.
+- Each approval is also appended to `run.jsonl` as an `approved` event.
 
 ### D7. Four approval gates
 
@@ -167,6 +182,11 @@ Each gate is passed only by a typed command (D6).
 | Final paper | After review ends, before the PDFs are rendered | The reviewed questions and key, and the list of automatic fixes (D2) |
 
 The spec is not a gate: the teacher writes it, and `validate_paper_spec.py` checks it.
+
+*Built so far:* gate 2 (`/exam-papers:approve blueprint`) and gate 4 (`/exam-papers:approve paper`,
+the `approve_paper` step before rendering). Gate 1 comes with the syllabus-pack task that drafts the
+concept list; gate 3 with the writer and severity loop, which changes how findings are decided.
+Until then the concept list's `status` field and the chat decision written to `fixes.json` stand in.
 
 *Why:* each gate sits where a teacher's judgement is needed and a mistake would be costly to undo
 later. The final gate is new: today nothing asks the teacher to sign off the finished paper.
@@ -236,7 +256,7 @@ so trust cannot carry from one cloud task to the next. Which plans teachers will
 so the design has to work in the cloud case.
 
 Each cloud task also re-approves the concept list: before the blueprint, it shows the list's summary
-and hash and asks for a typed `/exam:approve concepts`. The record delivered from an earlier task is
+and hash and asks for a typed `/exam-papers:approve concepts`. The record delivered from an earlier task is
 shown for reference only.
 
 *Why re-approve:* the earlier record is a copy Claude wrote into the teacher's folder; a changed list
@@ -260,11 +280,11 @@ findings.
   have the recorded hashes and its outputs exist. Changing an input makes that step and every step
   after it due again. Steps whose files prove them (a check that passes, `"status": "approved"`)
   keep those conditions.
-- Output hashes are recorded for the audit trail but are not checked. Two later steps change an
-  output on purpose: the approval sets `status` in `blueprint.json`, and the teacher may edit
-  `questions.json` by hand after `apply_fixes`. Checking outputs would send the first back to
-  `make_blueprint` (which refuses to overwrite an approved blueprint) and the second back to applying
-  the same fixes again. Any edit is still caught, because each step's outputs are a later step's inputs.
+- Output hashes are recorded for the audit trail but are not checked. The teacher may edit
+  `questions.json` by hand after `apply_fixes`; checking outputs would send the paper back to
+  applying the same fixes again. (The first version also had to allow for the approval setting
+  `status` in `blueprint.json`; approvals now live only in `approvals.json`, D6.) Any edit is still
+  caught, because each step's outputs are a later step's inputs.
 - `--done` refuses a step while an earlier step is not done, while one of its outputs is missing, or
   while its own done condition would still fail. Conditions that read the step's own outputs are
   ignored for the "earlier step" test: `apply_fixes` edits `questions.json`, which makes the check
@@ -335,7 +355,7 @@ flowchart LR
     subgraph Plugin["Plugin (installed, read-only)"]
         SK[Skill: playbook, scripts, formats]
         AG[Agents: writer, blind solver, reviewer]
-        CM[Commands: /exam:approve, /exam:decide]
+        CM[Commands: /exam-papers:approve]
         HK[Hooks: record approvals, block leaks]
     end
     subgraph WS["Teacher's workspace"]

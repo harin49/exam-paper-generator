@@ -38,7 +38,9 @@ The steps run one at a time, in the order listed in the skill's `workflow.json`.
 (approval points say STOP); `SKILL.md` has Claude run it before every step. When a step finishes,
 `next_step.py TASK --done STEP_ID` records the hashes of its files in `TASK/state.json` and appends to
 `TASK/run.jsonl`; a step is done while its inputs are unchanged, so copying a folder or re-saving a
-file does not change where the paper is.
+file does not change where the paper is. At the two approval points you type
+`/exam-papers:approve blueprint` and `/exam-papers:approve paper`; a hook records each one, with the
+file's hash, in `TASK/approvals.json`, and editing an approved file voids its approval.
 
 1. **Paper spec**: the user supplies `spec.json`; `validate_paper_spec.py` checks it (rules S1–S19).
 2. **Blueprint**: `make_blueprint.py` builds `blueprint.json` from the spec and the approved concept
@@ -69,6 +71,8 @@ paper, plus a 50-mark spec for the blueprint generator), never `examples/` or ge
 plugins/exam-papers/                # the plugin: the only part that is installed
   .claude-plugin/plugin.json
   agents/                           # blind-solver.md, reviewer.md (the two review subagents)
+  commands/approve.md               # /exam-papers:approve blueprint|paper (typed by the teacher)
+  hooks/                            # hooks.json + approve.py: record typed approvals, guard approvals.json
   skills/make-paper/
     SKILL.md                        # main workflow
     workflow.json                   # the steps in order: who does each, approval points, when done
@@ -76,7 +80,8 @@ plugins/exam-papers/                # the plugin: the only part that is installe
                                     # (C-rules), review files (V-rules); spec template
     scripts/                        # validate_paper_spec, validate_concepts, make_blueprint,
                                     # check_questions, render, new_paper, extract_paper,
-                                    # compare_solutions, next_step, render_review, spec_types
+                                    # compare_solutions, next_step, render_review, spec_types,
+                                    # approvals, task_files
     assets/syllabi/icse9-physics-selina/   # sample pack: syllabus.md, concepts.json (approved)
 docs/harness-design.md              # goal, architecture, decisions D1–D19
 examples/icse9-physics-ch1-5/       # example paper: spec + draft blueprint
@@ -140,7 +145,8 @@ requirements.txt, requirements-dev.txt
       (run once end to end with real subagents)
 - [x] `workflow.json` + `next_step.py`: one step at a time, in a fixed order, checked against the task folder
 - [x] State by content hashes (`state.json`, `run.jsonl`, `next_step.py --done`) instead of file times
-- [x] Unit tests moved to their own test data (`tests/test_data/`); 302 tests, all passing
+- [x] Typed approvals for the blueprint and the final paper (`/exam-papers:approve`, hooks, `approvals.json`)
+- [x] Unit tests moved to their own test data (`tests/test_data/`); 321 tests, all passing
 - [ ] New example: approve the `icse9-physics-ch1-5` blueprint, write its questions, review, render
 
 Open question: the syllabus includes spherical mirrors (with mirror-formula numericals) and

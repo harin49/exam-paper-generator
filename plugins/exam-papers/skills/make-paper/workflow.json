@@ -38,8 +38,8 @@
       "title": "Show the blueprint and get the user's approval",
       "by": "user",
       "waitsForUser": true,
-      "run": "Show the blueprint as SKILL.md step 2 says, then wait. On approval, change only \"status\" to \"approved\" in TASK/blueprint.json.",
-      "done": {"equals": "blueprint.json", "field": "status", "value": "approved"}
+      "run": "Show the blueprint as SKILL.md step 2 says, then ask the user to type /exam-papers:approve blueprint, and wait. Never write approvals.json or change TASK/blueprint.json yourself.",
+      "done": {"approved": "blueprint"}
     },
     {
       "id": "draft_questions",
@@ -140,6 +140,15 @@
         {"empty": "review/fixes.json", "field": "accepted"},
         {"recorded": ["review/fixes.json"]}
       ]}
+    },
+    {
+      "id": "approve_paper",
+      "skillStep": "5.6",
+      "title": "Approve the final paper",
+      "by": "user",
+      "waitsForUser": true,
+      "run": "Show the final paper as SKILL.md step 5.6 says, then ask the user to type /exam-papers:approve paper, and wait. Never write approvals.json.",
+      "done": {"approved": "paper"}
     },
     {
       "id": "render",

@@ -1,7 +1,6 @@
 {
   "spec": "spec.json",
   "conceptList": "concepts.json",
-  "status": "approved",
   "questions": [
     {
       "number": 1,

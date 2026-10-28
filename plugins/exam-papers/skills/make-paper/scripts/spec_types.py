@@ -75,7 +75,3 @@ class Difficulty(_StrEnum):
     MEDIUM = "medium"
     HARD = "hard"
 
-
-class BlueprintStatus(_StrEnum):
-    DRAFT = "draft"
-    APPROVED = "approved"

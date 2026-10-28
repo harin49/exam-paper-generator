@@ -12,6 +12,7 @@ import unittest
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "plugins", "exam-papers", "skills", "make-paper", "scripts"))
 import make_blueprint as mb  # noqa: E402
+from approvals import is_approved, record_approval  # noqa: E402
 
 # The real (frozen) concept list, because these tests need all ten book chapters, and a full-size
 # 50-mark spec kept as test data, because they test the generator at the scale of a real paper.
@@ -169,7 +170,7 @@ class CommandLine(unittest.TestCase):
     def test_writes_draft_with_relative_paths(self):
         self.assertEqual(self.run_main(), 0)
         doc = load(self.out)
-        self.assertEqual(doc["status"], "draft")
+        self.assertNotIn("status", doc)                 # approval lives in approvals.json
         self.assertEqual(doc["spec"], "spec.json")
         self.assertTrue(os.path.exists(os.path.join(self.dir, doc["conceptList"])))
 
@@ -190,14 +191,17 @@ class CommandLine(unittest.TestCase):
 
     def test_will_not_overwrite_approved(self):
         self.run_main()
-        doc = load(self.out)
-        doc["status"] = "approved"
-        with open(self.out, "w", encoding="utf-8") as f:
-            json.dump(doc, f)
+        record_approval(self.dir, "blueprint", "/exam-papers:approve blueprint")
         self.assertEqual(self.run_main(), 1)
-        self.assertEqual(load(self.out)["status"], "approved")
+        self.assertTrue(is_approved(self.dir, "blueprint"))
         self.assertEqual(self.run_main("--force"), 0)
-        self.assertEqual(load(self.out)["status"], "draft")
+
+    def test_overwrites_a_blueprint_edited_after_approval(self):
+        self.run_main()
+        record_approval(self.dir, "blueprint", "/exam-papers:approve blueprint")
+        with open(self.out, "a", encoding="utf-8") as f:
+            f.write("\n")
+        self.assertEqual(self.run_main(), 0)
 
     def test_missing_concept_list(self):
         rc = mb.main(["make_blueprint.py", self.spec, "--concepts", os.path.join(self.tmp, "nope.json")])

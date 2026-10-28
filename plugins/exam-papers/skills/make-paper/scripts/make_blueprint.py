@@ -4,8 +4,9 @@
 Usage:
     python3 make_blueprint.py SPEC.json --concepts CONCEPTS.json [--out BLUEPRINT.json] [--force] [--json]
 
-The blueprint is written beside the spec unless --out is given. An existing blueprint whose status
-is "approved" is never overwritten unless --force is given.
+The blueprint is written beside the spec unless --out is given. An existing blueprint that the
+teacher approved (approvals.json beside it, see approvals.py) is never overwritten unless --force is
+given.
 
 Every decision is made by fixed rules, so the same spec and concept list always give the same
 blueprint:
@@ -38,7 +39,8 @@ from itertools import product
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import check_questions as cq  # noqa: E402
-from spec_types import BlueprintStatus, Kind, Numbering, SectionType, SubParts  # noqa: E402
+from approvals import is_approved  # noqa: E402
+from spec_types import Kind, Numbering, SectionType, SubParts  # noqa: E402
 from validate_concepts import validate as validate_concepts  # noqa: E402
 from validate_paper_spec import Report, frac, validate as validate_spec  # noqa: E402
 
@@ -390,12 +392,12 @@ def main(argv):
 
     if os.path.exists(out) and not force:
         try:
-            with open(out, encoding="utf-8") as f:
-                if json.load(f).get("status") == BlueprintStatus.APPROVED:
-                    print(f"{out} is an approved blueprint; not overwriting it (use --force to replace it)")
-                    return 1
-        except (OSError, ValueError, AttributeError):
-            pass
+            approved = is_approved(os.path.dirname(os.path.abspath(out)), "blueprint", out)
+        except (OSError, ValueError):
+            approved = False
+        if approved:
+            print(f"{out} is an approved blueprint; not overwriting it (use --force to replace it)")
+            return 1
 
     questions, r = build(spec, concepts, syllabus_text)
     if questions is not None and not r.errors:
@@ -404,7 +406,6 @@ def main(argv):
         base = os.path.dirname(os.path.realpath(out))
         doc = {"spec": os.path.relpath(os.path.realpath(spath), base),
                "conceptList": os.path.relpath(os.path.realpath(cpath), base),
-               "status": BlueprintStatus.DRAFT.value,
                "questions": questions}
         with open(out, "w", encoding="utf-8") as f:
             json.dump(doc, f, indent=2, ensure_ascii=False)
@@ -420,7 +421,7 @@ def main(argv):
                 print(f"\n{title}:")
                 for m in items:
                     print(f"  - {m}")
-        print("\nResult: " + (f"WRITTEN to {out} (status: draft)" if not r.errors
+        print("\nResult: " + (f"WRITTEN to {out} (not approved yet)" if not r.errors
                               else f"NOT WRITTEN ({len(r.errors)} error(s))"))
     return 0 if not r.errors else 1
 

@@ -16,6 +16,7 @@ sys.path.insert(0, os.path.join(ROOT, "plugins", "exam-papers", "skills", "make-
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from helpers import TEST_DATA, load_json  # noqa: E402
 import next_step as ns  # noqa: E402
+from approvals import record_approval  # noqa: E402
 from render import output_names  # noqa: E402
 
 STEPS = ns.read_workflow(ns.WORKFLOW)
@@ -40,7 +41,7 @@ class Workflow(unittest.TestCase):
 
     def test_approval_points_wait_for_the_user(self):
         waiting = [s["id"] for s in STEPS if s["waitsForUser"]]
-        self.assertEqual(waiting, ["approve_blueprint", "decide_fixes"])
+        self.assertEqual(waiting, ["approve_blueprint", "decide_fixes", "approve_paper"])
         self.assertTrue(all(STEPS[i]["by"] == "user" for i, s in enumerate(STEPS) if s["waitsForUser"]))
 
     def test_malformed_workflows_are_refused(self):
@@ -90,13 +91,20 @@ class NextStep(unittest.TestCase):
     def done(self, step_id):
         self.assertIsNone(ns.record_done(self.task, STEPS, step_id))
 
+    def approve(self, gate):
+        record_approval(self.task, gate, f"/exam-papers:approve {gate}")   # what the hook does
+
     def next_id(self):
         return ns.next_step(self.task, STEPS)[1]["id"]
 
-    def ready_for_review(self):
+    def make_blueprint(self):
         self.add("concepts.json")
         self.add("blueprint.json")
         self.done("make_blueprint")
+        self.approve("blueprint")
+
+    def ready_for_review(self):
+        self.make_blueprint()
         self.add("questions.json")
 
     def review_round(self, compare="Result: NO MISMATCHES\n"):
@@ -117,6 +125,10 @@ class NextStep(unittest.TestCase):
     def decide(self, accepted):
         self.add("review/fixes.json", {"accepted": accepted, "rejected": []})
         self.done("decide_fixes")
+
+    def approve_paper(self):
+        self.assertEqual(self.next_id(), "approve_paper")
+        self.approve("paper")
 
     def build_pdfs(self):
         for name in output_names(load_json(os.path.join(self.task, "spec.json"))):
@@ -145,26 +157,22 @@ class NextStep(unittest.TestCase):
         self.edit("spec.json")
         self.assertEqual(self.next_id(), "make_blueprint")
 
-    def test_draft_blueprint_waits_for_approval(self):
-        bp = load_json(os.path.join(TEST_DATA, "blueprint.json"))
-        bp["status"] = "draft"
-        self.add("blueprint.json", bp)
+    def test_new_blueprint_waits_for_approval(self):
+        self.add("blueprint.json")
         self.done("make_blueprint")
         self.assertEqual(self.next_id(), "approve_blueprint")
 
-    def test_approving_the_blueprint_does_not_undo_making_it(self):
-        # Approval changes blueprint.json, an output of make_blueprint: outputs need only exist.
-        bp = load_json(os.path.join(TEST_DATA, "blueprint.json"))
-        bp["status"] = "draft"
-        self.add("blueprint.json", bp)
-        self.done("make_blueprint")
-        self.add("blueprint.json")
+    def test_approved_blueprint_goes_to_drafting(self):
+        self.make_blueprint()
         self.assertEqual(self.next_id(), "draft_questions")
 
+    def test_editing_an_approved_blueprint_voids_the_approval(self):
+        self.make_blueprint()
+        self.edit("blueprint.json")
+        self.assertEqual(self.next_id(), "approve_blueprint")
+
     def test_failing_questions_stay_on_the_check(self):
-        self.add("concepts.json")
-        self.add("blueprint.json")
-        self.done("make_blueprint")
+        self.make_blueprint()
         q = load_json(os.path.join(TEST_DATA, "questions.json"))
         q["questions"][0]["marks"] = 2
         self.add("questions.json", q)
@@ -204,7 +212,7 @@ class NextStep(unittest.TestCase):
         self.first_review_round()
         self.decide([])
         self.add("review/reviewer-report.html", "<!doctype html>")
-        self.assertEqual(self.next_id(), "render")
+        self.assertEqual(self.next_id(), "approve_paper")
 
     def test_the_build_waits_for_the_fix_decision(self):
         # The order this run went wrong in once: PDFs built while the review was unfinished.
@@ -216,6 +224,7 @@ class NextStep(unittest.TestCase):
     def test_no_fixes_accepted_goes_straight_to_the_build(self):
         self.first_review_round()
         self.decide([])
+        self.approve_paper()
         self.assertEqual(self.next_id(), "render")
         self.build_pdfs()
         self.done("render")
@@ -229,7 +238,7 @@ class NextStep(unittest.TestCase):
         self.done("apply_fixes")
         self.assertEqual(self.next_id(), "extract_paper")
         self.review_round()
-        self.assertEqual(self.next_id(), "render")             # the reviewer does not run again
+        self.assertEqual(self.next_id(), "approve_paper")      # the reviewer does not run again
 
     def test_mismatches_after_fixes_go_back_to_the_user(self):
         self.first_review_round()
@@ -248,15 +257,18 @@ class NextStep(unittest.TestCase):
         self.edit("questions.json")                           # the teacher's own edit
         self.assertEqual(self.next_id(), "extract_paper")
         self.review_round()
-        self.assertEqual(self.next_id(), "render")
+        self.assertEqual(self.next_id(), "approve_paper")
 
     def test_editing_questions_after_the_build_needs_a_rebuild(self):
         self.first_review_round()
         self.decide([])
+        self.approve_paper()
         self.build_pdfs()
         self.done("render")
         self.edit("questions.json")
         self.assertEqual(self.next_id(), "extract_paper")
+        self.review_round()
+        self.assertEqual(self.next_id(), "approve_paper")      # the old approval no longer counts
 
 
 class Recording(unittest.TestCase):
@@ -305,10 +317,7 @@ class CommandLine(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.mkdtemp()
         shutil.copy(os.path.join(TEST_DATA, "spec.json"), self.tmp)
-        bp = load_json(os.path.join(TEST_DATA, "blueprint.json"))
-        bp["status"] = "draft"
-        with open(os.path.join(self.tmp, "blueprint.json"), "w", encoding="utf-8") as f:
-            json.dump(bp, f)
+        shutil.copy(os.path.join(TEST_DATA, "blueprint.json"), self.tmp)
         ns.record_done(self.tmp, STEPS, "make_blueprint")
 
     def tearDown(self):
@@ -331,12 +340,9 @@ class CommandLine(unittest.TestCase):
 
     def test_done(self):
         code, out = self.run_main(self.tmp, "--done", "approve_blueprint")
-        self.assertEqual(code, 1, out)                          # still a draft: not done...
+        self.assertEqual(code, 1, out)                          # not approved: not done...
         self.assertIn("Not recorded", out)
-        bp = load_json(os.path.join(self.tmp, "blueprint.json"))
-        bp["status"] = "approved"                               # ...until the user approves it
-        with open(os.path.join(self.tmp, "blueprint.json"), "w", encoding="utf-8") as f:
-            json.dump(bp, f)
+        record_approval(self.tmp, "blueprint", "/exam-papers:approve blueprint")   # ...until it is
         self.assertEqual(self.run_main(self.tmp, "--done", "approve_blueprint")[0], 0)
         code, out = self.run_main(self.tmp, "--done", "nope")
         self.assertEqual(code, 1)

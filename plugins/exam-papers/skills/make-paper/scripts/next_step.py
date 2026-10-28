@@ -27,6 +27,8 @@ render.py uses for the spec):
                                                   the step's "inputs") still has the hash it had then,
                                                   and every one of the step's "outputs" exists
     {"passes": SCRIPT, "args": [PATH, ...]}       the script (relative to this skill's folder) exits 0
+    {"approved": GATE}                            the teacher approved GATE's file (approvals.py) and
+                                                  the file has not changed since
     {"equals": PATH, "field": F, "value": V}      JSON file PATH has field F equal to V
     {"empty": PATH, "field": F}                   JSON file PATH has field F as an empty list
     {"contains": PATH, "text": T}                 the file contains the text T
@@ -38,21 +40,20 @@ Exit codes:
     1  --done: the step was not recorded (the message says why)
     2  the workflow file or the task folder's spec could not be read, or the workflow is malformed
 """
-import hashlib
 import json
 import os
 import subprocess
 import sys
-from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from approvals import GATES, is_approved  # noqa: E402
 from render import output_names  # noqa: E402
+from task_files import file_hash, log_event, now  # noqa: E402
 
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WORKFLOW = os.path.join(SKILL_DIR, "workflow.json")
 STEP_KEYS = {"id", "skillStep", "title", "by", "waitsForUser", "run", "done"}
 STATE = "state.json"
-RUN_LOG = "run.jsonl"
 BY = {"script", "subagent", "claude", "user"}
 
 
@@ -99,15 +100,6 @@ def recorded_paths(cond):
             yield from recorded_paths(c)
 
 
-def file_hash(path):
-    """The SHA-256 of the file, or None if there is no such file."""
-    try:
-        with open(path, "rb") as f:
-            return hashlib.sha256(f.read()).hexdigest()
-    except OSError:
-        return None
-
-
 class Task:
     """The task folder, and the condition checks run against it."""
 
@@ -143,6 +135,10 @@ class Task:
         if "never" in cond:
             return False
         read = [cond[k] for k in ("exists", "equals", "empty", "contains") if k in cond] + cond.get("args", [])
+        if "approved" in cond:
+            if cond["approved"] not in GATES:
+                raise WorkflowError(f"unknown gate in {cond!r}: one of {', '.join(GATES)}")
+            read.append(GATES[cond["approved"]])
         if self.ignore & set(read):
             return True
         if "exists" in cond:
@@ -160,6 +156,8 @@ class Task:
             run = subprocess.run([sys.executable, os.path.join(SKILL_DIR, cond["passes"]), *args],
                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             return run.returncode == 0
+        if "approved" in cond:
+            return is_approved(self.folder, cond["approved"])
         if "equals" in cond:
             doc = self.read_json(cond["equals"])
             return isinstance(doc, dict) and doc.get(cond["field"]) == cond["value"]
@@ -216,7 +214,7 @@ def record_done(folder, steps, step_id):
     missing = [o for o in step.get("outputs", []) if not os.path.isfile(task.path(o))]
     if missing:
         return f"step '{step_id}' is not finished: {', '.join(task.names.get(o, o) for o in missing)} missing"
-    record = {"time": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+    record = {"time": now(),
               "inputs": task.hashes(step.get("inputs", [])),
               "outputs": task.hashes(step.get("outputs", []))}
     records = dict(task.records, **{step_id: record})
@@ -228,8 +226,7 @@ def record_done(folder, steps, step_id):
         json.dump({"steps": records}, f, indent=2)
         f.write("\n")
     os.replace(tmp, os.path.join(folder, STATE))
-    with open(os.path.join(folder, RUN_LOG), "a", encoding="utf-8") as f:
-        f.write(json.dumps(dict({"event": "done", "step": step_id}, **record)) + "\n")
+    log_event(folder, "done", step=step_id, inputs=record["inputs"], outputs=record["outputs"])
     return None
 
 

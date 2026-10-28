@@ -21,7 +21,12 @@ the user provides. Scripts decide the structure and check the result; you write 
   a step, read ahead for it or prepare it while a script or subagent from an earlier step is still
   running. Wait for each subagent to finish before doing anything else. When a step has finished,
   record it with the `--done` command `next_step.py` prints, report the step briefly, then run
-  `next_step.py` again. Stop and wait at the approval points (spec errors, blueprint, fixes).
+  `next_step.py` again. Stop and wait at the approval points (spec errors, blueprint, fixes, final
+  paper).
+- **Approvals come only from the user typing them.** The blueprint and the final paper are approved
+  when the user types `/exam-papers:approve blueprint` or `/exam-papers:approve paper`; a hook then
+  records it in `TASK/approvals.json`. Ask the user to type the command. Never write, edit or copy
+  `approvals.json` (a hook blocks it), and never treat "approved" in chat as an approval.
 - **Show script and reviewer output verbatim** when it contains errors or findings. Do not summarise
   them away, and do not change anything because of them until the user has seen them.
 - **Refer to scripts by file name** (`check_questions.py`), not "the checker".
@@ -59,8 +64,10 @@ There are two places:
 | 5.4 | `${CLAUDE_SKILL_DIR}/scripts/render_review.py` | Checks the reviewer's findings and makes the HTML report (run by the reviewer; `--print` shows the findings again and writes nothing) | `TASK/review/reviewer-report.html` |
 | 6 | `${CLAUDE_SKILL_DIR}/scripts/render.py` | Builds the question paper and answer key PDFs | two PDFs in `TASK` |
 
-Files that are **not** run in the workflow: `${CLAUDE_SKILL_DIR}/scripts/spec_types.py` (a library the
-other scripts import) and `${CLAUDE_SKILL_DIR}/scripts/validate_concepts.py` (only when the user asks
+Files that are **not** run in the workflow: `${CLAUDE_SKILL_DIR}/scripts/spec_types.py`,
+`${CLAUDE_SKILL_DIR}/scripts/approvals.py` and `${CLAUDE_SKILL_DIR}/scripts/task_files.py` (libraries
+the other scripts and the plugin's approval hook import) and
+`${CLAUDE_SKILL_DIR}/scripts/validate_concepts.py` (only when the user asks
 you to check a concept list).
 
 ### Other files used
@@ -89,7 +96,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/next_step.py" TASK
   `python3 "${CLAUDE_SKILL_DIR}/scripts/next_step.py" TASK --done STEP_ID`. This saves the hashes of
   the step's files in `TASK/state.json` and appends to `TASK/run.jsonl`. A step that is not recorded
   is not done, and `next_step.py` will print it again. At an approval point, record it only after
-  the user has answered and you have written their answer.
+  the user has answered (for the blueprint and the paper: after they typed the approve command).
 - If `--done` prints **Not recorded**, the step has not finished (a missing file, a failing check, an
   earlier step not done): show the message to the user; do not work around it.
 - If it says **STOP**, the step is an approval point: ask the user and wait for their answer.
@@ -139,10 +146,11 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/make_blueprint.py" TASK/spec.json --concept
 ```
 
 It writes
-`TASK/blueprint.json` with status `"draft"`. Show the user, per question: number, section, chapter,
-concept, marks, kind and difficulty; the balance figures; and any `[Q14]` warnings. Ask for approval.
-On approval, change only `"status"` to `"approved"` in `TASK/blueprint.json`. If the user wants a
-different blueprint, the spec is what changes (rerun the script); never hand-edit slots.
+`TASK/blueprint.json`. Show the user, per question: number, section, chapter, concept, marks, kind
+and difficulty; the balance figures; and any `[Q14]` warnings. Then ask them to approve it by typing
+`/exam-papers:approve blueprint`, and wait. The approval holds only for the blueprint as it is when
+they type it: any change to the file afterwards voids it. If the user wants a different blueprint,
+the spec is what changes (rerun the script); never hand-edit slots.
 `make_blueprint.py` will not overwrite an approved blueprint without `--force`; do not use `--force`
 unless the user asks for it.
 
@@ -223,6 +231,11 @@ Two independent checks; neither edits `questions.json`. File formats:
    `accepted` list if they want none). Apply only the accepted fixes to `TASK/questions.json`. Any
    change sends the paper back through steps 4 and 5.1-5.3 (`next_step.py` prints them in turn); if
    the new comparison finds mismatches, the user decides again.
+
+6. **Approve the paper (approval point).** Show the user the finished paper: every question with
+   its answer and marking, and a list of every change made to the questions since the blueprint was
+   approved (the accepted fixes). Ask them to type `/exam-papers:approve paper`, and wait. Any later
+   change to `TASK/questions.json` voids this approval and sends the paper back through the checks.
 
 A mismatch is not proof that the key is wrong: the solver may be wrong, or the question unclear.
 Work out which with the user.

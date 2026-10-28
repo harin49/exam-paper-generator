@@ -183,14 +183,16 @@ numerical/theory split and the difficulty mix, each against its target.
 
 The blueprint is the slot-by-slot plan that `questions.json` is written from. It is made by a
 script (`make_blueprint.py`) from the paper spec and the concept list, approved by the user, and kept beside the spec and
-questions as the record of what was approved. It has the same shape as `questions.json` but only the
+questions as the record of what was approved. Approval is not a field in the file: the user types
+`/exam-papers:approve blueprint`, and the plugin's hook records the file's hash in `approvals.json`
+beside it. Questions are only written from an approved blueprint, and any edit to the file voids
+its approval. It has the same shape as `questions.json` but only the
 structural fields: no wording, answers, marking or computed values.
 
 ```json
 {
   "spec": "spec.json",
   "conceptList": "../../syllabi/icse9-physics-selina/concepts.json",
-  "status": "approved",
   "questions": [
     { "number": 1, "section": "A", "chapter": 1, "marks": 1,
       "concepts": ["vernier_least_count"], "kind": "numerical", "difficulty": "easy",
@@ -209,7 +211,6 @@ structural fields: no wording, answers, marking or computed values.
 
 | Field | Meaning |
 |---|---|
-| `status` | `"draft"` until the user approves it, then `"approved"`. Questions are only written from an approved blueprint. |
 | question fields | `number`, `section`, `chapter`, `marks`, `concepts`; MCQs also `kind`, `difficulty`, `concept` and `correctOption` (dealt by `make_blueprint.py` so the letters are used evenly). |
 | part fields | Leaf: `label`, `marks`, `kind`, `difficulty`, `concept`. Group: `label`, `marks`, `parts`. |
 

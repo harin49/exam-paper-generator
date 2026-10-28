@@ -1,7 +1,6 @@
 {
   "spec": "spec.json",
   "conceptList": "../../plugins/exam-papers/skills/make-paper/assets/syllabi/icse9-physics-selina/concepts.json",
-  "status": "draft",
   "questions": [
     {
       "number": 1,

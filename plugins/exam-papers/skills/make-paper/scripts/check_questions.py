@@ -6,7 +6,8 @@ Usage:
 
 The spec and concept list are the files named in QUESTIONS.json's "spec" and "conceptList"
 fields (relative to its folder). By default
-the blueprint is the blueprint.json in the same folder as QUESTIONS.json.
+the blueprint is the blueprint.json in the same folder as QUESTIONS.json. It must be approved: the
+approvals.json beside it (see approvals.py) has the teacher's approval of it as it is now.
 
 Exit codes:
     0  passed (warnings may still be printed)
@@ -42,7 +43,8 @@ import sys
 from fractions import Fraction
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from spec_types import BlueprintStatus, Difficulty, Kind, Numbering, SectionType, SubParts  # noqa: E402
+from approvals import is_approved  # noqa: E402
+from spec_types import Difficulty, Kind, Numbering, SectionType, SubParts  # noqa: E402
 from validate_paper_spec import Report, fmt, frac, is_int, is_num, validate as validate_spec  # noqa: E402
 
 LETTERS = "abcdefghijklmnopqrstuvwxyz"
@@ -752,10 +754,10 @@ def compare_parts(r, qnum, labels, q_parts, b_parts):
             compare_parts(r, qnum, labels + (b_label,), qp["parts"], bp["parts"])
 
 
-def compare_to_blueprint(r, qdoc, bdoc):
-    if bdoc.get("status") != BlueprintStatus.APPROVED:
-        r.error("blueprint", f"status is {show(bdoc.get('status'))}: questions may only be written "
-                             "from an approved blueprint", "Q15")
+def compare_to_blueprint(r, qdoc, bdoc, approved):
+    if approved is False:
+        r.error("blueprint", "is not approved as it is now: questions may only be written from an "
+                             "approved blueprint", "Q15")
     for f in ("spec", "conceptList"):
         if qdoc.get(f) != bdoc.get(f):
             r.error(f, f"is {show(qdoc.get(f))} but the blueprint says {show(bdoc.get(f))}", "Q15")
@@ -800,8 +802,9 @@ def compare_to_blueprint(r, qdoc, bdoc):
 
 
 # ---------------- entry points ----------------
-def check(qdoc, bdoc=None, spec=None, concepts=None):
-    """Run every rule that the given inputs allow. Returns a Report."""
+def check(qdoc, bdoc=None, spec=None, concepts=None, blueprint_approved=None):
+    """Run every rule that the given inputs allow. Returns a Report. blueprint_approved is None when
+    the approval is not checked (render.py, tests of single rules)."""
     r = Report()
     spec_sections, numbering, smu = {}, Numbering.CONTINUOUS, None
     chapters, content_rules = [], {}
@@ -839,7 +842,7 @@ def check(qdoc, bdoc=None, spec=None, concepts=None):
         if content_rules["avoidOverlappingConcepts"]:
             check_shared_concepts(r, qs)
     if bdoc is not None:
-        compare_to_blueprint(r, qdoc, bdoc)
+        compare_to_blueprint(r, qdoc, bdoc, blueprint_approved)
     return r
 
 
@@ -873,11 +876,12 @@ def main(argv):
         spath = os.path.join(folder, qdoc.get("spec", "spec.json"))
         cpath = os.path.normpath(os.path.join(folder, qdoc.get("conceptList", "")))
         spec, bdoc, concepts = load(spath), load(bpath), load(cpath)
+        approved = is_approved(os.path.dirname(bpath), "blueprint", bpath)
     except (OSError, ValueError) as e:   # JSONDecodeError is a ValueError
         print(f"Cannot read input: {e}")
         return 2
 
-    r = check(qdoc, bdoc, spec, concepts)
+    r = check(qdoc, bdoc, spec, concepts, approved)
     if as_json:
         print(json.dumps({"passed": not r.errors, "errors": r.errors, "warnings": r.warnings,
                           "info": r.info}, indent=2, ensure_ascii=False))

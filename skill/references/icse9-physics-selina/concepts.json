@@ -1,0 +1,840 @@
+{
+  "board": "ICSE",
+  "class": 9,
+  "book": "Selina Concise Physics Part I",
+  "syllabus": "syllabus.md",
+  "syllabusYear": "2026-2027",
+  "status": "approved",
+  "chapters": {
+    "1": {
+      "title": "Measurements and Experimentation",
+      "concepts": [
+        {
+          "tag": "si_units_and_symbols",
+          "source": "1(i)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "fps_cgs_systems",
+          "source": "1(i)",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "least_count_and_accuracy",
+          "source": "1(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "vernier_callipers",
+          "source": "1(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "screw_gauge",
+          "source": "1(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "zero_error_basic_idea",
+          "source": "1(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "simple_pendulum_terms",
+          "source": "1(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "pendulum_frequency",
+          "source": "1(ii)",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "pendulum_time_period_formula",
+          "source": "1(ii)",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "pendulum_l_t2_graph",
+          "source": "1(ii)",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 3
+        }
+      ]
+    },
+    "2": {
+      "title": "Motion in One Dimension",
+      "concepts": [
+        {
+          "tag": "scalar_vector_quantities",
+          "source": "2",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "rest_and_motion",
+          "source": "2",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 1
+        },
+        {
+          "tag": "distance_displacement",
+          "source": "2",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "speed_velocity",
+          "source": "2",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "acceleration_retardation",
+          "source": "2",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "distance_time_graph",
+          "source": "2",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "velocity_time_graph_slope",
+          "source": "2",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "velocity_time_graph_area",
+          "source": "2",
+          "kinds": [
+            "numerical"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "equations_of_motion_derivation",
+          "source": "2",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 4
+        },
+        {
+          "tag": "equations_of_motion_numericals",
+          "source": "2",
+          "kinds": [
+            "numerical"
+          ],
+          "maxMarks": 3
+        }
+      ]
+    },
+    "3": {
+      "title": "Laws of Motion",
+      "concepts": [
+        {
+          "tag": "contact_forces",
+          "source": "3(i)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "non_contact_forces",
+          "source": "3(i)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "force_units_cgs_si",
+          "source": "3(i)",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "newtons_first_law",
+          "source": "3(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "inertia_examples",
+          "source": "3(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "linear_momentum",
+          "source": "3(iii)",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "newtons_second_law",
+          "source": "3(iii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "force_momentum_numericals",
+          "source": "3(iii)",
+          "kinds": [
+            "numerical"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "newtons_third_law",
+          "source": "3(iv)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "action_reaction_pairs",
+          "source": "3(iv)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "universal_law_of_gravitation",
+          "source": "3(v)",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "acceleration_due_to_gravity_free_fall",
+          "source": "3(v)",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "mass_and_weight",
+          "source": "3(v)",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "gravitational_units_of_force",
+          "source": "3(v)",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 2
+        }
+      ]
+    },
+    "4": {
+      "title": "Pressure in Fluids and Atmospheric Pressure",
+      "concepts": [
+        {
+          "tag": "thrust_and_pressure",
+          "source": "4(i)",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "liquid_pressure_formula",
+          "source": "4(i)",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "liquid_pressure_daily_examples",
+          "source": "4(i)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "pascals_law",
+          "source": "4(i)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "pascals_law_applications",
+          "source": "4(i)",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "atmospheric_pressure_manifestations",
+          "source": "4(i)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "pressure_and_altitude",
+          "source": "4(i)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        }
+      ]
+    },
+    "5": {
+      "title": "Upthrust in Fluids, Archimedes' Principle and Floatation",
+      "concepts": [
+        {
+          "tag": "buoyancy_upthrust",
+          "source": "4(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "upthrust_vs_weight_cases",
+          "source": "4(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "upthrust_properties",
+          "source": "4(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "archimedes_principle",
+          "source": "4(ii)",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "density_and_sinking_floating",
+          "source": "4(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "relative_density",
+          "source": "4(ii)",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "relative_density_determination",
+          "source": "4(ii)",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "principle_of_floatation",
+          "source": "4(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "floating_fraction_immersed",
+          "source": "4(ii)",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "apparent_weight_floating_body",
+          "source": "4(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "floatation_applications",
+          "source": "4(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        }
+      ]
+    },
+    "6": {
+      "title": "Heat and Energy",
+      "concepts": [
+        {
+          "tag": "heat_and_temperature",
+          "source": "5(i)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "heat_units_joule_calorie",
+          "source": "5(i)",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "anomalous_expansion_of_water",
+          "source": "5(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "hopes_experiment",
+          "source": "5(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "anomalous_expansion_consequences",
+          "source": "5(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "energy_flow_and_thermodynamics",
+          "source": "5(iii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "electricity_from_energy_sources",
+          "source": "5(iv)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "renewable_energy_sources",
+          "source": "5(iv)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "non_renewable_energy_sources",
+          "source": "5(iv)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "inequitable_energy_use",
+          "source": "5(iv)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "greenhouse_effect_global_warming",
+          "source": "5(v)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "energy_degradation",
+          "source": "5(v)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        }
+      ]
+    },
+    "7": {
+      "title": "Reflection of Light",
+      "concepts": [
+        {
+          "tag": "laws_of_reflection",
+          "source": "6(i)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "images_in_parallel_mirrors",
+          "source": "6(i)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "images_in_perpendicular_mirrors",
+          "source": "6(i)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "plane_mirror_uses",
+          "source": "6(i)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "spherical_mirror_terms",
+          "source": "6(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "focal_length_radius_relation",
+          "source": "6(ii)",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "concave_mirror_images",
+          "source": "6(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "convex_mirror_images",
+          "source": "6(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "mirror_formula_numericals",
+          "source": "6(ii)",
+          "kinds": [
+            "numerical"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "spherical_mirror_uses",
+          "source": "6(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        }
+      ]
+    },
+    "8": {
+      "title": "Propagation of Sound Waves",
+      "concepts": [
+        {
+          "tag": "sound_needs_medium",
+          "source": "7(i)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "wave_terms_v_f_lambda",
+          "source": "7(i)",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "speed_of_sound_factors",
+          "source": "7(i)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "sound_and_light_speed",
+          "source": "7(i)",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "frequency_ranges",
+          "source": "7(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "ultrasound_applications",
+          "source": "7(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "ultrasonic_vs_supersonic",
+          "source": "7(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 1
+        }
+      ]
+    },
+    "9": {
+      "title": "Current Electricity",
+      "concepts": [
+        {
+          "tag": "dc_sources",
+          "source": "8(i)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "current_and_charge",
+          "source": "8(i)",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "direction_of_current",
+          "source": "8(i)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "conductors_insulators",
+          "source": "8(i)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "circuit_symbols_and_circuits",
+          "source": "8(i)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "current_detection",
+          "source": "8(i)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 1
+        },
+        {
+          "tag": "potential_difference",
+          "source": "8(i)",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "electricity_saving_initiatives",
+          "source": "8(i)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        }
+      ]
+    },
+    "10": {
+      "title": "Magnetism",
+      "concepts": [
+        {
+          "tag": "induced_magnetism",
+          "source": "8(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "magnetic_field_lines",
+          "source": "8(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "earths_magnetic_field",
+          "source": "8(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "neutral_points",
+          "source": "8(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "electromagnet_and_uses",
+          "source": "8(iii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 3
+        }
+      ]
+    }
+  }
+}

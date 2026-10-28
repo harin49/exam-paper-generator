@@ -1,0 +1,205 @@
+{
+  "board": "ICSE",
+  "class": 9,
+  "book": "Selina Concise Physics Part I",
+  "syllabus": "syllabus.md",
+  "status": "approved",
+  "note": "Test data for the unit tests only.",
+  "chapters": {
+    "1": {
+      "title": "Measurements",
+      "concepts": [
+        {
+          "tag": "si_units",
+          "source": "1(i)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "unit_conversion",
+          "source": "1(i)",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "least_count",
+          "source": "1(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "zero_error",
+          "source": "1(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "pendulum_time_period",
+          "source": "1(ii)",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "pendulum_frequency",
+          "source": "1(ii)",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "pendulum_length_graph",
+          "source": "1(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        }
+      ]
+    },
+    "2": {
+      "title": "Motion in One Dimension",
+      "concepts": [
+        {
+          "tag": "distance_displacement",
+          "source": "2",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "speed_velocity",
+          "source": "2",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "acceleration",
+          "source": "2",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "retardation",
+          "source": "2",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "vt_graph_slope",
+          "source": "2",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "first_equation_of_motion",
+          "source": "2",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 4
+        },
+        {
+          "tag": "second_equation_of_motion",
+          "source": "2",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 4
+        }
+      ]
+    },
+    "3": {
+      "title": "Laws of Motion",
+      "concepts": [
+        {
+          "tag": "contact_forces",
+          "source": "3(i)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "non_contact_forces",
+          "source": "3(i)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "force_units",
+          "source": "3(i)",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "newton_first_law",
+          "source": "3(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "newton_second_law",
+          "source": "3(ii)",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 3
+        },
+        {
+          "tag": "newton_third_law",
+          "source": "3(ii)",
+          "kinds": [
+            "theory"
+          ],
+          "maxMarks": 2
+        },
+        {
+          "tag": "linear_momentum",
+          "source": "3(ii)",
+          "kinds": [
+            "numerical",
+            "theory"
+          ],
+          "maxMarks": 3
+        }
+      ]
+    }
+  }
+}

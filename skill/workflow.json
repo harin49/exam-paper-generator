@@ -1,0 +1,153 @@
+{
+  "about": "The order of the exam-paper workflow, read by skill/scripts/next_step.py. Steps run one at a time, in this order. A step is next when every step before it is done and it is not. 'by' says who does the step; 'waitsForUser' marks the approval points where work stops until the user answers. 'done' is checked against the task folder (paths are relative to it). Format: see next_step.py.",
+  "steps": [
+    {
+      "id": "new_paper",
+      "skillStep": "0",
+      "title": "Make the task folder",
+      "by": "script",
+      "waitsForUser": false,
+      "run": "python3 skill/scripts/new_paper.py PATH/TO/THE/USERS/spec.json",
+      "done": {"exists": "spec.json"}
+    },
+    {
+      "id": "validate_spec",
+      "skillStep": "1",
+      "title": "Validate the spec",
+      "by": "script",
+      "waitsForUser": false,
+      "run": "python3 skill/scripts/validate_paper_spec.py TASK/spec.json",
+      "note": "If it fails, show the errors verbatim and stop; the user decides how to fix the spec.",
+      "done": {"passes": "skill/scripts/validate_paper_spec.py", "args": ["spec.json"]}
+    },
+    {
+      "id": "make_blueprint",
+      "skillStep": "2",
+      "title": "Make the blueprint",
+      "by": "script",
+      "waitsForUser": false,
+      "run": "python3 skill/scripts/make_blueprint.py TASK/spec.json --concepts CONCEPT_LIST",
+      "note": "CONCEPT_LIST is the concept list found in step 0. If the spec changed after the blueprint was made, the blueprint is out of date.",
+      "done": {"newer": "blueprint.json", "than": ["spec.json"]}
+    },
+    {
+      "id": "approve_blueprint",
+      "skillStep": "2",
+      "title": "Show the blueprint and get the user's approval",
+      "by": "user",
+      "waitsForUser": true,
+      "run": "Show the blueprint as SKILL.md step 2 says, then wait. On approval, change only \"status\" to \"approved\" in TASK/blueprint.json.",
+      "done": {"equals": "blueprint.json", "field": "status", "value": "approved"}
+    },
+    {
+      "id": "draft_questions",
+      "skillStep": "3",
+      "title": "Draft questions.json and its diagrams",
+      "by": "claude",
+      "waitsForUser": false,
+      "run": "Write TASK/questions.json from the approved blueprint (and TASK/make_diagrams.py with its images).",
+      "done": {"exists": "questions.json"}
+    },
+    {
+      "id": "check_questions",
+      "skillStep": "4",
+      "title": "Check the questions",
+      "by": "script",
+      "waitsForUser": false,
+      "run": "python3 skill/scripts/check_questions.py TASK/questions.json",
+      "note": "Fix every error and rerun until it passes.",
+      "done": {"passes": "skill/scripts/check_questions.py", "args": ["questions.json"]}
+    },
+    {
+      "id": "extract_paper",
+      "skillStep": "5.1",
+      "title": "Prepare the blind paper",
+      "by": "script",
+      "waitsForUser": false,
+      "run": "python3 skill/scripts/extract_paper.py TASK/questions.json",
+      "done": {"newer": "review/solver-input.json", "than": ["questions.json"]}
+    },
+    {
+      "id": "blind_solver",
+      "skillStep": "5.2",
+      "title": "Blind solver",
+      "by": "subagent",
+      "waitsForUser": false,
+      "run": "Spawn one subagent with the full text of agents/blind-solver.md, input TASK/review/solver-input.json and output TASK/review/solver-answers.json. Wait for it to finish.",
+      "done": {"newer": "review/solver-answers.json", "than": ["review/solver-input.json"]}
+    },
+    {
+      "id": "compare_solutions",
+      "skillStep": "5.3",
+      "title": "Compare the solver's answers with the key",
+      "by": "script",
+      "waitsForUser": false,
+      "run": "python3 skill/scripts/compare_solutions.py TASK/questions.json TASK/review/solver-answers.json --out TASK/review/compare-output.txt",
+      "note": "Exit code 1 means mismatches, not a failure. Show the output verbatim.",
+      "done": {"newer": "review/compare-output.txt", "than": ["review/solver-answers.json", "questions.json"]}
+    },
+    {
+      "id": "reviewer",
+      "skillStep": "5.4",
+      "title": "Independent reviewer",
+      "by": "subagent",
+      "waitsForUser": false,
+      "run": "Spawn one subagent with the full text of agents/reviewer.md and the paths SKILL.md step 5.4 lists; output TASK/review/reviewer-report.json (it makes TASK/review/reviewer-report.html). Wait for it to finish, then print the findings with python3 skill/scripts/render_review.py TASK/review/reviewer-report.json, show them verbatim and send the user the HTML report.",
+      "note": "The reviewer runs once, before the first fix decision; later rounds only rerun the blind solver.",
+      "done": {"any": [
+        {"newer": "review/reviewer-report.html", "than": ["review/compare-output.txt"]},
+        {"exists": "review/fixes.json"}
+      ]}
+    },
+    {
+      "id": "decide_fixes",
+      "skillStep": "5.5",
+      "title": "The user decides which fixes to apply",
+      "by": "user",
+      "waitsForUser": true,
+      "run": "Ask the user which findings and mismatches to fix, then write their answer to TASK/review/fixes.json: {\"accepted\": [\"R1\", ...], \"rejected\": [...]}.",
+      "note": "Also asked again when a later comparison finds mismatches.",
+      "done": {"all": [
+        {"newer": "review/fixes.json", "than": ["review/reviewer-report.html"]},
+        {"any": [
+          {"newer": "review/fixes.json", "than": ["review/compare-output.txt"]},
+          {"contains": "review/compare-output.txt", "text": "Result: NO MISMATCHES"}
+        ]}
+      ]}
+    },
+    {
+      "id": "apply_fixes",
+      "skillStep": "5.5",
+      "title": "Apply the accepted fixes",
+      "by": "claude",
+      "waitsForUser": false,
+      "run": "Edit TASK/questions.json for the accepted fixes only. next_step.py then sends you back through the check and the blind solver.",
+      "done": {"any": [
+        {"empty": "review/fixes.json", "field": "accepted"},
+        {"newer": "questions.json", "than": ["review/fixes.json"]}
+      ]}
+    },
+    {
+      "id": "render",
+      "skillStep": "6",
+      "title": "Build the PDFs",
+      "by": "script",
+      "waitsForUser": false,
+      "run": "python3 skill/scripts/render.py TASK/questions.json",
+      "note": "Open both PDFs and look at them before delivering.",
+      "done": {"all": [
+        {"newer": "{paper_pdf}", "than": ["questions.json"]},
+        {"newer": "{key_pdf}", "than": ["questions.json"]}
+      ]}
+    },
+    {
+      "id": "deliver",
+      "skillStep": "7",
+      "title": "Deliver the PDFs",
+      "by": "claude",
+      "waitsForUser": false,
+      "run": "Send both PDFs to the user with the path of TASK and any warnings that remain.",
+      "done": {"never": true}
+    }
+  ]
+}

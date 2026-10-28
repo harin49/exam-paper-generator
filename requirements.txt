@@ -1,0 +1,3 @@
+# Needed to make a paper. Install from the project root: pip3 install -r requirements.txt
+reportlab>=4.0     # render.py: question paper and answer key PDFs
+matplotlib>=3.8    # diagrams Claude draws for questions (TASK/make_diagrams.py)

@@ -1,0 +1,158 @@
+"""Tests for skill/scripts/render_review.py. Run from the project root:
+    python3 -m unittest discover tests
+"""
+import contextlib
+import copy
+import io
+import json
+import os
+import shutil
+import sys
+import tempfile
+import unittest
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(ROOT, "skill", "scripts"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from helpers import TEST_DATA  # noqa: E402
+import render_review as rr  # noqa: E402
+
+FINDINGS = {"findings": [
+    {"id": "R1", "severity": "error", "location": "Q18(b)", "problem": "The key gives 4 N.",
+     "evidence": "F = ma = 8 × 5 = 40 N.", "suggestedFix": "Change the answer to 40 N."},
+    {"id": "R2", "severity": "warning", "location": "Q6 and Q17(b)", "problem": "Same idea twice.",
+     "evidence": "Q6: \"rest\"\nQ17(b): \"rest\"", "suggestedFix": "Reword Q17(b)."},
+    {"id": "R3", "severity": "suggestion", "location": "Q3", "problem": "Options <a> & <b> overlap.",
+     "evidence": "\"least count\" and \"Vernier constant\".", "suggestedFix": "Use \"parallax error\"."},
+]}
+
+
+class Check(unittest.TestCase):
+    def broken(self, change):
+        doc = copy.deepcopy(FINDINGS)
+        change(doc)
+        return rr.check(doc)
+
+    def test_valid_and_empty_files_pass(self):
+        self.assertEqual(rr.check(FINDINGS), [])
+        self.assertEqual(rr.check({"findings": []}), [])
+
+    def test_shape(self):
+        self.assertTrue(rr.check([]))
+        self.assertTrue(rr.check({"findings": [], "extra": 1}))
+        self.assertIn("finding 1: must be an object", rr.check({"findings": ["x"]}))
+
+    def test_missing_unknown_and_blank_fields(self):
+        self.assertIn("finding 1: missing evidence", self.broken(lambda d: d["findings"][0].pop("evidence")))
+        self.assertIn("finding 1: unknown field fix", self.broken(lambda d: d["findings"][0].update(fix="x")))
+        self.assertIn("finding 2: problem must be non-empty text",
+                      self.broken(lambda d: d["findings"][1].update(problem=" ")))
+
+    def test_ids_run_in_order(self):
+        self.assertIn("finding 2: id must be R2, not 'R3'",
+                      self.broken(lambda d: d["findings"][1].update(id="R3")))
+
+    def test_severity_values_and_order(self):
+        self.assertIn("finding 1: severity must be error, warning or suggestion, not 'major'",
+                      self.broken(lambda d: d["findings"][0].update(severity="major")))
+        errs = self.broken(lambda d: d["findings"][2].update(severity="error"))
+        self.assertTrue(any("finding 3: error comes after a less severe finding" in e for e in errs), errs)
+
+
+class Output(unittest.TestCase):
+    def test_text_report_keeps_the_wording(self):
+        text = rr.text_report(FINDINGS["findings"])
+        self.assertTrue(text.startswith("# Review of questions.json\n"
+                                        "Findings: 3 (1 error, 1 warning, 1 suggestion)\n"))
+        self.assertIn("## R2  Q6 and Q17(b)  warning\nProblem: Same idea twice.", text)
+        self.assertIn("Suggested fix: Change the answer to 40 N.", text)
+        self.assertEqual(rr.text_report([]), "# Review of questions.json\nFindings: none")
+
+    def test_counts_are_pluralised(self):
+        two = [dict(FINDINGS["findings"][1], id="R1"), dict(FINDINGS["findings"][1], id="R2")]
+        self.assertEqual(rr.counts_line(two), "Findings: 2 (0 errors, 2 warnings, 0 suggestions)")
+
+    def test_html_escapes_text_and_shows_every_finding(self):
+        page = rr.html_report(FINDINGS["findings"], {})
+        self.assertTrue(page.startswith("<!doctype html>"))
+        for fid in ("R1", "R2", "R3"):
+            self.assertIn(f'id="{fid}"', page)
+        self.assertIn("Options &lt;a&gt; &amp; &lt;b&gt; overlap.", page)
+        self.assertNotIn("<a>", page)
+        self.assertIn("Q6: &quot;rest&quot;<br>Q17(b)", page)              # line breaks kept
+        self.assertIn('<span class="chip error">1 error</span>', page)
+        self.assertIn("prefers-color-scheme:dark", page)
+
+    def test_html_with_no_findings(self):
+        self.assertIn("The reviewer found nothing to report.", rr.html_report([], {}))
+
+    def test_paper_line_comes_from_the_spec(self):
+        with open(os.path.join(TEST_DATA, "spec.json"), encoding="utf-8") as f:
+            spec = json.load(f)
+        self.assertIn("Physics · Class IX (ICSE)", rr.paper_line(spec))
+        self.assertEqual(rr.paper_line({}), "")
+
+
+class CommandLine(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        os.makedirs(os.path.join(self.tmp, "review"))
+        shutil.copy(os.path.join(TEST_DATA, "spec.json"), self.tmp)
+        self.path = os.path.join(self.tmp, "review", "reviewer-report.json")
+        self.html = os.path.join(self.tmp, "review", "reviewer-report.html")
+        self.write(FINDINGS)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp)
+
+    def write(self, doc):
+        with open(self.path, "w", encoding="utf-8") as f:
+            f.write(doc if isinstance(doc, str) else json.dumps(doc))
+
+    def run_main(self, *args):
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            code = rr.main(["render_review.py", *args])
+        return code, buf.getvalue()
+
+    def test_writes_html_beside_the_findings_and_prints_them(self):
+        code, out = self.run_main(self.path)
+        self.assertEqual(code, 0, out)
+        self.assertIn("## R1  Q18(b)  error", out)
+        self.assertIn(f"Wrote {self.html}", out)
+        with open(self.html, encoding="utf-8") as f:
+            page = f.read()
+        self.assertIn("Physics · Class IX (ICSE)", page)                  # from the task's spec.json
+
+    def test_same_findings_give_the_same_page(self):
+        self.run_main(self.path)
+        with open(self.html, encoding="utf-8") as f:
+            first = f.read()
+        self.run_main(self.path)
+        with open(self.html, encoding="utf-8") as f:
+            self.assertEqual(f.read(), first)
+
+    def test_out_option(self):
+        other = os.path.join(self.tmp, "other.html")
+        self.assertEqual(self.run_main(self.path, "--out", other)[0], 0)
+        self.assertTrue(os.path.isfile(other))
+        self.assertEqual(self.run_main(self.path, "--out")[0], 2)
+
+    def test_broken_findings_write_nothing(self):
+        doc = copy.deepcopy(FINDINGS)
+        doc["findings"][0]["severity"] = "major"
+        self.write(doc)
+        code, out = self.run_main(self.path)
+        self.assertEqual(code, 1)
+        self.assertIn("nothing was written", out)
+        self.assertFalse(os.path.exists(self.html))
+
+    def test_unreadable_input_and_usage(self):
+        self.write("{not json")
+        self.assertEqual(self.run_main(self.path)[0], 2)
+        self.assertEqual(self.run_main(os.path.join(self.tmp, "missing.json"))[0], 2)
+        self.assertEqual(self.run_main()[0], 2)
+
+
+if __name__ == "__main__":
+    unittest.main()

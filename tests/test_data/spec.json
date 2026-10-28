@@ -1,0 +1,94 @@
+{
+  "exam": {
+    "board": "ICSE",
+    "class": 9,
+    "subject": "Physics",
+    "book": "Selina Concise Physics Part I",
+    "chapters": [
+      1,
+      2,
+      3
+    ]
+  },
+  "pattern": {
+    "totalMarks": 21,
+    "durationMinutes": 40,
+    "sections": [
+      {
+        "id": "A",
+        "type": "mcq",
+        "questionsOffered": 6,
+        "questionsToAttempt": 6,
+        "marksPerQuestion": 1,
+        "sectionTotal": 6,
+        "mcqOptions": 4,
+        "subParts": "none"
+      },
+      {
+        "id": "B",
+        "type": "short_answer",
+        "questionsOffered": 4,
+        "questionsToAttempt": 3,
+        "marksPerQuestion": 3,
+        "sectionTotal": 9,
+        "subParts": "allowed",
+        "maxSubParts": 3
+      },
+      {
+        "id": "C",
+        "type": "long_answer",
+        "questionsOffered": 3,
+        "questionsToAttempt": 1,
+        "marksPerQuestion": 6,
+        "sectionTotal": 6,
+        "subParts": "required",
+        "minSubParts": 3,
+        "singleChapterPerQuestion": true
+      }
+    ],
+    "numbering": "continuous",
+    "smallestMarkUnit": 0.5
+  },
+  "content": {
+    "chapterWeightage": {
+      "mode": "equal",
+      "toleranceMarks": 5
+    },
+    "numericalTheorySplit": {
+      "target": [
+        50,
+        50
+      ],
+      "tolerancePercent": 5
+    },
+    "difficulty": {
+      "target": {
+        "easy": 50,
+        "medium": 50,
+        "hard": 0
+      },
+      "tolerancePercent": 10
+    },
+    "measureOn": "offered",
+    "everyChapterInCompulsorySection": true,
+    "diagrams": "only_if_essential",
+    "showChapterNames": false,
+    "constants": {
+      "g": 9.8
+    },
+    "avoidOverlappingConcepts": true
+  },
+  "output": {
+    "header": "Unit Test Paper",
+    "paperFormat": "pdf",
+    "answerKey": {
+      "format": "pdf",
+      "audience": "teacher",
+      "include": [
+        "answers",
+        "explanations",
+        "markingScheme"
+      ]
+    }
+  }
+}

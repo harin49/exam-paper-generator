@@ -1,0 +1,96 @@
+{
+  "exam": {
+    "board": "ICSE",
+    "class": 9,
+    "subject": "Physics",
+    "book": "Selina Concise Physics Part I",
+    "chapters": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
+  },
+  "pattern": {
+    "totalMarks": 50,
+    "durationMinutes": 75,
+    "sections": [
+      {
+        "id": "A",
+        "type": "mcq",
+        "questionsOffered": 15,
+        "questionsToAttempt": 15,
+        "marksPerQuestion": 1,
+        "sectionTotal": 15,
+        "mcqOptions": 4,
+        "subParts": "none"
+      },
+      {
+        "id": "B",
+        "type": "short_answer",
+        "questionsOffered": 7,
+        "questionsToAttempt": 5,
+        "marksPerQuestion": 3,
+        "sectionTotal": 15,
+        "subParts": "allowed",
+        "maxSubParts": 3
+      },
+      {
+        "id": "C",
+        "type": "long_answer",
+        "questionsOffered": 4,
+        "questionsToAttempt": 2,
+        "marksPerQuestion": 10,
+        "sectionTotal": 20,
+        "subParts": "required",
+        "minSubParts": 3,
+        "singleChapterPerQuestion": true
+      }
+    ],
+    "numbering": "continuous",
+    "smallestMarkUnit": 0.5
+  },
+  "content": {
+    "chapterWeightage": {
+      "mode": "equal",
+      "toleranceMarks": 5
+    },
+    "numericalTheorySplit": {
+      "target": [
+        50,
+        50
+      ],
+      "tolerancePercent": 5
+    },
+    "difficulty": {
+      "target": {
+        "easy": 50,
+        "medium": 50,
+        "hard": 0
+      },
+      "tolerancePercent": 10
+    },
+    "measureOn": "offered",
+    "everyChapterInCompulsorySection": true,
+    "diagrams": "only_if_essential",
+    "showChapterNames": false,
+    "constants": {
+      "g": 9.8
+    },
+    "avoidOverlappingConcepts": true
+  },
+  "output": {
+    "header": null,
+    "paperFormat": "pdf",
+    "answerKey": {
+      "format": "pdf",
+      "audience": "teacher",
+      "include": [
+        "answers",
+        "explanations",
+        "markingScheme"
+      ]
+    }
+  }
+}

@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+
+# Generated papers (one folder per paper, made by skill/scripts/new_paper.py)
+/output/

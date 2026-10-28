@@ -1,0 +1,537 @@
+{
+  "spec": "spec.json",
+  "conceptList": "../../skill/references/icse9-physics-selina/concepts.json",
+  "status": "draft",
+  "questions": [
+    {
+      "number": 1,
+      "section": "A",
+      "chapter": 1,
+      "marks": 1,
+      "concepts": [
+        "pendulum_frequency"
+      ],
+      "kind": "numerical",
+      "difficulty": "medium",
+      "concept": "pendulum_frequency"
+    },
+    {
+      "number": 2,
+      "section": "A",
+      "chapter": 1,
+      "marks": 1,
+      "concepts": [
+        "fps_cgs_systems"
+      ],
+      "kind": "numerical",
+      "difficulty": "medium",
+      "concept": "fps_cgs_systems"
+    },
+    {
+      "number": 3,
+      "section": "A",
+      "chapter": 1,
+      "marks": 1,
+      "concepts": [
+        "zero_error_basic_idea"
+      ],
+      "kind": "theory",
+      "difficulty": "easy",
+      "concept": "zero_error_basic_idea"
+    },
+    {
+      "number": 4,
+      "section": "A",
+      "chapter": 2,
+      "marks": 1,
+      "concepts": [
+        "velocity_time_graph_slope"
+      ],
+      "kind": "numerical",
+      "difficulty": "medium",
+      "concept": "velocity_time_graph_slope"
+    },
+    {
+      "number": 5,
+      "section": "A",
+      "chapter": 2,
+      "marks": 1,
+      "concepts": [
+        "velocity_time_graph_area"
+      ],
+      "kind": "numerical",
+      "difficulty": "easy",
+      "concept": "velocity_time_graph_area"
+    },
+    {
+      "number": 6,
+      "section": "A",
+      "chapter": 2,
+      "marks": 1,
+      "concepts": [
+        "rest_and_motion"
+      ],
+      "kind": "theory",
+      "difficulty": "easy",
+      "concept": "rest_and_motion"
+    },
+    {
+      "number": 7,
+      "section": "A",
+      "chapter": 3,
+      "marks": 1,
+      "concepts": [
+        "linear_momentum"
+      ],
+      "kind": "numerical",
+      "difficulty": "medium",
+      "concept": "linear_momentum"
+    },
+    {
+      "number": 8,
+      "section": "A",
+      "chapter": 3,
+      "marks": 1,
+      "concepts": [
+        "newtons_first_law"
+      ],
+      "kind": "theory",
+      "difficulty": "medium",
+      "concept": "newtons_first_law"
+    },
+    {
+      "number": 9,
+      "section": "A",
+      "chapter": 3,
+      "marks": 1,
+      "concepts": [
+        "inertia_examples"
+      ],
+      "kind": "theory",
+      "difficulty": "easy",
+      "concept": "inertia_examples"
+    },
+    {
+      "number": 10,
+      "section": "A",
+      "chapter": 4,
+      "marks": 1,
+      "concepts": [
+        "thrust_and_pressure"
+      ],
+      "kind": "numerical",
+      "difficulty": "easy",
+      "concept": "thrust_and_pressure"
+    },
+    {
+      "number": 11,
+      "section": "A",
+      "chapter": 4,
+      "marks": 1,
+      "concepts": [
+        "atmospheric_pressure_manifestations"
+      ],
+      "kind": "theory",
+      "difficulty": "medium",
+      "concept": "atmospheric_pressure_manifestations"
+    },
+    {
+      "number": 12,
+      "section": "A",
+      "chapter": 4,
+      "marks": 1,
+      "concepts": [
+        "pressure_and_altitude"
+      ],
+      "kind": "theory",
+      "difficulty": "easy",
+      "concept": "pressure_and_altitude"
+    },
+    {
+      "number": 13,
+      "section": "A",
+      "chapter": 5,
+      "marks": 1,
+      "concepts": [
+        "relative_density"
+      ],
+      "kind": "numerical",
+      "difficulty": "medium",
+      "concept": "relative_density"
+    },
+    {
+      "number": 14,
+      "section": "A",
+      "chapter": 5,
+      "marks": 1,
+      "concepts": [
+        "upthrust_properties"
+      ],
+      "kind": "theory",
+      "difficulty": "medium",
+      "concept": "upthrust_properties"
+    },
+    {
+      "number": 15,
+      "section": "A",
+      "chapter": 5,
+      "marks": 1,
+      "concepts": [
+        "density_and_sinking_floating"
+      ],
+      "kind": "theory",
+      "difficulty": "easy",
+      "concept": "density_and_sinking_floating"
+    },
+    {
+      "number": 16,
+      "section": "B",
+      "chapter": 1,
+      "marks": 3,
+      "concepts": [
+        "fps_cgs_systems",
+        "simple_pendulum_terms"
+      ],
+      "parts": [
+        {
+          "label": "a",
+          "marks": 1,
+          "kind": "theory",
+          "difficulty": "medium",
+          "concept": "simple_pendulum_terms"
+        },
+        {
+          "label": "b",
+          "marks": 2,
+          "kind": "numerical",
+          "difficulty": "medium",
+          "concept": "fps_cgs_systems"
+        }
+      ]
+    },
+    {
+      "number": 17,
+      "section": "B",
+      "chapter": 2,
+      "marks": 3,
+      "concepts": [
+        "distance_displacement",
+        "rest_and_motion"
+      ],
+      "parts": [
+        {
+          "label": "a",
+          "marks": 2,
+          "kind": "numerical",
+          "difficulty": "easy",
+          "concept": "distance_displacement"
+        },
+        {
+          "label": "b",
+          "marks": 1,
+          "kind": "theory",
+          "difficulty": "easy",
+          "concept": "rest_and_motion"
+        }
+      ]
+    },
+    {
+      "number": 18,
+      "section": "B",
+      "chapter": 3,
+      "marks": 3,
+      "concepts": [
+        "force_units_cgs_si",
+        "newtons_third_law"
+      ],
+      "parts": [
+        {
+          "label": "a",
+          "marks": 1,
+          "kind": "theory",
+          "difficulty": "medium",
+          "concept": "newtons_third_law"
+        },
+        {
+          "label": "b",
+          "marks": 2,
+          "kind": "numerical",
+          "difficulty": "medium",
+          "concept": "force_units_cgs_si"
+        }
+      ]
+    },
+    {
+      "number": 19,
+      "section": "B",
+      "chapter": 4,
+      "marks": 3,
+      "concepts": [
+        "pascals_law_applications",
+        "liquid_pressure_daily_examples"
+      ],
+      "parts": [
+        {
+          "label": "a",
+          "marks": 2,
+          "kind": "numerical",
+          "difficulty": "easy",
+          "concept": "pascals_law_applications"
+        },
+        {
+          "label": "b",
+          "marks": 1,
+          "kind": "theory",
+          "difficulty": "easy",
+          "concept": "liquid_pressure_daily_examples"
+        }
+      ]
+    },
+    {
+      "number": 20,
+      "section": "B",
+      "chapter": 5,
+      "marks": 3,
+      "concepts": [
+        "archimedes_principle",
+        "principle_of_floatation"
+      ],
+      "parts": [
+        {
+          "label": "a",
+          "marks": 1,
+          "kind": "theory",
+          "difficulty": "medium",
+          "concept": "principle_of_floatation"
+        },
+        {
+          "label": "b",
+          "marks": 2,
+          "kind": "numerical",
+          "difficulty": "medium",
+          "concept": "archimedes_principle"
+        }
+      ]
+    },
+    {
+      "number": 21,
+      "section": "B",
+      "chapter": 5,
+      "marks": 3,
+      "concepts": [
+        "buoyancy_upthrust",
+        "apparent_weight_floating_body"
+      ],
+      "parts": [
+        {
+          "label": "a",
+          "marks": 2,
+          "kind": "theory",
+          "difficulty": "easy",
+          "concept": "buoyancy_upthrust"
+        },
+        {
+          "label": "b",
+          "marks": 1,
+          "kind": "theory",
+          "difficulty": "easy",
+          "concept": "apparent_weight_floating_body"
+        }
+      ]
+    },
+    {
+      "number": 22,
+      "section": "B",
+      "chapter": 5,
+      "marks": 3,
+      "concepts": [
+        "upthrust_vs_weight_cases",
+        "floatation_applications"
+      ],
+      "parts": [
+        {
+          "label": "a",
+          "marks": 1,
+          "kind": "theory",
+          "difficulty": "medium",
+          "concept": "floatation_applications"
+        },
+        {
+          "label": "b",
+          "marks": 2,
+          "kind": "theory",
+          "difficulty": "easy",
+          "concept": "upthrust_vs_weight_cases"
+        }
+      ]
+    },
+    {
+      "number": 23,
+      "section": "C",
+      "chapter": 1,
+      "marks": 10,
+      "concepts": [
+        "pendulum_time_period_formula",
+        "pendulum_l_t2_graph",
+        "si_units_and_symbols",
+        "least_count_and_accuracy"
+      ],
+      "parts": [
+        {
+          "label": "a",
+          "marks": 2,
+          "kind": "theory",
+          "difficulty": "medium",
+          "concept": "si_units_and_symbols"
+        },
+        {
+          "label": "b",
+          "marks": 2,
+          "kind": "theory",
+          "difficulty": "easy",
+          "concept": "least_count_and_accuracy"
+        },
+        {
+          "label": "c",
+          "marks": 3,
+          "kind": "numerical",
+          "difficulty": "medium",
+          "concept": "pendulum_time_period_formula"
+        },
+        {
+          "label": "d",
+          "marks": 3,
+          "kind": "numerical",
+          "difficulty": "easy",
+          "concept": "pendulum_l_t2_graph"
+        }
+      ]
+    },
+    {
+      "number": 24,
+      "section": "C",
+      "chapter": 2,
+      "marks": 10,
+      "concepts": [
+        "acceleration_retardation",
+        "distance_time_graph",
+        "scalar_vector_quantities",
+        "speed_velocity"
+      ],
+      "parts": [
+        {
+          "label": "a",
+          "marks": 2,
+          "kind": "theory",
+          "difficulty": "medium",
+          "concept": "scalar_vector_quantities"
+        },
+        {
+          "label": "b",
+          "marks": 3,
+          "kind": "numerical",
+          "difficulty": "medium",
+          "concept": "acceleration_retardation"
+        },
+        {
+          "label": "c",
+          "marks": 2,
+          "kind": "theory",
+          "difficulty": "easy",
+          "concept": "speed_velocity"
+        },
+        {
+          "label": "d",
+          "marks": 3,
+          "kind": "numerical",
+          "difficulty": "easy",
+          "concept": "distance_time_graph"
+        }
+      ]
+    },
+    {
+      "number": 25,
+      "section": "C",
+      "chapter": 3,
+      "marks": 10,
+      "concepts": [
+        "force_momentum_numericals",
+        "universal_law_of_gravitation",
+        "contact_forces",
+        "non_contact_forces"
+      ],
+      "parts": [
+        {
+          "label": "a",
+          "marks": 2,
+          "kind": "theory",
+          "difficulty": "medium",
+          "concept": "contact_forces"
+        },
+        {
+          "label": "b",
+          "marks": 3,
+          "kind": "numerical",
+          "difficulty": "medium",
+          "concept": "force_momentum_numericals"
+        },
+        {
+          "label": "c",
+          "marks": 3,
+          "kind": "numerical",
+          "difficulty": "easy",
+          "concept": "universal_law_of_gravitation"
+        },
+        {
+          "label": "d",
+          "marks": 2,
+          "kind": "theory",
+          "difficulty": "easy",
+          "concept": "non_contact_forces"
+        }
+      ]
+    },
+    {
+      "number": 26,
+      "section": "C",
+      "chapter": 4,
+      "marks": 10,
+      "concepts": [
+        "thrust_and_pressure",
+        "liquid_pressure_formula",
+        "liquid_pressure_daily_examples",
+        "pascals_law"
+      ],
+      "parts": [
+        {
+          "label": "a",
+          "marks": 3,
+          "kind": "numerical",
+          "difficulty": "medium",
+          "concept": "thrust_and_pressure"
+        },
+        {
+          "label": "b",
+          "marks": 2,
+          "kind": "theory",
+          "difficulty": "medium",
+          "concept": "liquid_pressure_daily_examples"
+        },
+        {
+          "label": "c",
+          "marks": 2,
+          "kind": "theory",
+          "difficulty": "easy",
+          "concept": "pascals_law"
+        },
+        {
+          "label": "d",
+          "marks": 3,
+          "kind": "theory",
+          "difficulty": "easy",
+          "concept": "liquid_pressure_formula"
+        }
+      ]
+    }
+  ]
+}

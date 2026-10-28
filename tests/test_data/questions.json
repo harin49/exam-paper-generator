@@ -1,0 +1,644 @@
+{
+  "spec": "spec.json",
+  "conceptList": "concepts.json",
+  "questions": [
+    {
+      "number": 1,
+      "section": "A",
+      "chapter": 1,
+      "marks": 1,
+      "concepts": [
+        "unit_conversion"
+      ],
+      "kind": "numerical",
+      "difficulty": "medium",
+      "concept": "unit_conversion",
+      "text": "A density of 1.2 g cm<sup>−3</sup> expressed in SI units is:",
+      "options": [
+        "12 kg m<sup>−3</sup>",
+        "120 kg m<sup>−3</sup>",
+        "1200 kg m<sup>−3</sup>",
+        "12000 kg m<sup>−3</sup>"
+      ],
+      "correctOption": "c",
+      "explanation": "1 g cm<sup>−3</sup> = 1000 kg m<sup>−3</sup>, so 1.2 g cm<sup>−3</sup> = 1.2 × 1000 = 1200 kg m<sup>−3</sup>.",
+      "computed": [
+        {
+          "expression": "1.2 * 1000",
+          "value": 1200,
+          "unit": "kg m<sup>−3</sup>"
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "section": "A",
+      "chapter": 1,
+      "marks": 1,
+      "concepts": [
+        "zero_error"
+      ],
+      "kind": "theory",
+      "difficulty": "easy",
+      "concept": "zero_error",
+      "text": "A Vernier callipers has a positive zero error. The correct reading is obtained by:",
+      "options": [
+        "adding the zero error to the observed reading",
+        "subtracting the zero error from the observed reading",
+        "doubling the observed reading",
+        "ignoring the zero error"
+      ],
+      "correctOption": "b",
+      "explanation": "A positive zero error makes every reading too large by that amount, so it is subtracted."
+    },
+    {
+      "number": 3,
+      "section": "A",
+      "chapter": 2,
+      "marks": 1,
+      "concepts": [
+        "retardation"
+      ],
+      "kind": "numerical",
+      "difficulty": "medium",
+      "concept": "retardation",
+      "text": "A car moving at 20 m s<sup>−1</sup> is brought to rest uniformly in 5 s. Its retardation is:",
+      "options": [
+        "100 m s<sup>−2</sup>",
+        "0.25 m s<sup>−2</sup>",
+        "25 m s<sup>−2</sup>",
+        "4 m s<sup>−2</sup>"
+      ],
+      "correctOption": "d",
+      "explanation": "Retardation = (u − v) ÷ t = (20 − 0) ÷ 5 = 4 m s<sup>−2</sup>. 100 comes from multiplying instead of dividing.",
+      "computed": [
+        {
+          "expression": "(20 - 0) / 5",
+          "value": 4,
+          "unit": "m s<sup>−2</sup>"
+        }
+      ]
+    },
+    {
+      "number": 4,
+      "section": "A",
+      "chapter": 2,
+      "marks": 1,
+      "concepts": [
+        "distance_displacement"
+      ],
+      "kind": "theory",
+      "difficulty": "easy",
+      "concept": "distance_displacement",
+      "text": "A runner completes exactly one round of a circular track. The runner's displacement is:",
+      "options": [
+        "zero",
+        "equal to the circumference",
+        "equal to the diameter",
+        "equal to the radius"
+      ],
+      "correctOption": "a",
+      "explanation": "The runner ends where they started, so the displacement is zero even though the distance is the circumference."
+    },
+    {
+      "number": 5,
+      "section": "A",
+      "chapter": 3,
+      "marks": 1,
+      "concepts": [
+        "linear_momentum"
+      ],
+      "kind": "numerical",
+      "difficulty": "medium",
+      "concept": "linear_momentum",
+      "text": "A ball of mass 0.2 kg moves with a velocity of 15 m s<sup>−1</sup>. Its linear momentum is:",
+      "options": [
+        "75 kg m s<sup>−1</sup>",
+        "0.3 kg m s<sup>−1</sup>",
+        "3 kg m s<sup>−1</sup>",
+        "30 kg m s<sup>−1</sup>"
+      ],
+      "correctOption": "c",
+      "explanation": "p = mv = 0.2 × 15 = 3 kg m s<sup>−1</sup>.",
+      "computed": [
+        {
+          "expression": "0.2 * 15",
+          "value": 3,
+          "unit": "kg m s<sup>−1</sup>"
+        }
+      ]
+    },
+    {
+      "number": 6,
+      "section": "A",
+      "chapter": 3,
+      "marks": 1,
+      "concepts": [
+        "newton_first_law"
+      ],
+      "kind": "theory",
+      "difficulty": "medium",
+      "concept": "newton_first_law",
+      "text": "Passengers standing in a bus lurch forward when the bus stops suddenly. This is due to:",
+      "options": [
+        "inertia of motion",
+        "inertia of rest",
+        "friction",
+        "gravity"
+      ],
+      "correctOption": "a",
+      "explanation": "The passengers' bodies tend to keep moving forward (inertia of motion) while the bus stops."
+    },
+    {
+      "number": 7,
+      "section": "B",
+      "chapter": 1,
+      "marks": 3,
+      "concepts": [
+        "unit_conversion",
+        "pendulum_length_graph"
+      ],
+      "parts": [
+        {
+          "label": "a",
+          "marks": 1,
+          "kind": "theory",
+          "difficulty": "easy",
+          "concept": "pendulum_length_graph",
+          "text": "Name the two quantities plotted to get a straight-line graph through the origin for a simple pendulum.",
+          "answer": "Effective length l against the square of the time period, T<sup>2</sup>.",
+          "marking": [
+            {
+              "marks": 1,
+              "for": "l and T<sup>2</sup>"
+            }
+          ]
+        },
+        {
+          "label": "b",
+          "marks": 2,
+          "kind": "numerical",
+          "difficulty": "medium",
+          "concept": "unit_conversion",
+          "text": "Convert a speed of 72 km h<sup>−1</sup> into m s<sup>−1</sup>.",
+          "answer": "72 km h<sup>−1</sup> = 72 × 1000 m ÷ 3600 s = 20 m s<sup>−1</sup>.",
+          "marking": [
+            {
+              "marks": 1,
+              "for": "conversion factor 1000/3600"
+            },
+            {
+              "marks": 1,
+              "for": "20 m s<sup>−1</sup>"
+            }
+          ],
+          "computed": [
+            {
+              "expression": "72 * 1000 / 3600",
+              "value": 20,
+              "unit": "m s<sup>−1</sup>"
+            }
+          ]
+        }
+      ],
+      "stem": null
+    },
+    {
+      "number": 8,
+      "section": "B",
+      "chapter": 1,
+      "marks": 3,
+      "concepts": [
+        "si_units",
+        "least_count"
+      ],
+      "parts": [
+        {
+          "label": "a",
+          "marks": 2,
+          "kind": "theory",
+          "difficulty": "easy",
+          "concept": "si_units",
+          "text": "Write the SI unit, with its symbol, of (i) mass and (ii) time.",
+          "answer": "(i) kilogram (kg); (ii) second (s).",
+          "marking": [
+            {
+              "marks": 1,
+              "for": "kilogram, kg"
+            },
+            {
+              "marks": 1,
+              "for": "second, s"
+            }
+          ]
+        },
+        {
+          "label": "b",
+          "marks": 1,
+          "kind": "theory",
+          "difficulty": "medium",
+          "concept": "least_count",
+          "text": "How does a smaller least count affect the accuracy of a measurement?",
+          "answer": "The smaller the least count, the more accurate the measurement.",
+          "marking": [
+            {
+              "marks": 1,
+              "for": "accuracy increases"
+            }
+          ]
+        }
+      ],
+      "stem": null
+    },
+    {
+      "number": 9,
+      "section": "B",
+      "chapter": 2,
+      "marks": 3,
+      "concepts": [
+        "speed_velocity",
+        "acceleration"
+      ],
+      "parts": [
+        {
+          "label": "a",
+          "marks": 1,
+          "kind": "theory",
+          "difficulty": "easy",
+          "concept": "acceleration",
+          "text": "Define acceleration.",
+          "answer": "Acceleration is the rate of change of velocity: a = (v − u) ÷ t.",
+          "marking": [
+            {
+              "marks": 1,
+              "for": "rate of change of velocity"
+            }
+          ]
+        },
+        {
+          "label": "b",
+          "marks": 2,
+          "kind": "numerical",
+          "difficulty": "easy",
+          "concept": "speed_velocity",
+          "text": "A cyclist covers 600 m in 2 minutes. Find the average speed in m s<sup>−1</sup>.",
+          "answer": "Time = 2 × 60 = 120 s. Average speed = 600 ÷ 120 = 5 m s<sup>−1</sup>.",
+          "marking": [
+            {
+              "marks": 0.5,
+              "for": "time in seconds"
+            },
+            {
+              "marks": 0.5,
+              "for": "formula"
+            },
+            {
+              "marks": 1,
+              "for": "5 m s<sup>−1</sup>"
+            }
+          ],
+          "computed": [
+            {
+              "expression": "600 / (2 * 60)",
+              "value": 5,
+              "unit": "m s<sup>−1</sup>"
+            }
+          ]
+        }
+      ],
+      "stem": null
+    },
+    {
+      "number": 10,
+      "section": "B",
+      "chapter": 3,
+      "marks": 3,
+      "concepts": [
+        "force_units",
+        "newton_third_law"
+      ],
+      "parts": [
+        {
+          "label": "a",
+          "marks": 2,
+          "kind": "numerical",
+          "difficulty": "medium",
+          "concept": "force_units",
+          "text": "Express 2 kgf in newton.",
+          "answer": "1 kgf = 9.8 N, so 2 kgf = 2 × 9.8 = 19.6 N.",
+          "marking": [
+            {
+              "marks": 1,
+              "for": "1 kgf = 9.8 N"
+            },
+            {
+              "marks": 1,
+              "for": "19.6 N"
+            }
+          ],
+          "computed": [
+            {
+              "expression": "2 * 9.8",
+              "value": 19.6,
+              "unit": "N"
+            }
+          ]
+        },
+        {
+          "label": "b",
+          "marks": 1,
+          "kind": "theory",
+          "difficulty": "medium",
+          "concept": "newton_third_law",
+          "text": "State Newton's third law of motion.",
+          "answer": "To every action there is an equal and opposite reaction; the two forces act on different bodies.",
+          "marking": [
+            {
+              "marks": 1,
+              "for": "statement"
+            }
+          ]
+        }
+      ],
+      "stem": null
+    },
+    {
+      "number": 11,
+      "section": "C",
+      "chapter": 1,
+      "marks": 6,
+      "concepts": [
+        "pendulum_frequency",
+        "pendulum_time_period",
+        "least_count"
+      ],
+      "parts": [
+        {
+          "label": "a",
+          "marks": 2,
+          "kind": "numerical",
+          "difficulty": "easy",
+          "concept": "pendulum_frequency",
+          "text": "Find its time period and its frequency.",
+          "answer": "T = 40 ÷ 20 = 2 s. f = 1 ÷ T = 0.5 Hz.",
+          "marking": [
+            {
+              "marks": 1,
+              "for": "T = 2 s"
+            },
+            {
+              "marks": 1,
+              "for": "f = 0.5 Hz"
+            }
+          ],
+          "computed": [
+            {
+              "label": "time period",
+              "expression": "40 / 20",
+              "value": 2,
+              "unit": "s"
+            },
+            {
+              "label": "frequency",
+              "expression": "20 / 40",
+              "value": 0.5,
+              "unit": "Hz"
+            }
+          ]
+        },
+        {
+          "label": "b",
+          "marks": 2,
+          "kind": "numerical",
+          "difficulty": "medium",
+          "concept": "pendulum_time_period",
+          "text": "Find the effective length of the pendulum.",
+          "answer": "T = 2π√(l/g), so l = gT<sup>2</sup> ÷ 4π<sup>2</sup> = 9.8 × 2<sup>2</sup> ÷ (4π<sup>2</sup>) = 0.993 m.",
+          "marking": [
+            {
+              "marks": 1,
+              "for": "rearranged formula"
+            },
+            {
+              "marks": 1,
+              "for": "0.993 m"
+            }
+          ],
+          "computed": [
+            {
+              "expression": "9.8 * 2**2 / (4 * pi**2)",
+              "value": 0.992948,
+              "unit": "m"
+            }
+          ]
+        },
+        {
+          "label": "c",
+          "marks": 2,
+          "kind": "theory",
+          "difficulty": "easy",
+          "concept": "least_count",
+          "text": "Define the least count of an instrument. Why is a smaller least count preferred?",
+          "answer": "The least count is the smallest measurement an instrument can make accurately. A smaller least count gives a more accurate reading.",
+          "marking": [
+            {
+              "marks": 1,
+              "for": "definition"
+            },
+            {
+              "marks": 1,
+              "for": "reason"
+            }
+          ]
+        }
+      ],
+      "stem": "A simple pendulum makes 20 oscillations in 40 s. (Take g = 9.8 m s<sup>−2</sup>.)"
+    },
+    {
+      "number": 12,
+      "section": "C",
+      "chapter": 2,
+      "marks": 6,
+      "concepts": [
+        "acceleration",
+        "second_equation_of_motion",
+        "distance_displacement",
+        "vt_graph_slope"
+      ],
+      "parts": [
+        {
+          "label": "a",
+          "marks": 2,
+          "parts": [
+            {
+              "label": "i",
+              "marks": 1,
+              "kind": "numerical",
+              "difficulty": "easy",
+              "concept": "acceleration",
+              "text": "the acceleration in the first 5 s;",
+              "answer": "a = (20 − 0) ÷ 5 = 4 m s<sup>−2</sup>.",
+              "marking": [
+                {
+                  "marks": 1,
+                  "for": "4 m s<sup>−2</sup>"
+                }
+              ],
+              "computed": [
+                {
+                  "expression": "(20 - 0) / 5",
+                  "value": 4,
+                  "unit": "m s<sup>−2</sup>"
+                }
+              ]
+            },
+            {
+              "label": "ii",
+              "marks": 1,
+              "kind": "numerical",
+              "difficulty": "easy",
+              "concept": "second_equation_of_motion",
+              "text": "the distance covered in the first 5 s.",
+              "answer": "s = ½at<sup>2</sup> = ½ × 4 × 5<sup>2</sup> = 50 m.",
+              "marking": [
+                {
+                  "marks": 1,
+                  "for": "50 m"
+                }
+              ],
+              "computed": [
+                {
+                  "expression": "0.5 * 4 * 5**2",
+                  "value": 50,
+                  "unit": "m"
+                }
+              ]
+            }
+          ],
+          "text": "Find:"
+        },
+        {
+          "label": "b",
+          "marks": 2,
+          "kind": "theory",
+          "difficulty": "medium",
+          "concept": "distance_displacement",
+          "text": "Is the displacement of the car over the whole journey equal to the distance it travels? Give a reason.",
+          "answer": "Yes. The car moves in a straight line without changing direction, so the magnitude of the displacement equals the distance.",
+          "marking": [
+            {
+              "marks": 1,
+              "for": "yes"
+            },
+            {
+              "marks": 1,
+              "for": "reason"
+            }
+          ]
+        },
+        {
+          "label": "c",
+          "marks": 2,
+          "kind": "theory",
+          "difficulty": "easy",
+          "concept": "vt_graph_slope",
+          "text": "What does the slope of a velocity-time graph represent, and what does the area under it represent?",
+          "answer": "The slope gives the acceleration; the area under the graph gives the displacement.",
+          "marking": [
+            {
+              "marks": 1,
+              "for": "slope: acceleration"
+            },
+            {
+              "marks": 1,
+              "for": "area: displacement"
+            }
+          ]
+        }
+      ],
+      "stem": "A car starts from rest and reaches 20 m s<sup>−1</sup> in 5 s with uniform acceleration. It moves at this speed for 10 s and then comes to rest uniformly in 5 s. Its velocity-time graph is shown.",
+      "diagram": {
+        "description": "Velocity-time graph: straight lines (0,0) to (5,20) to (15,20) to (20,0); time in s, velocity in m s<sup>−1</sup>",
+        "file": "vt_graph.png"
+      }
+    },
+    {
+      "number": 13,
+      "section": "C",
+      "chapter": 3,
+      "marks": 6,
+      "concepts": [
+        "newton_second_law",
+        "contact_forces",
+        "non_contact_forces"
+      ],
+      "parts": [
+        {
+          "label": "a",
+          "marks": 2,
+          "kind": "numerical",
+          "difficulty": "medium",
+          "concept": "newton_second_law",
+          "text": "A force changes the velocity of a body of mass 4 kg from 2 m s<sup>−1</sup> to 8 m s<sup>−1</sup> in 3 s. Find the force.",
+          "answer": "a = (8 − 2) ÷ 3 = 2 m s<sup>−2</sup>. F = ma = 4 × 2 = 8 N.",
+          "marking": [
+            {
+              "marks": 1,
+              "for": "a = 2 m s<sup>−2</sup>"
+            },
+            {
+              "marks": 1,
+              "for": "F = 8 N"
+            }
+          ],
+          "computed": [
+            {
+              "expression": "4 * (8 - 2) / 3",
+              "value": 8,
+              "unit": "N"
+            }
+          ]
+        },
+        {
+          "label": "b",
+          "marks": 2,
+          "kind": "theory",
+          "difficulty": "medium",
+          "concept": "contact_forces",
+          "text": "What is a contact force? Give one example.",
+          "answer": "A force that acts only when two bodies are in physical contact, e.g. friction.",
+          "marking": [
+            {
+              "marks": 1,
+              "for": "definition"
+            },
+            {
+              "marks": 1,
+              "for": "example"
+            }
+          ]
+        },
+        {
+          "label": "c",
+          "marks": 2,
+          "kind": "theory",
+          "difficulty": "easy",
+          "concept": "non_contact_forces",
+          "text": "Name two non-contact forces.",
+          "answer": "Gravitational force and magnetic force (or electric force).",
+          "marking": [
+            {
+              "marks": 1,
+              "for": "first force"
+            },
+            {
+              "marks": 1,
+              "for": "second force"
+            }
+          ]
+        }
+      ],
+      "stem": null
+    }
+  ]
+}

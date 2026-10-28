@@ -318,6 +318,33 @@ class McqQ4(WithSpec):
         self.assertNotIn("[Q4] Q2", self.errors())
 
 
+    def test_working_value_is_not_an_option_answer(self):
+        q1 = q(self.qdoc, 1)
+        # A working value of 12 would otherwise make option (a), "12 kg m⁻³", a second correct answer.
+        q1["computed"] = [dict(q1["computed"][0], label="a step", expression="1200 / 100",
+                               value=12, working=True),
+                          dict(q1["computed"][0], label="density")]
+        self.assertNotIn("[Q4] Q1", self.errors())
+
+
+class WorkingValues(WithSpec):
+    def leaf(self):
+        return q(self.qdoc, 11)["parts"][0]                        # time period and frequency
+
+    def test_working_must_be_true_or_false(self):
+        self.leaf()["computed"][0]["working"] = "yes"
+        self.assertIn("[Q1] Q11(a) computed #1: working must be true or false", self.errors())
+
+    def test_not_every_value_may_be_working(self):
+        for c in self.leaf()["computed"]:
+            c["working"] = True
+        self.assertIn("[Q1] Q11(a): every computed value is marked working", self.errors())
+
+    def test_some_working_values_pass(self):
+        self.leaf()["computed"][0]["working"] = True
+        self.assertEqual(self.errors(), "")
+
+
 class OptionNumber(unittest.TestCase):
     def test_forms(self):
         self.assertEqual(cq.option_number("1.25 Hz"), (1.25, 0.01))

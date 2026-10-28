@@ -101,6 +101,10 @@ it with `value`. This stops a wrong number from reaching the answer key.
   0.993955... but 0.99 is not.
 - `unit`: as printed, using the markup below; `""` for a pure number.
 - `label`: optional, needed when a part has more than one value.
+- `working`: optional; `true` for a step the marking scheme checks but the question does not ask for
+  (e.g. u = 20 m s<sup>−1</sup> on the way to "find the retardation and the distance"). The blind
+  solver is not expected to report working values (`compare_solutions.py` rule V4), though any it does
+  report must still match. At least one value in each `computed` list must not be working.
 
 ## `diagram` and `answerDiagram`
 

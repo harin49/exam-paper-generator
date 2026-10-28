@@ -47,7 +47,8 @@ solver is wrong, or the question is unclear. Decide which, and say why.
    recall or one-step application; medium needs two steps or some reasoning.
 6. **Marking scheme.** The marking items match the model answer, are marked sensibly (the marks for a
    step appear where a student earns them), accept reasonable alternatives, and say where carry-
-   forward applies. A reader could award marks from the scheme alone.
+   forward applies. A reader could award marks from the scheme alone. In `computed`, exactly the
+   values the question does not ask for are marked `"working": true`.
 7. **Whole paper.** No two questions test the same thing or share near-identical wording; the
    numbers are realistic (a car does not travel at 720 m s⁻¹); the choice between questions in
    Sections with choice is fair (no option is obviously much harder than the others).

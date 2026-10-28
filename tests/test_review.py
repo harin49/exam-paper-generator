@@ -36,8 +36,9 @@ def perfect_solver(qdoc):
             continue
         for labels, leaf in leaves(q["parts"]):
             a = {"number": q["number"], "id": ep.part_id(labels), "answer": "text"}
-            if "computed" in leaf:
-                a["values"] = [{"value": c["value"], "unit": c["unit"]} for c in leaf["computed"]]
+            if "computed" in leaf:          # a solver reports what is asked for, not the working
+                a["values"] = [{"value": c["value"], "unit": c["unit"]} for c in leaf["computed"]
+                               if not c.get("working")]
             answers.append(a)
     return {"answers": answers}
 
@@ -187,8 +188,9 @@ class Compare(unittest.TestCase):
         a = self.find(11, "b")
         a["values"] = [{"value": 1.5, "unit": "m"}]
         msgs = self.messages()
-        self.assertEqual(len(msgs), 1)
+        self.assertEqual(len(msgs), 2, msgs)
         self.assertTrue(msgs[0].startswith("[V2] Q11(b): the solver's 1.5 m matches nothing in the key"))
+        self.assertTrue(msgs[1].startswith("[V4] Q11(b): the solver gave no value for (0.992948 m)"), msgs)
 
     def test_value_within_one_percent_matches(self):
         a = self.find(11, "b")
@@ -218,11 +220,31 @@ class Compare(unittest.TestCase):
         self.assertEqual(len(msgs), 1)
         self.assertTrue(msgs[0].startswith("[V4] Q11(b)"), msgs)
 
-    def test_extra_intermediate_values_in_the_key_are_fine(self):
-        # the key may list intermediates; the solver only has to match what it reports
-        a = next(a for a in self.solver["answers"] if len(a.get("values", [])) > 1)
-        a["values"] = a["values"][:1]
+    # Q11(a) asks for the time period (2 s) and the frequency (0.5 Hz).
+    def test_v4_a_value_the_question_asks_for_is_missing(self):
+        self.find(11, "a")["values"] = [{"value": 2, "unit": "s"}]
+        self.assertEqual(self.messages(), ["[V4] Q11(a): the solver gave no value for frequency (0.5 Hz)"])
+
+    def test_working_values_need_not_be_given(self):
+        q11 = next(x for x in self.qdoc["questions"] if x["number"] == 11)
+        q11["parts"][0]["computed"][0]["working"] = True          # the time period is only a step
+        self.find(11, "a")["values"] = [{"value": 0.5, "unit": "Hz"}]
         self.assertEqual(self.messages(), [])
+
+    def test_working_values_given_anyway_must_still_match(self):
+        q11 = next(x for x in self.qdoc["questions"] if x["number"] == 11)
+        q11["parts"][0]["computed"][0]["working"] = True
+        self.find(11, "a")["values"] = [{"value": 2, "unit": "s"}, {"value": 0.5, "unit": "Hz"}]
+        self.assertEqual(self.messages(), [])
+        self.find(11, "a")["values"] = [{"value": 3, "unit": "s"}, {"value": 0.5, "unit": "Hz"}]
+        self.assertEqual(len(self.messages()), 1)
+        self.assertTrue(self.messages()[0].startswith("[V2] Q11(a): the solver's 3 s matches nothing"))
+
+    def test_v3_value_is_not_also_reported_missing(self):
+        self.find(11, "a")["values"] = [{"value": 200, "unit": "cs"}, {"value": 0.5, "unit": "Hz"}]
+        msgs = self.messages()
+        self.assertEqual(len(msgs), 1, msgs)
+        self.assertTrue(msgs[0].startswith("[V3] Q11(a)"))
 
     def test_v5_unanswered_question_and_part(self):
         self.solver["answers"] = [a for a in self.solver["answers"]

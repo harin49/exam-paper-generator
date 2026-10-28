@@ -57,7 +57,7 @@ PARTED_KEYS = PARTED_REQUIRED | {"diagram"}
 LEAF_REQUIRED = {"label", "text", "marks", "kind", "difficulty", "answer", "marking"}
 LEAF_KEYS = LEAF_REQUIRED | {"computed", "diagram", "answerDiagram", "concept"}
 GROUP_KEYS = {"label", "text", "marks", "parts"}
-COMPUTED_KEYS = {"label", "expression", "value", "unit"}
+COMPUTED_KEYS = {"label", "expression", "value", "unit", "working"}
 DIAGRAM_KEYS = {"description", "file"}
 
 
@@ -101,8 +101,12 @@ def check_computed(r, comp, loc):
         field(r, c, "value", cl, is_num, "a number")
         field(r, c, "unit", cl, lambda x: isinstance(x, str), "text ('' for no unit)")
         field(r, c, "label", cl, nonempty_str, "non-empty text")
+        field(r, c, "working", cl, lambda x: isinstance(x, bool), "true or false")
         if len(comp) > 1 and "label" not in c:
             r.error(cl, "needs a label when there is more than one computed value", "Q1")
+    if all(isinstance(c, dict) and c.get("working") is True for c in comp):
+        r.error(loc, "every computed value is marked working: at least one must be an answer the "
+                     "question asks for", "Q1")
 
 
 def check_diagram(r, obj, key, loc):
@@ -334,8 +338,8 @@ def option_number(text):
 def check_option_values(r, q, opts, correct, loc):
     """Q4 for a numerical MCQ: the correct option shows a computed value, and no other option does."""
     comp = q.get("computed")
-    values = [c["value"] for c in comp if isinstance(c, dict) and is_num(c.get("value"))] \
-        if isinstance(comp, list) else []
+    values = [c["value"] for c in comp if isinstance(c, dict) and is_num(c.get("value"))
+              and c.get("working") is not True] if isinstance(comp, list) else []
     if not values:
         return  # Q1 or Q7 reports it
 

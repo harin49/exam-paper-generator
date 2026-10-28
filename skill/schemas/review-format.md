@@ -81,7 +81,7 @@ Every message starts with its rule number, e.g. `[V1] Q5: the solver chose (d) b
 | **V1** | An MCQ: the solver chose a different option from the key. |
 | **V2** | A numerical part: a value the solver gave matches no `computed` value in the key (agreement means within 1%). |
 | **V3** | Same, but the values differ only by a power of ten (probably a unit difference) or only in sign (probably a direction convention). |
-| **V4** | A numerical part: the solver gave no values. |
+| **V4** | A numerical part: the solver gave no values, or gave none for a `computed` value the question asks for (values marked `"working": true` are not required). |
 | **V5** | A question or part is unanswered, an id is unknown or repeated, or the file is malformed. |
 | **V6** | (warning) The solver reported a `problem` with a question. |
 

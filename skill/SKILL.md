@@ -146,6 +146,8 @@ concept list (copy it from `TASK/blueprint.json`). For every question:
 - `answer`: the model answer with working; `marking`: items that add up to the part's marks.
 - Every numerical part and numerical MCQ has `computed`: an `expression` using plain numbers
   (spec constants as numbers) and the `value` it gives. Compute with a script, not in your head.
+  Mark a value `"working": true` when the marking scheme checks it but the question does not ask
+  for it (e.g. converting 72 km h<sup>−1</sup> to 20 m s<sup>−1</sup> on the way to a distance).
 - MCQs: one correct option, placed at the letter the blueprint's `correctOption` gives (rule Q15);
   in a numerical MCQ it starts with the computed value (rule Q4). Wrong options should be real mistakes (a unit slip, an inverted ratio);
   `explanation` says why the answer is right and why the tempting wrong options are wrong.

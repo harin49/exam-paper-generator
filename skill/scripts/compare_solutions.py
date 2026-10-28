@@ -10,7 +10,9 @@ The solver's answers file is described in schemas/review-format.md. The comparis
     V2  a numerical part: a value the solver gave matches no computed value in the key
     V3  the same, but the two differ only by a power of ten (probably a unit difference) or only
         in sign (probably a direction convention)
-    V4  a numerical part: the solver gave no values at all
+    V4  a numerical part: the solver gave no values at all, or gave none for a value the question asks
+        for (key values marked "working" are steps the marking scheme checks, not asked for, so the
+        solver need not give them; if it does, they must still match)
     V5  coverage or format: a question or part is unanswered, an id is unknown or repeated, or the
         answers file is malformed
     V6  (warning) the solver reported a problem with a question: ambiguous, missing data, or no
@@ -152,6 +154,15 @@ def compare_values(r, loc, leaf, got):
                          "probably a unit difference", "V3")
         else:
             r.error(loc, f"the solver's {mine} matches nothing in the key ({key_text})", "V2")
+    for c in leaf["computed"]:
+        if c.get("working") is True:
+            continue
+        w = c["value"]
+        # A value already reported under V3 (sign or power of ten) is not reported again as missing.
+        if not any(close(v, w) or close(abs(v), abs(w)) or power_of_ten_apart(v, w) for v, _ in got):
+            name = f"{c['label']} " if c.get("label") else ""
+            r.error(loc, f"the solver gave no value for {name}({fmt(w)} {plain_text(c.get('unit', ''))}"
+                         .rstrip() + ")", "V4")
 
 
 def load(path):

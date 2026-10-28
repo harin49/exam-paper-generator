@@ -19,8 +19,9 @@ the user provides. Scripts decide the structure and check the result; you write 
 - **One step at a time, in order.** Before every step, run `python3 "${CLAUDE_SKILL_DIR}/scripts/next_step.py" TASK`
   and do only the step it prints (see "Order of work"). Never run two steps side by side: do not start
   a step, read ahead for it or prepare it while a script or subagent from an earlier step is still
-  running. Wait for each subagent to finish before doing anything else. Report each step briefly, then
-  run `next_step.py` again. Stop and wait at the approval points (spec errors, blueprint, fixes).
+  running. Wait for each subagent to finish before doing anything else. When a step has finished,
+  record it with the `--done` command `next_step.py` prints, report the step briefly, then run
+  `next_step.py` again. Stop and wait at the approval points (spec errors, blueprint, fixes).
 - **Show script and reviewer output verbatim** when it contains errors or findings. Do not summarise
   them away, and do not change anything because of them until the user has seen them.
 - **Refer to scripts by file name** (`check_questions.py`), not "the checker".
@@ -84,6 +85,13 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/next_step.py" TASK
 
 - Run it before every step (from step 1 on; before step 0 there is no `TASK`). Do the step it prints,
   and nothing else, until that step has finished.
+- When the step has finished, record it with the command it printed:
+  `python3 "${CLAUDE_SKILL_DIR}/scripts/next_step.py" TASK --done STEP_ID`. This saves the hashes of
+  the step's files in `TASK/state.json` and appends to `TASK/run.jsonl`. A step that is not recorded
+  is not done, and `next_step.py` will print it again. At an approval point, record it only after
+  the user has answered and you have written their answer.
+- If `--done` prints **Not recorded**, the step has not finished (a missing file, a failing check, an
+  earlier step not done): show the message to the user; do not work around it.
 - If it says **STOP**, the step is an approval point: ask the user and wait for their answer.
 - It can send you back: editing `questions.json` makes the blind paper, the comparison and the PDFs
   out of date, so those steps are next again. Follow it; do not skip a step it prints.

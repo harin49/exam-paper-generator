@@ -58,6 +58,9 @@ class SkillMd(unittest.TestCase):
                 self.assertTrue(m, c)
                 self.assertTrue(os.path.isfile(os.path.join(SKILL_DIR, m.group(1))), c)
 
+    def test_steps_are_recorded_with_done(self):
+        self.assertIn('"${CLAUDE_SKILL_DIR}/scripts/next_step.py" TASK --done STEP_ID', TEXT)
+
     def test_agents_are_started_by_type_not_pasted(self):
         # Pasting an agent file into a general-purpose subagent drops its tool limits.
         for text in (TEXT, WORKFLOW):

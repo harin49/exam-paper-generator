@@ -35,7 +35,10 @@ Give Claude your `spec.json` (format and template in the skill's `schemas/`) and
 
 The steps run one at a time, in the order listed in the skill's `workflow.json`. Its
 `scripts/next_step.py TASK` checks the paper's task folder and prints the one step that may run next
-(approval points say STOP); `SKILL.md` has Claude run it before every step.
+(approval points say STOP); `SKILL.md` has Claude run it before every step. When a step finishes,
+`next_step.py TASK --done STEP_ID` records the hashes of its files in `TASK/state.json` and appends to
+`TASK/run.jsonl`; a step is done while its inputs are unchanged, so copying a folder or re-saving a
+file does not change where the paper is.
 
 1. **Paper spec**: the user supplies `spec.json`; `validate_paper_spec.py` checks it (rules S1–S19).
 2. **Blueprint**: `make_blueprint.py` builds `blueprint.json` from the spec and the approved concept
@@ -136,7 +139,8 @@ requirements.txt, requirements-dev.txt
 - [x] Review chain: `extract_paper.py`, `compare_solutions.py`, the blind-solver and reviewer agents
       (run once end to end with real subagents)
 - [x] `workflow.json` + `next_step.py`: one step at a time, in a fixed order, checked against the task folder
-- [x] Unit tests moved to their own test data (`tests/test_data/`); 291 tests, all passing
+- [x] State by content hashes (`state.json`, `run.jsonl`, `next_step.py --done`) instead of file times
+- [x] Unit tests moved to their own test data (`tests/test_data/`); 302 tests, all passing
 - [ ] New example: approve the `icse9-physics-ch1-5` blueprint, write its questions, review, render
 
 Open question: the syllabus includes spherical mirrors (with mirror-formula numericals) and

@@ -49,7 +49,10 @@ class Workflow(unittest.TestCase):
             path = os.path.join(tmp, "w.json")
             for doc in ({}, {"steps": []}, {"steps": [{"id": "x"}]},
                         {"steps": [dict(STEPS[0]), dict(STEPS[0])]},
-                        {"steps": [dict(STEPS[0], by="robot")]}):
+                        {"steps": [dict(STEPS[0], by="robot")]},
+                        {"steps": [dict(STEPS[0], done={"recorded": []})]},
+                        {"steps": [dict(STEPS[0], outputs=["x"], done={"recorded": ["spec.json"]})]},
+                        {"steps": [dict(STEPS[0], inputs="spec.json")]}):
                 with open(path, "w", encoding="utf-8") as f:
                     json.dump(doc, f)
                 with self.assertRaises(ns.WorkflowError, msg=doc):
@@ -59,42 +62,61 @@ class Workflow(unittest.TestCase):
 
 
 class NextStep(unittest.TestCase):
-    """Walks a task folder (the 21-mark test paper) through the workflow."""
+    """Walks a task folder (the 21-mark test paper) through the workflow, recording each step as Claude would."""
 
     def setUp(self):
         self.tmp = tempfile.mkdtemp()
         self.task = os.path.join(self.tmp, "task")
         os.makedirs(os.path.join(self.task, "review"))
-        self.clock = 1_700_000_000
         self.add("spec.json")
 
     def tearDown(self):
         shutil.rmtree(self.tmp)
 
     def add(self, name, content=None):
-        """Write a file into the task folder, later than every file written before it."""
+        """Write a file into the task folder (a copy of the test data file when there is no content)."""
         path = os.path.join(self.task, name)
         if content is None:
             shutil.copy(os.path.join(TEST_DATA, name), path)
         else:
             with open(path, "w", encoding="utf-8") as f:
                 f.write(content if isinstance(content, str) else json.dumps(content))
-        self.clock += 10
-        os.utime(path, (self.clock, self.clock))
+
+    def edit(self, name):
+        """Change a file's content without changing what it means."""
+        with open(os.path.join(self.task, name), "a", encoding="utf-8") as f:
+            f.write("\n")
+
+    def done(self, step_id):
+        self.assertIsNone(ns.record_done(self.task, STEPS, step_id))
 
     def next_id(self):
         return ns.next_step(self.task, STEPS)[1]["id"]
 
     def ready_for_review(self):
-        for name in ("concepts.json", "blueprint.json", "questions.json"):
-            self.add(name)
+        self.add("concepts.json")
+        self.add("blueprint.json")
+        self.done("make_blueprint")
+        self.add("questions.json")
+
+    def review_round(self, compare="Result: NO MISMATCHES\n"):
+        self.add("review/solver-input.json", {})
+        self.done("extract_paper")
+        self.add("review/solver-answers.json", {})
+        self.done("blind_solver")
+        self.add("review/compare-output.txt", compare)
+        self.done("compare_solutions")
 
     def first_review_round(self, compare="Result: NO MISMATCHES\n"):
         self.ready_for_review()
-        self.add("review/solver-input.json", {})
-        self.add("review/solver-answers.json", {})
-        self.add("review/compare-output.txt", compare)
+        self.review_round(compare)
+        self.add("review/reviewer-report.json", {})
         self.add("review/reviewer-report.html", "<!doctype html>")
+        self.done("reviewer")
+
+    def decide(self, accepted):
+        self.add("review/fixes.json", {"accepted": accepted, "rejected": []})
+        self.done("decide_fixes")
 
     def build_pdfs(self):
         for name in output_names(load_json(os.path.join(self.task, "spec.json"))):
@@ -113,24 +135,36 @@ class NextStep(unittest.TestCase):
         self.add("spec.json", spec)
         self.assertEqual(self.next_id(), "validate_spec")
 
-    def test_blueprint_older_than_the_spec_is_remade(self):
+    def test_a_blueprint_that_was_not_recorded_is_not_done(self):
         self.add("blueprint.json")
-        self.add("spec.json")
+        self.assertEqual(self.next_id(), "make_blueprint")
+
+    def test_changing_the_spec_remakes_the_blueprint(self):
+        self.add("blueprint.json")
+        self.done("make_blueprint")
+        self.edit("spec.json")
         self.assertEqual(self.next_id(), "make_blueprint")
 
     def test_draft_blueprint_waits_for_approval(self):
         bp = load_json(os.path.join(TEST_DATA, "blueprint.json"))
         bp["status"] = "draft"
         self.add("blueprint.json", bp)
+        self.done("make_blueprint")
         self.assertEqual(self.next_id(), "approve_blueprint")
 
-    def test_approved_blueprint_goes_to_drafting(self):
+    def test_approving_the_blueprint_does_not_undo_making_it(self):
+        # Approval changes blueprint.json, an output of make_blueprint: outputs need only exist.
+        bp = load_json(os.path.join(TEST_DATA, "blueprint.json"))
+        bp["status"] = "draft"
+        self.add("blueprint.json", bp)
+        self.done("make_blueprint")
         self.add("blueprint.json")
         self.assertEqual(self.next_id(), "draft_questions")
 
     def test_failing_questions_stay_on_the_check(self):
         self.add("concepts.json")
         self.add("blueprint.json")
+        self.done("make_blueprint")
         q = load_json(os.path.join(TEST_DATA, "questions.json"))
         q["questions"][0]["marks"] = 2
         self.add("questions.json", q)
@@ -140,54 +174,131 @@ class NextStep(unittest.TestCase):
         self.ready_for_review()
         self.assertEqual(self.next_id(), "extract_paper")
         self.add("review/solver-input.json", {})
+        self.assertEqual(self.next_id(), "extract_paper")         # written but not recorded yet
+        self.done("extract_paper")
         self.assertEqual(self.next_id(), "blind_solver")
         self.add("review/solver-answers.json", {})
+        self.done("blind_solver")
         self.assertEqual(self.next_id(), "compare_solutions")
         self.add("review/compare-output.txt", "Result: NO MISMATCHES\n")
+        self.done("compare_solutions")
         self.assertEqual(self.next_id(), "reviewer")
+        self.add("review/reviewer-report.json", {})
         self.add("review/reviewer-report.html", "<!doctype html>")
+        self.done("reviewer")
         self.assertEqual(self.next_id(), "decide_fixes")
+
+    def test_file_times_do_not_matter(self):
+        # A copy, a checkout or a re-save changes file times; only contents count.
+        self.first_review_round()
+        for root, _, files in os.walk(self.task):
+            for f in files:
+                os.utime(os.path.join(root, f), (1_000_000_000, 1_000_000_000))
+        copy = os.path.join(self.tmp, "copy")
+        shutil.copytree(self.task, copy)
+        self.assertEqual(self.next_id(), "decide_fixes")
+        self.assertEqual(ns.next_step(copy, STEPS)[1]["id"], "decide_fixes")
+
+    def test_rewriting_the_review_html_unchanged_keeps_the_decision(self):
+        # The bug that started D14: re-printing the findings sent a finished paper back to 5.5.
+        self.first_review_round()
+        self.decide([])
+        self.add("review/reviewer-report.html", "<!doctype html>")
+        self.assertEqual(self.next_id(), "render")
 
     def test_the_build_waits_for_the_fix_decision(self):
         # The order this run went wrong in once: PDFs built while the review was unfinished.
         self.first_review_round()
         self.build_pdfs()
         self.assertEqual(self.next_id(), "decide_fixes")
+        self.assertIn("decide_fixes", ns.record_done(self.task, STEPS, "render"))
 
     def test_no_fixes_accepted_goes_straight_to_the_build(self):
         self.first_review_round()
-        self.add("review/fixes.json", {"accepted": [], "rejected": ["R1"]})
+        self.decide([])
         self.assertEqual(self.next_id(), "render")
         self.build_pdfs()
+        self.done("render")
         self.assertEqual(self.next_id(), "deliver")
 
     def test_accepted_fixes_send_the_paper_back_through_the_blind_solver(self):
         self.first_review_round()
-        self.add("review/fixes.json", {"accepted": ["R1"], "rejected": []})
+        self.decide(["R1"])
         self.assertEqual(self.next_id(), "apply_fixes")
-        self.add("questions.json")                       # the fixes are applied
+        self.edit("questions.json")                           # the fixes are applied
+        self.done("apply_fixes")
         self.assertEqual(self.next_id(), "extract_paper")
-        self.add("review/solver-input.json", {})
-        self.add("review/solver-answers.json", {})
-        self.assertEqual(self.next_id(), "compare_solutions")
-        self.add("review/compare-output.txt", "Result: NO MISMATCHES\n")
-        self.assertEqual(self.next_id(), "render")        # the reviewer does not run again
+        self.review_round()
+        self.assertEqual(self.next_id(), "render")             # the reviewer does not run again
 
     def test_mismatches_after_fixes_go_back_to_the_user(self):
         self.first_review_round()
-        self.add("review/fixes.json", {"accepted": ["R1"], "rejected": []})
-        self.add("questions.json")
-        self.add("review/solver-input.json", {})
-        self.add("review/solver-answers.json", {})
-        self.add("review/compare-output.txt", "MISMATCHES:\n  - [V2] Q7(b)\n\nResult: 1 MISMATCH(ES)\n")
+        self.decide(["R1"])
+        self.edit("questions.json")
+        self.done("apply_fixes")
+        self.review_round("MISMATCHES:\n  - [V2] Q7(b)\n\nResult: 1 MISMATCH(ES)\n")
         self.assertEqual(self.next_id(), "decide_fixes")
+
+    def test_editing_questions_by_hand_after_fixes_does_not_apply_them_again(self):
+        self.first_review_round()
+        self.decide(["R1"])
+        self.edit("questions.json")
+        self.done("apply_fixes")
+        self.review_round()
+        self.edit("questions.json")                           # the teacher's own edit
+        self.assertEqual(self.next_id(), "extract_paper")
+        self.review_round()
+        self.assertEqual(self.next_id(), "render")
 
     def test_editing_questions_after_the_build_needs_a_rebuild(self):
         self.first_review_round()
-        self.add("review/fixes.json", {"accepted": [], "rejected": []})
+        self.decide([])
         self.build_pdfs()
-        self.add("questions.json")
+        self.done("render")
+        self.edit("questions.json")
         self.assertEqual(self.next_id(), "extract_paper")
+
+
+class Recording(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        shutil.copy(os.path.join(TEST_DATA, "spec.json"), self.tmp)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp)
+
+    def test_records_hashes_in_state_and_appends_to_the_run_log(self):
+        shutil.copy(os.path.join(TEST_DATA, "blueprint.json"), self.tmp)
+        self.assertIsNone(ns.record_done(self.tmp, STEPS, "make_blueprint"))
+        self.assertIsNone(ns.record_done(self.tmp, STEPS, "make_blueprint"))
+        state = load_json(os.path.join(self.tmp, "state.json"))
+        record = state["steps"]["make_blueprint"]
+        self.assertEqual(record["inputs"], {"spec.json": ns.file_hash(os.path.join(self.tmp, "spec.json"))})
+        self.assertEqual(set(record["outputs"]), {"blueprint.json"})
+        with open(os.path.join(self.tmp, "run.jsonl"), encoding="utf-8") as f:
+            lines = [json.loads(line) for line in f]
+        self.assertEqual([(x["event"], x["step"]) for x in lines], [("done", "make_blueprint")] * 2)
+
+    def test_refuses_a_step_with_a_missing_output(self):
+        error = ns.record_done(self.tmp, STEPS, "make_blueprint")
+        self.assertIn("blueprint.json missing", error)
+        self.assertFalse(os.path.exists(os.path.join(self.tmp, "state.json")))
+
+    def test_refuses_a_step_while_an_earlier_one_is_not_done(self):
+        os.makedirs(os.path.join(self.tmp, "review"))
+        with open(os.path.join(self.tmp, "review", "solver-answers.json"), "w") as f:
+            f.write("{}")
+        self.assertIn("make_blueprint", ns.record_done(self.tmp, STEPS, "blind_solver"))
+
+    def test_refuses_an_unknown_step_and_a_missing_folder(self):
+        self.assertIn("no step", ns.record_done(self.tmp, STEPS, "nope"))
+        self.assertIn("no task folder", ns.record_done(os.path.join(self.tmp, "x"), STEPS, "new_paper"))
+
+    def test_a_broken_state_file_is_an_error(self):
+        with open(os.path.join(self.tmp, "state.json"), "w") as f:
+            f.write("[]")
+        with self.assertRaises(ns.WorkflowError):
+            ns.next_step(self.tmp, STEPS)
 
 
 class CommandLine(unittest.TestCase):
@@ -198,6 +309,7 @@ class CommandLine(unittest.TestCase):
         bp["status"] = "draft"
         with open(os.path.join(self.tmp, "blueprint.json"), "w", encoding="utf-8") as f:
             json.dump(bp, f)
+        ns.record_done(self.tmp, STEPS, "make_blueprint")
 
     def tearDown(self):
         shutil.rmtree(self.tmp)
@@ -215,6 +327,20 @@ class CommandLine(unittest.TestCase):
         self.assertIn("STOP after this step", out)
         self.assertEqual(out.count("NEXT:"), 1)
         self.assertIn(f"{self.tmp}/blueprint.json", out)        # TASK is filled in
+        self.assertIn(f"next_step.py\" {self.tmp} --done approve_blueprint", out)
+
+    def test_done(self):
+        code, out = self.run_main(self.tmp, "--done", "approve_blueprint")
+        self.assertEqual(code, 1, out)                          # still a draft: not done...
+        self.assertIn("Not recorded", out)
+        bp = load_json(os.path.join(self.tmp, "blueprint.json"))
+        bp["status"] = "approved"                               # ...until the user approves it
+        with open(os.path.join(self.tmp, "blueprint.json"), "w", encoding="utf-8") as f:
+            json.dump(bp, f)
+        self.assertEqual(self.run_main(self.tmp, "--done", "approve_blueprint")[0], 0)
+        code, out = self.run_main(self.tmp, "--done", "nope")
+        self.assertEqual(code, 1)
+        self.assertEqual(self.run_main(self.tmp, "--done")[0], 2)
 
     def test_json(self):
         code, out = self.run_main(self.tmp, "--json")

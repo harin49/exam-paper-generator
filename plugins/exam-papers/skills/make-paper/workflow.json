@@ -1,5 +1,5 @@
 {
-  "about": "The order of the exam-paper workflow, read by scripts/next_step.py. Steps run one at a time, in this order. A step is next when every step before it is done and it is not. 'by' says who does the step; 'waitsForUser' marks the approval points where work stops until the user answers. 'done' is checked against the task folder (paths are relative to it). Format: see next_step.py.",
+  "about": "The order of the exam-paper workflow, read by scripts/next_step.py. Steps run one at a time, in this order. A step is next when every step before it is done and it is not. 'by' says who does the step; 'waitsForUser' marks the approval points where work stops until the user answers. 'done' is checked against the task folder (paths are relative to it). 'inputs' and 'outputs' are the files whose hashes next_step.py --done records when the step finishes; a 'recorded' condition is done while those inputs are unchanged and the outputs exist. Format: see next_step.py.",
   "steps": [
     {
       "id": "new_paper",
@@ -28,7 +28,9 @@
       "waitsForUser": false,
       "run": "python3 \"${CLAUDE_SKILL_DIR}/scripts/make_blueprint.py\" TASK/spec.json --concepts CONCEPT_LIST",
       "note": "CONCEPT_LIST is the concept list found in step 0. If the spec changed after the blueprint was made, the blueprint is out of date.",
-      "done": {"newer": "blueprint.json", "than": ["spec.json"]}
+      "inputs": ["spec.json"],
+      "outputs": ["blueprint.json"],
+      "done": {"recorded": ["spec.json"]}
     },
     {
       "id": "approve_blueprint",
@@ -65,7 +67,9 @@
       "by": "script",
       "waitsForUser": false,
       "run": "python3 \"${CLAUDE_SKILL_DIR}/scripts/extract_paper.py\" TASK/questions.json",
-      "done": {"newer": "review/solver-input.json", "than": ["questions.json"]}
+      "inputs": ["questions.json"],
+      "outputs": ["review/solver-input.json"],
+      "done": {"recorded": ["questions.json"]}
     },
     {
       "id": "blind_solver",
@@ -74,7 +78,9 @@
       "by": "subagent",
       "waitsForUser": false,
       "run": "Start the exam-papers:blind-solver subagent by its type (the plugin's agents/blind-solver.md; never pasted into a general-purpose subagent) with only two paths: input TASK/review/solver-input.json and output TASK/review/solver-answers.json. Wait for it to finish.",
-      "done": {"newer": "review/solver-answers.json", "than": ["review/solver-input.json"]}
+      "inputs": ["review/solver-input.json"],
+      "outputs": ["review/solver-answers.json"],
+      "done": {"recorded": ["review/solver-input.json"]}
     },
     {
       "id": "compare_solutions",
@@ -84,7 +90,9 @@
       "waitsForUser": false,
       "run": "python3 \"${CLAUDE_SKILL_DIR}/scripts/compare_solutions.py\" TASK/questions.json TASK/review/solver-answers.json --out TASK/review/compare-output.txt",
       "note": "Exit code 1 means mismatches, not a failure. Show the output verbatim.",
-      "done": {"newer": "review/compare-output.txt", "than": ["review/solver-answers.json", "questions.json"]}
+      "inputs": ["review/solver-answers.json", "questions.json"],
+      "outputs": ["review/compare-output.txt"],
+      "done": {"recorded": ["review/solver-answers.json", "questions.json"]}
     },
     {
       "id": "reviewer",
@@ -94,8 +102,10 @@
       "waitsForUser": false,
       "run": "Start the exam-papers:reviewer subagent by its type (the plugin's agents/reviewer.md; never pasted into a general-purpose subagent) with the paths SKILL.md step 5.4 lists; output TASK/review/reviewer-report.json (it makes TASK/review/reviewer-report.html). Wait for it to finish, then print the findings with python3 \"${CLAUDE_SKILL_DIR}/scripts/render_review.py\" TASK/review/reviewer-report.json --print, show them verbatim and send the user the HTML report.",
       "note": "The reviewer runs once, before the first fix decision; later rounds only rerun the blind solver.",
+      "inputs": ["review/compare-output.txt"],
+      "outputs": ["review/reviewer-report.json", "review/reviewer-report.html"],
       "done": {"any": [
-        {"newer": "review/reviewer-report.html", "than": ["review/compare-output.txt"]},
+        {"recorded": ["review/compare-output.txt"]},
         {"exists": "review/fixes.json"}
       ]}
     },
@@ -107,10 +117,12 @@
       "waitsForUser": true,
       "run": "Ask the user which findings and mismatches to fix, then write their answer to TASK/review/fixes.json: {\"accepted\": [\"R1\", ...], \"rejected\": [...]}.",
       "note": "Also asked again when a later comparison finds mismatches.",
+      "inputs": ["review/reviewer-report.html", "review/compare-output.txt"],
+      "outputs": ["review/fixes.json"],
       "done": {"all": [
-        {"newer": "review/fixes.json", "than": ["review/reviewer-report.html"]},
+        {"recorded": ["review/reviewer-report.html"]},
         {"any": [
-          {"newer": "review/fixes.json", "than": ["review/compare-output.txt"]},
+          {"recorded": ["review/compare-output.txt"]},
           {"contains": "review/compare-output.txt", "text": "Result: NO MISMATCHES"}
         ]}
       ]}
@@ -122,9 +134,11 @@
       "by": "claude",
       "waitsForUser": false,
       "run": "Edit TASK/questions.json for the accepted fixes only. next_step.py then sends you back through the check and the blind solver.",
+      "inputs": ["review/fixes.json"],
+      "outputs": ["questions.json"],
       "done": {"any": [
         {"empty": "review/fixes.json", "field": "accepted"},
-        {"newer": "questions.json", "than": ["review/fixes.json"]}
+        {"recorded": ["review/fixes.json"]}
       ]}
     },
     {
@@ -135,10 +149,9 @@
       "waitsForUser": false,
       "run": "python3 \"${CLAUDE_SKILL_DIR}/scripts/render.py\" TASK/questions.json",
       "note": "Open both PDFs and look at them before delivering.",
-      "done": {"all": [
-        {"newer": "{paper_pdf}", "than": ["questions.json"]},
-        {"newer": "{key_pdf}", "than": ["questions.json"]}
-      ]}
+      "inputs": ["questions.json"],
+      "outputs": ["{paper_pdf}", "{key_pdf}"],
+      "done": {"recorded": ["questions.json"]}
     },
     {
       "id": "deliver",

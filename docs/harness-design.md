@@ -221,8 +221,8 @@ attached folders. The teacher owns and can see everything.
 
 Where hooks run in a sandbox that ends with the task (Cowork on Pro and Max plans, and on Team and
 Enterprise when cloud sessions are on), a paper is made from start to finish in one task. Approvals,
-`state.json` and `run.log` are trusted only inside that task. At the end, the whole paper folder (PDFs,
-spec, blueprint, questions, review, `approvals.json`, `state.json`, `run.log`) is delivered to the
+`state.json` and `run.jsonl` are trusted only inside that task. At the end, the whole paper folder (PDFs,
+spec, blueprint, questions, review, `approvals.json`, `state.json`, `run.jsonl`) is delivered to the
 teacher's folder as a record. A new task starts a new paper. Syllabus packs are read from the teacher's
 folder and checked again with `validate_concepts.py` in every task.
 
@@ -255,14 +255,29 @@ findings.
 ### D14. State is a hash ledger plus a run log
 
 - `state.json` in each task folder records every finished step with the SHA-256 hashes of its inputs
-  and outputs. A step is done only while those hashes still match the files; changing an input makes
-  that step and every step after it due again.
-- `run.log` is an append-only record of every step, script result, agent call, approval and automatic
-  fix, with times.
+  and outputs. Claude records a step with `next_step.py TASK --done STEP_ID` when it finishes.
+- A step that is checked by its inputs (`"recorded"` in `workflow.json`) is done while its inputs still
+  have the recorded hashes and its outputs exist. Changing an input makes that step and every step
+  after it due again. Steps whose files prove them (a check that passes, `"status": "approved"`)
+  keep those conditions.
+- Output hashes are recorded for the audit trail but are not checked. Two later steps change an
+  output on purpose: the approval sets `status` in `blueprint.json`, and the teacher may edit
+  `questions.json` by hand after `apply_fixes`. Checking outputs would send the first back to
+  `make_blueprint` (which refuses to overwrite an approved blueprint) and the second back to applying
+  the same fixes again. Any edit is still caught, because each step's outputs are a later step's inputs.
+- `--done` refuses a step while an earlier step is not done, while one of its outputs is missing, or
+  while its own done condition would still fail. Conditions that read the step's own outputs are
+  ignored for the "earlier step" test: `apply_fixes` edits `questions.json`, which makes the check
+  and the blind solver due again, as it should.
+- `run.jsonl` is an append-only record with times, one JSON object per line. It has every `--done`
+  so far; script results, agent calls, approvals and automatic fixes are to be added with the hooks
+  (D6) and the writer loop (D13).
+- Task folders made before this have no `state.json` and start again (no migration).
 
 *Why:* file timestamps break on a copy, a `git checkout` or any re-save (re-printing the review findings
 once sent a finished paper back to an earlier step). Hashes depend only on content. The log gives the
-teacher an audit trail (D2) and gives the evals their data (D17).
+teacher an audit trail (D2) and gives the evals their data (D17). JSON lines, so scripts can count
+rounds and failures without parsing text.
 
 ### D15. Each syllabus pack declares its own kinds
 
@@ -285,7 +300,7 @@ rubrics, and fill-in or match items can be added later.
 
 - **Planted errors:** inject known mistakes into a known-good paper (wrong key, unanswerable question,
   off-syllabus part, marking that does not add up) and measure how many the solver and reviewer catch.
-- **Run metrics:** from `run.log`: check failures, solver mismatches, findings by severity, rounds
+- **Run metrics:** from `run.jsonl`: check failures, solver mismatches, findings by severity, rounds
   used, automatic fixes, and findings the teacher rejected.
 - **Golden papers:** a fixed set of syllabi and specs rerun after every change to the prompts or
   scripts, with their metrics compared to the previous run.
@@ -389,7 +404,7 @@ Also seen:
 Problem found: **files and hooks live in the cloud workspace, not the teacher's folder.** Hooks ran
 in `/home/claude` and wrote `approvals.json` and their logs there. The user's picked folders were
 reachable only by Claude copying files across, and the files reached the Mac only when Claude sent
-them. So approvals, `state.json`, `run.log`, syllabus packs and papers would be lost when the workspace
+them. So approvals, `state.json`, `run.jsonl`, syllabus packs and papers would be lost when the workspace
 goes, and copying them to the teacher's folder is a step Claude performs, which D6 does not trust.
 This affects D6, D12 and D14 for Cowork tasks that run in the cloud.
 

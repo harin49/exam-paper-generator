@@ -3,21 +3,29 @@
 
 Usage:
     python3 next_step.py TASK [--json] [--workflow FILE]
+    python3 next_step.py TASK --done STEP_ID [--workflow FILE]
 
 TASK is the paper's task folder (papers/<board>-<class>-<subject>-<date>/ in the teacher's workspace).
 The steps and their order come from workflow.json in this skill's folder (or FILE). Each step has a "done" condition that is checked
 against TASK; the next step is the first one that is not done. Steps are never run side by side:
 do the step this prints, wait for it to finish, then run this script again.
 
+When a step has finished, record it with --done STEP_ID. That saves the SHA-256 hashes of the step's
+"inputs" and "outputs" in TASK/state.json (the latest record of each step) and appends the record to
+TASK/run.jsonl (one JSON object per line, never rewritten). --done refuses a step while an earlier
+step is not done, while one of the step's outputs is missing, or while the step's own "done"
+condition would still not hold (an approval that has not been given, a check that fails).
+
 A step that was done can become not done when an earlier file changes: for example, editing
 questions.json after the blind solver ran makes the blind paper out of date, so extract_paper.py
-is next again.
+is next again. Contents decide this, never file times, so copying the folder changes nothing.
 
 "done" conditions (paths are relative to TASK; {paper_pdf} and {key_pdf} are the PDF names
 render.py uses for the spec):
     {"exists": PATH}                              the file exists
-    {"newer": PATH, "than": [PATH, ...]}          PATH exists and was written after every file in
-                                                  "than" (missing "than" files are ignored)
+    {"recorded": [PATH, ...]}                     the step was recorded with --done, each PATH (one of
+                                                  the step's "inputs") still has the hash it had then,
+                                                  and every one of the step's "outputs" exists
     {"passes": SCRIPT, "args": [PATH, ...]}       the script (relative to this skill's folder) exits 0
     {"equals": PATH, "field": F, "value": V}      JSON file PATH has field F equal to V
     {"empty": PATH, "field": F}                   JSON file PATH has field F as an empty list
@@ -26,13 +34,16 @@ render.py uses for the spec):
     {"never": true}                               never done (the last step)
 
 Exit codes:
-    0  the next step was printed
+    0  the next step was printed (or, with --done, the step was recorded)
+    1  --done: the step was not recorded (the message says why)
     2  the workflow file or the task folder's spec could not be read, or the workflow is malformed
 """
+import hashlib
 import json
 import os
 import subprocess
 import sys
+from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from render import output_names  # noqa: E402
@@ -40,6 +51,8 @@ from render import output_names  # noqa: E402
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WORKFLOW = os.path.join(SKILL_DIR, "workflow.json")
 STEP_KEYS = {"id", "skillStep", "title", "by", "waitsForUser", "run", "done"}
+STATE = "state.json"
+RUN_LOG = "run.jsonl"
 BY = {"script", "subagent", "claude", "user"}
 
 
@@ -65,16 +78,44 @@ def read_workflow(path):
             raise WorkflowError(f"step id '{s['id']}' is used twice")
         if s["by"] not in BY:
             raise WorkflowError(f"step '{s['id']}': 'by' must be one of {', '.join(sorted(BY))}")
+        for key in ("inputs", "outputs"):
+            if not isinstance(s.get(key, []), list):
+                raise WorkflowError(f"step '{s['id']}': '{key}' must be a list of paths")
+        for paths in recorded_paths(s["done"]):
+            if not s.get("outputs"):
+                raise WorkflowError(f"step '{s['id']}': a 'recorded' condition needs the step's 'outputs'")
+            if not set(paths) <= set(s.get("inputs", [])):
+                raise WorkflowError(f"step '{s['id']}': 'recorded' paths must be among the step's 'inputs'")
         ids.add(s["id"])
     return steps
+
+
+def recorded_paths(cond):
+    """Every path list of the "recorded" conditions inside cond."""
+    if isinstance(cond, dict):
+        if "recorded" in cond:
+            yield cond["recorded"]
+        for c in cond.get("all", []) + cond.get("any", []):
+            yield from recorded_paths(c)
+
+
+def file_hash(path):
+    """The SHA-256 of the file, or None if there is no such file."""
+    try:
+        with open(path, "rb") as f:
+            return hashlib.sha256(f.read()).hexdigest()
+    except OSError:
+        return None
 
 
 class Task:
     """The task folder, and the condition checks run against it."""
 
-    def __init__(self, folder):
+    def __init__(self, folder, ignore=()):
         self.folder = folder
         self.names = {}
+        self.records = read_state(folder)
+        self.ignore = set(ignore)       # paths whose conditions count as holding (see record_done)
         spath = os.path.join(folder, "spec.json")
         if os.path.isfile(spath):
             paper, key = output_names(load(spath))
@@ -83,8 +124,8 @@ class Task:
     def path(self, p):
         return os.path.join(self.folder, self.names.get(p, p))
 
-    def mtime(self, p):
-        return os.stat(self.path(p)).st_mtime_ns
+    def hashes(self, paths):
+        return {p: file_hash(self.path(p)) for p in paths}
 
     def read_json(self, p):
         try:
@@ -92,22 +133,26 @@ class Task:
         except (OSError, ValueError):
             return None
 
-    def holds(self, cond):
+    def holds(self, cond, step):
         if not isinstance(cond, dict) or len(cond) == 0:
             raise WorkflowError(f"a condition must be a non-empty object: {cond!r}")
         if "all" in cond:
-            return all(self.holds(c) for c in cond["all"])
+            return all(self.holds(c, step) for c in cond["all"])
         if "any" in cond:
-            return any(self.holds(c) for c in cond["any"])
+            return any(self.holds(c, step) for c in cond["any"])
         if "never" in cond:
             return False
+        read = [cond[k] for k in ("exists", "equals", "empty", "contains") if k in cond] + cond.get("args", [])
+        if self.ignore & set(read):
+            return True
         if "exists" in cond:
             return os.path.isfile(self.path(cond["exists"]))
-        if "newer" in cond:
-            if not os.path.isfile(self.path(cond["newer"])):
+        if "recorded" in cond:
+            record = self.records.get(step["id"])
+            if record is None or not all(os.path.isfile(self.path(o)) for o in step["outputs"]):
                 return False
-            t = self.mtime(cond["newer"])
-            return all(t > self.mtime(o) for o in cond.get("than", []) if os.path.isfile(self.path(o)))
+            now = self.hashes([p for p in cond["recorded"] if p not in self.ignore])
+            return all(record["inputs"].get(p) == h and h is not None for p, h in now.items())
         if "passes" in cond:
             args = [os.path.abspath(self.path(a)) for a in cond.get("args", [])]
             if not all(os.path.isfile(a) for a in args):
@@ -130,15 +175,62 @@ class Task:
         raise WorkflowError(f"unknown condition: {cond!r}")
 
 
-def next_step(folder, steps):
+def read_state(folder):
+    """The latest record of each step: {step id: record}. Empty if TASK has no state.json yet."""
+    path = os.path.join(folder, STATE)
+    if not os.path.isfile(path):
+        return {}
+    doc = load(path)
+    if not isinstance(doc, dict) or not isinstance(doc.get("steps"), dict):
+        raise WorkflowError(f"{path} has no 'steps' object")
+    return doc["steps"]
+
+
+def next_step(folder, steps, ignore=()):
     """(the steps already done, the next step). The first step is next if TASK does not exist."""
-    task = Task(folder) if os.path.isdir(folder) else None
+    task = Task(folder, ignore) if os.path.isdir(folder) else None
     done = []
     for s in steps:
-        if task is None or not task.holds(s["done"]):
+        if task is None or not task.holds(s["done"], s):
             return done, s
         done.append(s)
     return done, None
+
+
+def record_done(folder, steps, step_id):
+    """Record that step_id has finished. Returns an error message, or None when it was recorded."""
+    by_id = {s["id"]: s for s in steps}
+    if step_id not in by_id:
+        return f"there is no step '{step_id}' in the workflow"
+    if not os.path.isdir(folder):
+        return f"there is no task folder {folder}"
+    step = by_id[step_id]
+    # A step can change files that earlier steps read (apply_fixes edits questions.json, so the
+    # check and the blind solver are due again). Those earlier steps were done before it ran.
+    done, _ = next_step(folder, steps, ignore=step.get("outputs", []))
+    index = [s["id"] for s in steps].index(step_id)
+    if len(done) < index:
+        return (f"step '{step_id}' cannot be recorded yet: step '{steps[len(done)]['id']}' "
+                "before it is not done")
+    task = Task(folder)
+    missing = [o for o in step.get("outputs", []) if not os.path.isfile(task.path(o))]
+    if missing:
+        return f"step '{step_id}' is not finished: {', '.join(task.names.get(o, o) for o in missing)} missing"
+    record = {"time": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+              "inputs": task.hashes(step.get("inputs", [])),
+              "outputs": task.hashes(step.get("outputs", []))}
+    records = dict(task.records, **{step_id: record})
+    task.records = records
+    if step["done"] != {"never": True} and not task.holds(step["done"], step):
+        return f"step '{step_id}' is not finished: its done condition in workflow.json does not hold"
+    tmp = os.path.join(folder, STATE + ".tmp")
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump({"steps": records}, f, indent=2)
+        f.write("\n")
+    os.replace(tmp, os.path.join(folder, STATE))
+    with open(os.path.join(folder, RUN_LOG), "a", encoding="utf-8") as f:
+        f.write(json.dumps(dict({"event": "done", "step": step_id}, **record)) + "\n")
+    return None
 
 
 def main(argv):
@@ -153,10 +245,28 @@ def main(argv):
             return 2
         wpath = args[i + 1]
         del args[i:i + 2]
+    done_id = None
+    if "--done" in args:
+        i = args.index("--done")
+        if i + 1 >= len(args):
+            print("--done needs a step id")
+            return 2
+        done_id = args[i + 1]
+        del args[i:i + 2]
     if len(args) != 1:
         print(__doc__.strip())
         return 2
     folder = args[0]
+    if done_id is not None:
+        try:
+            error = record_done(folder, read_workflow(wpath), done_id)
+        except (OSError, ValueError, KeyError, TypeError) as e:
+            error = str(e)
+        if error:
+            print(f"Not recorded: {error}")
+            return 1
+        print(f"Recorded: {done_id}. Run next_step.py again for the next step.")
+        return 0
     try:
         steps = read_workflow(wpath)
         done, step = next_step(folder, steps)
@@ -182,7 +292,10 @@ def main(argv):
         print(f"  Note: {step['note']}")
     if step["waitsForUser"]:
         print("\nSTOP after this step: wait for the user's answer before anything else.")
-    print("\nDo this step only. When it has finished, run next_step.py again.")
+    script = os.path.join(SKILL_DIR, "scripts", "next_step.py")
+    print("\nDo this step only. When it has finished, record it:")
+    print(f'  python3 "{script}" {folder.rstrip("/")} --done {step["id"]}')
+    print("then run next_step.py again.")
     return 0
 
 

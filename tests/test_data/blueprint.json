@@ -13,7 +13,8 @@
       ],
       "kind": "numerical",
       "difficulty": "medium",
-      "concept": "unit_conversion"
+      "concept": "unit_conversion",
+      "correctOption": "c"
     },
     {
       "number": 2,
@@ -25,7 +26,8 @@
       ],
       "kind": "theory",
       "difficulty": "easy",
-      "concept": "zero_error"
+      "concept": "zero_error",
+      "correctOption": "b"
     },
     {
       "number": 3,
@@ -37,7 +39,8 @@
       ],
       "kind": "numerical",
       "difficulty": "medium",
-      "concept": "retardation"
+      "concept": "retardation",
+      "correctOption": "d"
     },
     {
       "number": 4,
@@ -49,7 +52,8 @@
       ],
       "kind": "theory",
       "difficulty": "easy",
-      "concept": "distance_displacement"
+      "concept": "distance_displacement",
+      "correctOption": "a"
     },
     {
       "number": 5,
@@ -61,7 +65,8 @@
       ],
       "kind": "numerical",
       "difficulty": "medium",
-      "concept": "linear_momentum"
+      "concept": "linear_momentum",
+      "correctOption": "c"
     },
     {
       "number": 6,
@@ -73,7 +78,8 @@
       ],
       "kind": "theory",
       "difficulty": "medium",
-      "concept": "newton_first_law"
+      "concept": "newton_first_law",
+      "correctOption": "a"
     },
     {
       "number": 7,

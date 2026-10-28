@@ -140,7 +140,9 @@ Hard rules (the paper cannot be built until they pass):
   is `per_section`); each section's questions are together and in spec order; parts are labelled
   a, b, c... and sub-parts i, ii, iii... in order.
 - **Q3.** Each section has exactly `questionsOffered` questions, each worth `marksPerQuestion`.
-- **Q4.** MCQs: correct number of options, a valid `correctOption`, no parts.
+- **Q4.** MCQs: correct number of options, a valid `correctOption`, no parts. In a numerical MCQ the
+  correct option starts with a number that shows a `computed` value, rounded at the option's own last
+  digit ("1.33 Hz" shows 1.3333; "5 × 10<sup>4</sup> Pa" shows 50 000), and no other option shows one.
 - **Q5.** Parts follow the spec's `subParts` rule (`none` / `allowed` / `required`, min and max).
 - **Q6.** Leaf marks add up to the question's marks; group marks equal their sub-parts; every mark is a
    multiple of `smallestMarkUnit`; marking items add up to their leaf's marks.
@@ -187,7 +189,8 @@ structural fields: no wording, answers, marking or computed values.
   "status": "approved",
   "questions": [
     { "number": 1, "section": "A", "chapter": 1, "marks": 1,
-      "concepts": ["vernier_least_count"], "kind": "numerical", "difficulty": "easy" },
+      "concepts": ["vernier_least_count"], "kind": "numerical", "difficulty": "easy",
+      "correctOption": "c" },
     { "number": 21, "section": "B", "chapter": 4, "marks": 3,
       "concepts": ["pascals_law", "hydraulic_press"],
       "parts": [
@@ -203,7 +206,7 @@ structural fields: no wording, answers, marking or computed values.
 | Field | Meaning |
 |---|---|
 | `status` | `"draft"` until the user approves it, then `"approved"`. Questions are only written from an approved blueprint. |
-| question fields | `number`, `section`, `chapter`, `marks`, `concepts`; MCQs also `kind`, `difficulty` and `concept`. |
+| question fields | `number`, `section`, `chapter`, `marks`, `concepts`; MCQs also `kind`, `difficulty`, `concept` and `correctOption` (dealt by `make_blueprint.py` so the letters are used evenly). |
 | part fields | Leaf: `label`, `marks`, `kind`, `difficulty`, `concept`. Group: `label`, `marks`, `parts`. |
 
 All balance rules (chapters, numerical/theory, difficulty, compulsory coverage) can be checked on the
@@ -212,5 +215,5 @@ blueprint alone, before any question is written.
 Additional hard rule for the question checker:
 
 - **Q15.** `questions.json` must match its blueprint exactly on every structural field: the same questions
-  in the same order with the same number, section, chapter, marks and concepts, and the same parts
-  with the same labels, marks, kind, difficulty and concept. Claude adds wording; it never changes a slot.
+  in the same order with the same number, section, chapter, marks and concepts (and, for MCQs, the
+  same `correctOption`), and the same parts with the same labels, marks, kind, difficulty and concept. Claude adds wording; it never changes a slot.

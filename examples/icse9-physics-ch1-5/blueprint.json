@@ -13,7 +13,8 @@
       ],
       "kind": "numerical",
       "difficulty": "medium",
-      "concept": "pendulum_frequency"
+      "concept": "pendulum_frequency",
+      "correctOption": "a"
     },
     {
       "number": 2,
@@ -25,7 +26,8 @@
       ],
       "kind": "numerical",
       "difficulty": "medium",
-      "concept": "fps_cgs_systems"
+      "concept": "fps_cgs_systems",
+      "correctOption": "c"
     },
     {
       "number": 3,
@@ -37,7 +39,8 @@
       ],
       "kind": "theory",
       "difficulty": "easy",
-      "concept": "zero_error_basic_idea"
+      "concept": "zero_error_basic_idea",
+      "correctOption": "d"
     },
     {
       "number": 4,
@@ -49,7 +52,8 @@
       ],
       "kind": "numerical",
       "difficulty": "medium",
-      "concept": "velocity_time_graph_slope"
+      "concept": "velocity_time_graph_slope",
+      "correctOption": "b"
     },
     {
       "number": 5,
@@ -61,7 +65,8 @@
       ],
       "kind": "numerical",
       "difficulty": "easy",
-      "concept": "velocity_time_graph_area"
+      "concept": "velocity_time_graph_area",
+      "correctOption": "a"
     },
     {
       "number": 6,
@@ -73,7 +78,8 @@
       ],
       "kind": "theory",
       "difficulty": "easy",
-      "concept": "rest_and_motion"
+      "concept": "rest_and_motion",
+      "correctOption": "b"
     },
     {
       "number": 7,
@@ -85,7 +91,8 @@
       ],
       "kind": "numerical",
       "difficulty": "medium",
-      "concept": "linear_momentum"
+      "concept": "linear_momentum",
+      "correctOption": "d"
     },
     {
       "number": 8,
@@ -97,7 +104,8 @@
       ],
       "kind": "theory",
       "difficulty": "medium",
-      "concept": "newtons_first_law"
+      "concept": "newtons_first_law",
+      "correctOption": "c"
     },
     {
       "number": 9,
@@ -109,7 +117,8 @@
       ],
       "kind": "theory",
       "difficulty": "easy",
-      "concept": "inertia_examples"
+      "concept": "inertia_examples",
+      "correctOption": "a"
     },
     {
       "number": 10,
@@ -121,7 +130,8 @@
       ],
       "kind": "numerical",
       "difficulty": "easy",
-      "concept": "thrust_and_pressure"
+      "concept": "thrust_and_pressure",
+      "correctOption": "c"
     },
     {
       "number": 11,
@@ -133,7 +143,8 @@
       ],
       "kind": "theory",
       "difficulty": "medium",
-      "concept": "atmospheric_pressure_manifestations"
+      "concept": "atmospheric_pressure_manifestations",
+      "correctOption": "d"
     },
     {
       "number": 12,
@@ -145,7 +156,8 @@
       ],
       "kind": "theory",
       "difficulty": "easy",
-      "concept": "pressure_and_altitude"
+      "concept": "pressure_and_altitude",
+      "correctOption": "b"
     },
     {
       "number": 13,
@@ -157,7 +169,8 @@
       ],
       "kind": "numerical",
       "difficulty": "medium",
-      "concept": "relative_density"
+      "concept": "relative_density",
+      "correctOption": "a"
     },
     {
       "number": 14,
@@ -169,7 +182,8 @@
       ],
       "kind": "theory",
       "difficulty": "medium",
-      "concept": "upthrust_properties"
+      "concept": "upthrust_properties",
+      "correctOption": "c"
     },
     {
       "number": 15,
@@ -181,7 +195,8 @@
       ],
       "kind": "theory",
       "difficulty": "easy",
-      "concept": "density_and_sinking_floating"
+      "concept": "density_and_sinking_floating",
+      "correctOption": "d"
     },
     {
       "number": 16,

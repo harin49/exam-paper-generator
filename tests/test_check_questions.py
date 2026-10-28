@@ -290,6 +290,44 @@ class McqQ4(WithSpec):
         q(self.qdoc, 3)["parts"] = []
         self.assertIn("[Q4] Q3: an MCQ must not have parts", self.errors())
 
+    # Q1 is numerical: options 12, 120, 1200 (correct, c), 12000 kg m⁻³; computed 1200.
+    def test_correct_option_shows_wrong_value(self):
+        q(self.qdoc, 1)["correctOption"] = "b"
+        self.assertIn("[Q4] Q1: the correct option (b) shows \"120 kg m<sup>−3</sup>\" but the computed "
+                      "value is 1200", self.errors())
+
+    def test_two_options_show_the_computed_value(self):
+        q(self.qdoc, 1)["options"][3] = "1.2 × 10<sup>3</sup> kg m<sup>−3</sup>"
+        self.assertIn("[Q4] Q1: option (d) also shows the computed value 1200: two options would be "
+                      "correct", self.errors())
+
+    def test_correct_option_without_a_number(self):
+        q(self.qdoc, 1)["options"][2] = "ten times that of water"
+        self.assertIn("[Q4] Q1: is numerical, but the correct option (c) does not start with a number",
+                      self.errors())
+
+    def test_rounded_and_scientific_options_match(self):
+        q1 = q(self.qdoc, 1)
+        q1["computed"][0].update(expression="3700 / 3", value=1233.3333)
+        q1["options"][2] = "1.23 × 10<sup>3</sup> kg m<sup>−3</sup>"
+        self.assertNotIn("[Q4] Q1", self.errors())
+
+    def test_theory_mcq_options_are_not_checked(self):
+        self.assertEqual(q(self.qdoc, 2)["kind"], "theory")
+        q(self.qdoc, 2)["options"][0] = "5 m"
+        self.assertNotIn("[Q4] Q2", self.errors())
+
+
+class OptionNumber(unittest.TestCase):
+    def test_forms(self):
+        self.assertEqual(cq.option_number("1.25 Hz"), (1.25, 0.01))
+        self.assertEqual(cq.option_number("−0.5 m"), (-0.5, 0.1))
+        self.assertEqual(cq.option_number("50,000 Pa"), (50000.0, 1))
+        value, step = cq.option_number("5 × 10<sup>−3</sup> m")
+        self.assertAlmostEqual(value, 0.005)
+        self.assertAlmostEqual(step, 0.001)
+        self.assertIsNone(cq.option_number("It doubles"))
+
 
 class PartCountsQ5(WithSpec):
     def test_too_few_parts_in_long_answer(self):
@@ -587,6 +625,18 @@ class PartConceptsQ8(WithSpec):
         self.info("newton_first_law")["kinds"] = ["numerical"]
         self.assertIn("[Q8] Q6: is theory, but concept 'newton_first_law' only allows numerical",
                       " | ".join(self.q8()))
+
+    def test_blueprint_compares_correct_option(self):
+        bdoc = load("blueprint.json")
+        next(x for x in bdoc["questions"] if x["number"] == 1)["correctOption"] = "a"
+        errs = cq.check(self.qdoc, bdoc, self.spec, self.concepts).errors
+        self.assertIn("[Q15] Q1: correctOption is \"c\" but the blueprint says \"a\"", " | ".join(errs))
+
+    def test_blueprint_without_correct_option(self):
+        bdoc = load("blueprint.json")
+        del next(x for x in bdoc["questions"] if x["number"] == 1)["correctOption"]
+        errs = cq.check(self.qdoc, bdoc, self.spec, self.concepts).errors
+        self.assertIn("[Q15] blueprint: gives no correctOption for Q1;", " | ".join(errs))
 
     def test_blueprint_compares_concepts(self):
         bdoc = load("blueprint.json")

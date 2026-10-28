@@ -17,7 +17,7 @@ Rules implemented so far (see skill/schemas/question-format.md):
     Q1   fields present, correct types and values, no unknown fields
     Q2   question numbers, section order and part labels in sequence
     Q3   questions per section and marks per question match the spec
-    Q4   MCQ options and correct option
+    Q4   MCQ options and correct option; a numerical MCQ's correct option shows its computed value
     Q5   number of parts follows the section's subParts rule
     Q6   marks add up (parts, sub-parts, marking items) in multiples of the smallest mark unit
     Q7   every numerical answer has a computed formula that recalculates to its stored value
@@ -37,6 +37,7 @@ import json
 import math
 import operator
 import os
+import re
 import sys
 from fractions import Fraction
 
@@ -309,6 +310,52 @@ def check_mcqs(r, qs, spec_sections):
         valid = LETTERS[:len(opts)]
         if isinstance(c, str) and c not in valid:
             r.error(loc, f"correctOption is {show(c)} but the options run {valid[0]}–{valid[-1]}", "Q4")
+        elif isinstance(c, str) and q.get("kind") == Kind.NUMERICAL:
+            check_option_values(r, q, opts, c, loc)
+
+
+# A number at the start of an option: 1.25, −0.5, 50,000 or 5 × 10<sup>4</sup>.
+OPTION_NUMBER = re.compile(r"\s*([−-]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d+))?)"
+                           r"(?:\s*×\s*10\s*<sup>\s*([−-]?\d+)\s*</sup>)?")
+
+
+def option_number(text):
+    """(value, step) for the number an option starts with, or None. step is the place value of the
+    option's last digit (0.01 for "1.25", 1000 for "5 × 10<sup>3</sup>")."""
+    m = OPTION_NUMBER.match(text) if isinstance(text, str) else None
+    if not m:
+        return None
+    exp = int(m.group(3).replace("−", "-")) if m.group(3) else 0
+    mantissa = float(m.group(1).replace("−", "-").replace(",", ""))
+    decimals = len(m.group(2) or "")
+    return mantissa * 10 ** exp, 10 ** (exp - decimals)
+
+
+def check_option_values(r, q, opts, correct, loc):
+    """Q4 for a numerical MCQ: the correct option shows a computed value, and no other option does."""
+    comp = q.get("computed")
+    values = [c["value"] for c in comp if isinstance(c, dict) and is_num(c.get("value"))] \
+        if isinstance(comp, list) else []
+    if not values:
+        return  # Q1 or Q7 reports it
+
+    def shows_value(opt):
+        n = option_number(opt)
+        # The option matches a value that rounds to it at the option's own last digit.
+        return n is not None and any(abs(n[0] - v) <= n[1] / 2 * (1 + 1e-9) for v in values)
+
+    i = LETTERS.index(correct)
+    computed = ", ".join(fmt(v) for v in values)
+    if option_number(opts[i]) is None:
+        r.error(loc, f"is numerical, but the correct option ({correct}) does not start with a number "
+                     f"to check against the computed value {computed}", "Q4")
+    elif not shows_value(opts[i]):
+        r.error(loc, f"the correct option ({correct}) shows {show(opts[i])} but the computed value is "
+                     f"{computed}", "Q4")
+    for j, opt in enumerate(opts):
+        if j != i and isinstance(opt, str) and shows_value(opt):
+            r.error(loc, f"option ({LETTERS[j]}) also shows the computed value {computed}: two options "
+                         "would be correct", "Q4")
 
 
 # ---------------- Q5: number of parts ----------------
@@ -714,6 +761,7 @@ def compare_to_blueprint(r, qdoc, bdoc):
         return
     if len(qs) != len(bs):
         r.error("questions", f"there are {len(qs)} questions but the blueprint has {len(bs)}", "Q15")
+    no_letter = []
     for i, (q, b) in enumerate(zip(qs, bs)):
         bnum = b.get("number", i + 1)
         loc = where(bnum)
@@ -735,9 +783,16 @@ def compare_to_blueprint(r, qdoc, bdoc):
         else:
             if "parts" in q:
                 r.error(loc, "the blueprint says this question has no parts", "Q15")
-            for f in ("kind", "difficulty", "concept"):
+            if "options" in q and "correctOption" not in b:
+                no_letter.append(where(bnum))
+            for f in ("kind", "difficulty", "concept", "correctOption"):
+                if f == "correctOption" and f not in b:
+                    continue
                 if q.get(f) != b.get(f):
                     r.error(loc, f"{f} is {show(q.get(f))} but the blueprint says {show(b.get(f))}", "Q15")
+    if no_letter:
+        r.error("blueprint", f"gives no correctOption for {', '.join(no_letter)}; it was made by an older "
+                             "make_blueprint.py: make it again", "Q15")
 
 
 # ---------------- entry points ----------------

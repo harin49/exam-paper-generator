@@ -20,13 +20,18 @@ blueprint:
   5. Concepts: each part gets the least-used concept of its chapter that allows its kind and marks,
      preferring one not already used in the same question and one whose maxMarks fits the part
      (a concept meant for parts 3+ marks bigger counts as already used once).
+  6. Correct options: each MCQ section's correct letters are dealt in shuffled rounds of a, b, c, d
+     (every letter once per round), so the letters are used evenly and none comes up more than twice
+     in a row. The shuffle is seeded from the spec, so the same spec always gives the same letters.
 The result is then checked with the same rules as check_questions.py (Q2-Q14 where they apply).
 
 Exit codes: 0 written, 1 errors (in the inputs, or the result fails a check), 2 a file could not be read.
 """
+import hashlib
 import json
 import math
 import os
+import random
 import sys
 from fractions import Fraction
 from itertools import product
@@ -208,6 +213,24 @@ def assign_concepts(leaves, by_chapter):
         in_q.append(best["tag"])
 
 
+# ---------------- 6. correct options ----------------
+def assign_correct_options(questions, spec):
+    """Give every MCQ a correctOption, dealt in shuffled rounds of the section's letters."""
+    seed = hashlib.sha256(json.dumps(spec, sort_keys=True).encode("utf-8")).hexdigest()
+    for s in spec["pattern"]["sections"]:
+        if s["type"] != SectionType.MCQ:
+            continue
+        rng = random.Random(f"{seed}:{s['id']}")
+        mcqs = [q for q in questions if q["section"] == s["id"]]
+        letters = []
+        while len(letters) < len(mcqs):
+            round_ = list(LETTERS[:s["mcqOptions"]])
+            rng.shuffle(round_)
+            letters += round_
+        for q, letter in zip(mcqs, letters):
+            q["correctOption"] = letter
+
+
 # ---------------- assemble ----------------
 def number_value(x):
     x = float(x)
@@ -280,6 +303,7 @@ def make(spec, concepts):
         else:
             item.update(kind=q["kind"], difficulty=q["difficulty"], concept=q["concept"])
         out.append(item)
+    assign_correct_options(out, spec)
     return out
 
 

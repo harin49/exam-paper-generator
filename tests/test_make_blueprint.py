@@ -62,6 +62,17 @@ class Blueprint(unittest.TestCase):
         b, _ = self.build(copy.deepcopy(self.spec))
         self.assertEqual(json.dumps(a), json.dumps(b))
 
+    def test_mcq_correct_options_spread_evenly(self):
+        qs, _ = self.build()
+        mcq_ids = {s["id"] for s in self.spec["pattern"]["sections"] if s["type"] == "mcq"}
+        letters = [x["correctOption"] for x in qs if x["section"] in mcq_ids]
+        self.assertEqual(len(letters), 15)
+        counts = [letters.count(c) for c in "abcd"]
+        self.assertLessEqual(max(counts) - min(counts), 1)
+        runs = [letters[i] == letters[i + 1] == letters[i + 2] for i in range(len(letters) - 2)]
+        self.assertFalse(any(runs), f"three in a row: {''.join(letters)}")
+        self.assertTrue(all("correctOption" not in x for x in qs if x["section"] not in mcq_ids))
+
     def test_respects_syllabus_kinds(self):
         qs, _ = self.build()
         theory_only = {c["tag"] for e in self.concepts["chapters"].values() for c in e["concepts"]

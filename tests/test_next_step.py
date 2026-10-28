@@ -1,4 +1,4 @@
-"""Tests for skill/scripts/next_step.py and skill/workflow.json. Run from the project root:
+"""Tests for the make-paper skill's scripts/next_step.py and workflow.json. Run from the project root:
     python3 -m unittest discover tests
 """
 import contextlib
@@ -12,7 +12,7 @@ import tempfile
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(ROOT, "skill", "scripts"))
+sys.path.insert(0, os.path.join(ROOT, "plugins", "exam-papers", "skills", "make-paper", "scripts"))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from helpers import TEST_DATA, load_json  # noqa: E402
 import next_step as ns  # noqa: E402
@@ -22,7 +22,7 @@ STEPS = ns.read_workflow(ns.WORKFLOW)
 
 
 class Workflow(unittest.TestCase):
-    """The real skill/workflow.json."""
+    """The real workflow.json of the make-paper skill."""
 
     def test_steps_are_in_skill_order(self):
         order = [tuple(int(n) for n in s["skillStep"].split(".")) for s in STEPS]
@@ -32,10 +32,11 @@ class Workflow(unittest.TestCase):
 
     def test_every_script_it_names_exists(self):
         text = json.dumps(STEPS)
-        scripts = set(re.findall(r"skill/scripts/\w+\.py", text))
+        scripts = set(re.findall(r"scripts/\w+\.py", text))
         self.assertTrue(scripts)
         for s in scripts:
-            self.assertTrue(os.path.isfile(os.path.join(ROOT, s)), s)
+            self.assertTrue(os.path.isfile(os.path.join(ns.SKILL_DIR, s)), s)
+        self.assertNotIn("skill/scripts", text)                 # the old repo-relative paths
 
     def test_approval_points_wait_for_the_user(self):
         waiting = [s["id"] for s in STEPS if s["waitsForUser"]]

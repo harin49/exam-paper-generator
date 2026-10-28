@@ -293,6 +293,26 @@ rubrics, and fill-in or match items can be added later.
 *Why:* unit tests check the scripts, not the agents. Planted errors show whether review works; run
 metrics and golden papers show whether a change made things better or worse.
 
+### D19. Plugin name, repo layout, sample pack and dev loading
+
+- **Name:** `exam-papers`. It is permanent and prefixes everything: the skill is
+  `/exam-papers:make-paper`, the agents are `exam-papers:blind-solver` and `exam-papers:reviewer`, and
+  the approve command will be `/exam-papers:approve`.
+- **Layout:** the repo is a marketplace (`.claude-plugin/marketplace.json`) listing one plugin,
+  `plugins/exam-papers/`. Tests, docs and examples stay in the repo and are not installed.
+- **Paths:** the skill names its own files as `${CLAUDE_SKILL_DIR}/…` and runs every command from the
+  teacher's workspace. Agents get every path they need in their prompt (the docs do not say that
+  `${CLAUDE_SKILL_DIR}` works inside agent files).
+- **Sample pack:** the ICSE Class 9 Physics (Selina) pack ships read-only in the skill, under
+  `assets/syllabi/`. The skill copies it into the workspace's `syllabi/` only when the teacher agrees
+  (D12: packs a paper uses live in the workspace).
+- **Development:** the plugin is installed from this repo's own marketplace, so names and loading
+  match what teachers get. A plugin installed from a local folder is read in place, so edits take
+  effect after `/reload-plugins`.
+
+*Why:* a permanent name that is specific but short to type at every gate; only the plugin ships; one
+sample pack lets a teacher try a paper without writing a concept list first.
+
 ### Architecture
 
 ```mermaid

@@ -13,7 +13,7 @@ Exit codes:
     1  errors found: the paper must not be built
     2  a file could not be read or is not valid JSON
 
-Rules implemented so far (see skill/schemas/question-format.md):
+Rules implemented so far (see schemas/question-format.md in this skill):
     Q1   fields present, correct types and values, no unknown fields
     Q2   question numbers, section order and part labels in sequence
     Q3   questions per section and marks per question match the spec

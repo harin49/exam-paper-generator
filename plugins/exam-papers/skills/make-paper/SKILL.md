@@ -1,9 +1,9 @@
 ---
-name: exam-paper-generator
-description: Generate an exam question paper and a teacher answer key (two PDFs) from a paper spec JSON. Use when the user supplies a paper spec (spec.json) or asks for an exam paper, question paper or answer key for a board, class and book that has an approved concept list.
+name: make-paper
+description: Make an exam question paper and a teacher answer key (two PDFs) from a paper spec JSON. Use when the user supplies a paper spec (spec.json) or asks for an exam paper, question paper or answer key for a syllabus that has an approved concept list.
 ---
 
-# Exam paper generator
+# Make an exam paper
 
 Produces a question paper and a teacher answer key as PDFs. The paper is defined by a **paper spec**
 the user provides. Scripts decide the structure and check the result; you write only the wording.
@@ -13,10 +13,10 @@ the user provides. Scripts decide the structure and check the result; you write 
 - **Code decides structure, you write wording.** Chapters, marks, kinds, difficulty and concepts for
   every question come from `blueprint.json`. Never change a slot. Arithmetic is checked by script.
 - **Run exactly the scripts named in this file, with the exact paths given.** Do not write your own
-  version of what a script does, do not run a script that is not listed for the step, and do not run
-  scripts from `examples/`. Check the exit code of every script; stop on one this file does not expect.
+  version of what a script does, and do not run a script that is not listed for the step. Check the
+  exit code of every script; stop on one this file does not expect.
 - **Never assume.** If something in the spec or a script's output is unclear, ask the user.
-- **One step at a time, in order.** Before every step, run `python3 skill/scripts/next_step.py TASK`
+- **One step at a time, in order.** Before every step, run `python3 "${CLAUDE_SKILL_DIR}/scripts/next_step.py" TASK`
   and do only the step it prints (see "Order of work"). Never run two steps side by side: do not start
   a step, read ahead for it or prepare it while a script or subagent from an earlier step is still
   running. Wait for each subagent to finish before doing anything else. Report each step briefly, then
@@ -29,54 +29,57 @@ the user provides. Scripts decide the structure and check the result; you write 
 
 ## Paths
 
-**Every path in this file is relative to the project root** (the folder that contains `skill/`,
-`agents/`, `examples/` and `output/`). Run every command from the project root, and write files
-into the user's own folder on their computer, not only the cloud workspace.
+There are two places:
 
-`TASK` means the paper's task folder, `output/<board>-<class>-<subject>-<date>/` (for example
-`output/icse-9-physics-2026-10-27/`). Step 0 creates it and prints its path. `spec.json`,
+- **This skill's folder**, `${CLAUDE_SKILL_DIR}`: the scripts, the formats, `workflow.json` and a
+  sample syllabus pack. Read from it; never write into it.
+- **The teacher's workspace**: the folder you work in. Run every command from it. It holds
+  `syllabi/<pack>/` (a syllabus and its approved concept list) and `papers/<task>/` (one folder per
+  paper). Paths in this file without `${CLAUDE_SKILL_DIR}` are relative to the workspace.
+
+`TASK` means the paper's task folder, `papers/<board>-<class>-<subject>-<date>/` (for example
+`papers/icse-9-physics-2026-10-27/`). Step 0 creates it and prints its path. `spec.json`,
 `blueprint.json`, `questions.json`, diagram images, `review/` and the two PDFs all live in `TASK`.
+
+`PACK` means the paper's syllabus pack, `syllabi/<pack>/` (for example
+`syllabi/icse9-physics-selina/`), holding `syllabus.md` and `concepts.json`.
 
 ### Scripts used in the workflow
 
 | Step | Script (exact path) | What it does | Writes |
 |---|---|---|---|
-| every | `skill/scripts/next_step.py` | Prints the one step that may run next (order from `skill/workflow.json`) | nothing |
-| 0 | `skill/scripts/new_paper.py` | Makes `TASK` and copies the user's spec into it | `TASK/spec.json` |
-| 1 | `skill/scripts/validate_paper_spec.py` | Checks the spec (rules S1-S19) | nothing |
-| 2 | `skill/scripts/make_blueprint.py` | Plans every question slot from the spec and concept list | `TASK/blueprint.json` |
-| 4 | `skill/scripts/check_questions.py` | Checks the questions (rules Q1-Q15) | nothing |
-| 5.1 | `skill/scripts/extract_paper.py` | Makes the paper with no answers for the blind solver | `TASK/review/solver-input.json` |
-| 5.3 | `skill/scripts/compare_solutions.py` | Compares the solver's answers with the key (rules V1-V6) | `TASK/review/compare-output.txt` |
-| 5.4 | `skill/scripts/render_review.py` | Checks the reviewer's findings and makes the HTML report (run by the reviewer; `--print` shows the findings again and writes nothing) | `TASK/review/reviewer-report.html` |
-| 6 | `skill/scripts/render.py` | Builds the question paper and answer key PDFs | two PDFs in `TASK` |
+| every | `${CLAUDE_SKILL_DIR}/scripts/next_step.py` | Prints the one step that may run next (order from `${CLAUDE_SKILL_DIR}/workflow.json`) | nothing |
+| 0 | `${CLAUDE_SKILL_DIR}/scripts/new_paper.py` | Makes `TASK` and copies the user's spec into it | `TASK/spec.json` |
+| 1 | `${CLAUDE_SKILL_DIR}/scripts/validate_paper_spec.py` | Checks the spec (rules S1-S19) | nothing |
+| 2 | `${CLAUDE_SKILL_DIR}/scripts/make_blueprint.py` | Plans every question slot from the spec and concept list | `TASK/blueprint.json` |
+| 4 | `${CLAUDE_SKILL_DIR}/scripts/check_questions.py` | Checks the questions (rules Q1-Q15) | nothing |
+| 5.1 | `${CLAUDE_SKILL_DIR}/scripts/extract_paper.py` | Makes the paper with no answers for the blind solver | `TASK/review/solver-input.json` |
+| 5.3 | `${CLAUDE_SKILL_DIR}/scripts/compare_solutions.py` | Compares the solver's answers with the key (rules V1-V6) | `TASK/review/compare-output.txt` |
+| 5.4 | `${CLAUDE_SKILL_DIR}/scripts/render_review.py` | Checks the reviewer's findings and makes the HTML report (run by the reviewer; `--print` shows the findings again and writes nothing) | `TASK/review/reviewer-report.html` |
+| 6 | `${CLAUDE_SKILL_DIR}/scripts/render.py` | Builds the question paper and answer key PDFs | two PDFs in `TASK` |
 
-Files that are **not** run in the workflow: `skill/scripts/spec_types.py` (a library the other scripts
-import) and `skill/scripts/validate_concepts.py` (only when the user asks you to check a concept list).
+Files that are **not** run in the workflow: `${CLAUDE_SKILL_DIR}/scripts/spec_types.py` (a library the
+other scripts import) and `${CLAUDE_SKILL_DIR}/scripts/validate_concepts.py` (only when the user asks
+you to check a concept list).
 
 ### Other files used
 
 | What | Exact path |
 |---|---|
-| Spec format and template | `skill/schemas/paper-spec-format.md`, `skill/schemas/paper-spec.template.json` |
-| Question format (read before step 3) | `skill/schemas/question-format.md` |
-| Review file formats | `skill/schemas/review-format.md` |
-| Concept list format | `skill/schemas/concept-list-format.md` |
-| ICSE Class 9 Physics (Selina) concept list | `skill/references/icse9-physics-selina/concepts.json` |
-| ICSE Class 9 Physics (Selina) syllabus | `skill/references/icse9-physics-selina/syllabus.md` |
-| Blind-solver prompt | `agents/blind-solver.md` |
-| Reviewer prompt | `agents/reviewer.md` |
-
-Another board, class or book has its own folder under `skill/references/`.
+| Spec format and template | `${CLAUDE_SKILL_DIR}/schemas/paper-spec-format.md`, `${CLAUDE_SKILL_DIR}/schemas/paper-spec.template.json` |
+| Question format (read before step 3) | `${CLAUDE_SKILL_DIR}/schemas/question-format.md` |
+| Review file formats | `${CLAUDE_SKILL_DIR}/schemas/review-format.md` |
+| Concept list format | `${CLAUDE_SKILL_DIR}/schemas/concept-list-format.md` |
+| Sample pack: ICSE Class 9 Physics (Selina) | `${CLAUDE_SKILL_DIR}/assets/syllabi/icse9-physics-selina/` |
+| Blind solver and reviewer | the plugin's agents `exam-papers:blind-solver` and `exam-papers:reviewer` |
 
 ## Order of work
 
-The steps, their order and the approval points are listed in `skill/workflow.json`.
-`skill/scripts/next_step.py` reads it, looks at what is in `TASK`, and prints the one step that may
-run next:
+The steps, their order and the approval points are listed in `${CLAUDE_SKILL_DIR}/workflow.json`.
+`next_step.py` reads it, looks at what is in `TASK`, and prints the one step that may run next:
 
 ```
-python3 skill/scripts/next_step.py TASK
+python3 "${CLAUDE_SKILL_DIR}/scripts/next_step.py" TASK
 ```
 
 - Run it before every step (from step 1 on; before step 0 there is no `TASK`). Do the step it prints,
@@ -90,29 +93,32 @@ python3 skill/scripts/next_step.py TASK
 
 ### 0. Inputs
 
-The user provides a spec file. If they have none, point them to `skill/schemas/paper-spec.template.json`
-and `skill/schemas/paper-spec-format.md`, or an existing example, and ask them to supply one. Do not
+The user provides a spec file. If they have none, point them to
+`${CLAUDE_SKILL_DIR}/schemas/paper-spec.template.json` and `${CLAUDE_SKILL_DIR}/schemas/paper-spec-format.md`,
+and ask them to supply one. Do not
 write a spec from a chat description.
 
 Make the paper's task folder:
 
 ```
-python3 skill/scripts/new_paper.py PATH/TO/THE/USERS/spec.json
+python3 "${CLAUDE_SKILL_DIR}/scripts/new_paper.py" PATH/TO/THE/USERS/spec.json
 ```
 
-It creates `output/` if needed and a new folder named board-class-subject-date, copies the spec into
+It creates `papers/` if needed and a new folder named board-class-subject-date, copies the spec into
 it as `spec.json`, and prints the folder's path: that is `TASK` from here on. It never reuses an
 existing folder (a repeat on the same day gets `-2`, `-3`...). Exit code 2 means the spec could not be
 read. To carry on with an earlier paper, use its existing `TASK` and skip this script.
 
-Find the concept list for the spec's board, class, subject and book under `skill/references/`
-(for ICSE Class 9 Physics, Selina: `skill/references/icse9-physics-selina/concepts.json`). If there is
-none, stop: a concept list must be drafted and approved before a paper can be made.
+Find the syllabus pack for the spec's board, class, subject and book under `syllabi/` in the
+workspace: that folder is `PACK`. If there is none, look for a matching sample pack under
+`${CLAUDE_SKILL_DIR}/assets/syllabi/`; if one matches, ask the user whether to copy it into
+`syllabi/`, and copy it only on their yes. If there is no pack at all, stop: a concept list must be
+drafted and approved before a paper can be made.
 
 ### 1. Validate the spec
 
 ```
-python3 skill/scripts/validate_paper_spec.py TASK/spec.json
+python3 "${CLAUDE_SKILL_DIR}/scripts/validate_paper_spec.py" TASK/spec.json
 ```
 
 - Exit code 1, errors (`[S1]`...): show them verbatim and stop. Suggest fixes; the user decides.
@@ -121,10 +127,10 @@ python3 skill/scripts/validate_paper_spec.py TASK/spec.json
 ### 2. Make the blueprint (approval point)
 
 ```
-python3 skill/scripts/make_blueprint.py TASK/spec.json --concepts skill/references/icse9-physics-selina/concepts.json
+python3 "${CLAUDE_SKILL_DIR}/scripts/make_blueprint.py" TASK/spec.json --concepts PACK/concepts.json
 ```
 
-(Use the concept list found in step 0 if the paper is not ICSE Class 9 Physics.) It writes
+It writes
 `TASK/blueprint.json` with status `"draft"`. Show the user, per question: number, section, chapter,
 concept, marks, kind and difficulty; the balance figures; and any `[Q14]` warnings. Ask for approval.
 On approval, change only `"status"` to `"approved"` in `TASK/blueprint.json`. If the user wants a
@@ -134,15 +140,14 @@ unless the user asks for it.
 
 ### 3. Draft `questions.json`
 
-Read `skill/schemas/question-format.md`, then write `TASK/questions.json` from the approved blueprint.
+Read `${CLAUDE_SKILL_DIR}/schemas/question-format.md`, then write `TASK/questions.json` from the approved blueprint.
 Its `spec` field is `spec.json` and its `conceptList` field is the relative path from `TASK` to the
 concept list (copy it from `TASK/blueprint.json`). For every question:
 
 - Copy `number`, `section`, `chapter`, `concepts`, `marks`, and every part's `label`, `marks`,
   `kind`, `difficulty` and `concept` exactly from the blueprint (rule Q15). Add the wording.
 - `text`/`stem`: clear, self-contained, at the level of the class and book. Test only the part's
-  `concept`, within its `kind`. Do not go beyond the syllabus
-  (`skill/references/icse9-physics-selina/syllabus.md` for this book).
+  `concept`, within its `kind`. Do not go beyond the syllabus (`PACK/syllabus.md`).
 - `answer`: the model answer with working; `marking`: items that add up to the part's marks.
 - Every numerical part and numerical MCQ has `computed`: an `expression` using plain numbers
   (spec constants as numbers) and the `value` it gives. Compute with a script, not in your head.
@@ -164,7 +169,7 @@ Write the file one section at a time.
 ### 4. Check
 
 ```
-python3 skill/scripts/check_questions.py TASK/questions.json
+python3 "${CLAUDE_SKILL_DIR}/scripts/check_questions.py" TASK/questions.json
 ```
 
 Exit code 1: fix every error (`[Q...]`) and rerun until it passes. Exit code 0: show the user the
@@ -173,33 +178,34 @@ warnings.
 ### 5. Review
 
 Two independent checks; neither edits `questions.json`. File formats:
-`skill/schemas/review-format.md`. Everything goes in `TASK/review/`.
+`${CLAUDE_SKILL_DIR}/schemas/review-format.md`. Everything goes in `TASK/review/`.
 
 1. **Prepare the blind paper.**
    ```
-   python3 skill/scripts/extract_paper.py TASK/questions.json
+   python3 "${CLAUDE_SKILL_DIR}/scripts/extract_paper.py" TASK/questions.json
    ```
    This writes `TASK/review/solver-input.json`: the paper as a student sees it, with no answers.
-2. **Blind solver.** Start the `blind-solver` subagent by its type (defined in
-   `agents/blind-solver.md`, which limits its tools; do not paste that file into a general-purpose
-   subagent). Its prompt is only two paths: `TASK/review/solver-input.json` (its input) and
+2. **Blind solver.** Start the `exam-papers:blind-solver` subagent by its type (its definition limits
+   its tools; never paste its instructions into a general-purpose subagent). Its prompt is only two paths: `TASK/review/solver-input.json` (its input) and
    `TASK/review/solver-answers.json` (its output). Give it nothing else: do not paste in
    `questions.json`, the key or any answer.
 3. **Compare.**
    ```
-   python3 skill/scripts/compare_solutions.py TASK/questions.json TASK/review/solver-answers.json --out TASK/review/compare-output.txt
+   python3 "${CLAUDE_SKILL_DIR}/scripts/compare_solutions.py" TASK/questions.json TASK/review/solver-answers.json --out TASK/review/compare-output.txt
    ```
    Exit code 1 means mismatches (`[V1]`-`[V5]`), not a failure of the script. The output also lists
    problems the solver reported (`[V6]`) and the theory parts side by side. Show it to the user
    verbatim.
-4. **Reviewer.** Start the `reviewer` subagent by its type (defined in `agents/reviewer.md`; do not
-   paste that file into a general-purpose subagent). Its prompt gives these paths: `TASK/questions.json`, `TASK/spec.json`, the concept list, the syllabus
-   (`skill/references/icse9-physics-selina/syllabus.md` for this book), and the output path
+4. **Reviewer.** Start the `exam-papers:reviewer` subagent by its type (never paste its
+   instructions into a general-purpose subagent). Its prompt gives these paths, each written out in
+   full: `TASK/questions.json`, `TASK/spec.json`, `PACK/concepts.json`, `PACK/syllabus.md`,
+   `${CLAUDE_SKILL_DIR}/schemas/question-format.md`, `${CLAUDE_SKILL_DIR}/schemas/review-format.md`,
+   the script `${CLAUDE_SKILL_DIR}/scripts/render_review.py`, and the output path
    `TASK/review/reviewer-report.json`; also paste in the full output of step 3. The reviewer writes
-   its findings to that file and runs `skill/scripts/render_review.py` on it, which writes
+   its findings to that file and runs `render_review.py` on it, which writes
    `TASK/review/reviewer-report.html`. When it has finished, print the findings with
    ```
-   python3 skill/scripts/render_review.py TASK/review/reviewer-report.json --print
+   python3 "${CLAUDE_SKILL_DIR}/scripts/render_review.py" TASK/review/reviewer-report.json --print
    ```
    and show that output to the user verbatim, then send them `TASK/review/reviewer-report.html`.
    Exit code 1 means the reviewer's file breaks the format: tell the user, and do not fix it yourself.
@@ -216,7 +222,7 @@ Work out which with the user.
 ### 6. Build
 
 ```
-python3 skill/scripts/render.py TASK/questions.json
+python3 "${CLAUDE_SKILL_DIR}/scripts/render.py" TASK/questions.json
 ```
 
 It checks the questions again, then writes the question paper and answer key into `TASK`. Exit code 1

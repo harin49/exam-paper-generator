@@ -4,8 +4,8 @@
 Usage:
     python3 next_step.py TASK [--json] [--workflow FILE]
 
-TASK is the paper's task folder (output/<board>-<class>-<subject>-<date>/). The steps and their
-order come from skill/workflow.json (or FILE). Each step has a "done" condition that is checked
+TASK is the paper's task folder (papers/<board>-<class>-<subject>-<date>/ in the teacher's workspace).
+The steps and their order come from workflow.json in this skill's folder (or FILE). Each step has a "done" condition that is checked
 against TASK; the next step is the first one that is not done. Steps are never run side by side:
 do the step this prints, wait for it to finish, then run this script again.
 
@@ -18,7 +18,7 @@ render.py uses for the spec):
     {"exists": PATH}                              the file exists
     {"newer": PATH, "than": [PATH, ...]}          PATH exists and was written after every file in
                                                   "than" (missing "than" files are ignored)
-    {"passes": SCRIPT, "args": [PATH, ...]}       the script (relative to the project root) exits 0
+    {"passes": SCRIPT, "args": [PATH, ...]}       the script (relative to this skill's folder) exits 0
     {"equals": PATH, "field": F, "value": V}      JSON file PATH has field F equal to V
     {"empty": PATH, "field": F}                   JSON file PATH has field F as an empty list
     {"contains": PATH, "text": T}                 the file contains the text T
@@ -37,8 +37,8 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from render import output_names  # noqa: E402
 
-ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-WORKFLOW = os.path.join(ROOT, "skill", "workflow.json")
+SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+WORKFLOW = os.path.join(SKILL_DIR, "workflow.json")
 STEP_KEYS = {"id", "skillStep", "title", "by", "waitsForUser", "run", "done"}
 BY = {"script", "subagent", "claude", "user"}
 
@@ -109,11 +109,11 @@ class Task:
             t = self.mtime(cond["newer"])
             return all(t > self.mtime(o) for o in cond.get("than", []) if os.path.isfile(self.path(o)))
         if "passes" in cond:
-            args = [self.path(a) for a in cond.get("args", [])]
+            args = [os.path.abspath(self.path(a)) for a in cond.get("args", [])]
             if not all(os.path.isfile(a) for a in args):
                 return False
-            run = subprocess.run([sys.executable, os.path.join(ROOT, cond["passes"]), *args],
-                                 cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            run = subprocess.run([sys.executable, os.path.join(SKILL_DIR, cond["passes"]), *args],
+                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             return run.returncode == 0
         if "equals" in cond:
             doc = self.read_json(cond["equals"])
@@ -174,7 +174,7 @@ def main(argv):
     if step is None:
         print("\nEvery step is done.")
         return 0
-    run = step["run"].replace("TASK", folder.rstrip("/"))
+    run = step["run"].replace("${CLAUDE_SKILL_DIR}", SKILL_DIR).replace("TASK", folder.rstrip("/"))
     print(f"\nNEXT: step {step['skillStep']}, {step['id']}: {step['title']}")
     print(f"  By:   {step['by']}")
     print(f"  Run:  {run}")

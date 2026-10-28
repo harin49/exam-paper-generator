@@ -1,6 +1,6 @@
 {
   "spec": "spec.json",
-  "conceptList": "../../skill/references/icse9-physics-selina/concepts.json",
+  "conceptList": "../../plugins/exam-papers/skills/make-paper/assets/syllabi/icse9-physics-selina/concepts.json",
   "status": "draft",
   "questions": [
     {

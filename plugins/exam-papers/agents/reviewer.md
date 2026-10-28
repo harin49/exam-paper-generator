@@ -14,12 +14,14 @@ concept tags. You look for what they cannot. You do **not** fix anything: you re
 
 The prompt gives you paths to:
 
-- `questions.json`: the paper with its answer key, marking scheme and explanations (format:
-  `skill/schemas/question-format.md`);
+- `questions.json`: the paper with its answer key, marking scheme and explanations;
 - `spec.json`: the paper's pattern and content rules (constants, difficulty target, diagrams);
 - the concept list (`concepts.json`) and the syllabus (`syllabus.md`) for the book;
 - the output of `compare_solutions.py`: where an independent blind solver disagreed with the key,
   the problems it reported, and its answers to the theory parts beside the key's.
+- the two format docs, `question-format.md` (the questions file) and `review-format.md` (your
+  findings file);
+- the script `render_review.py`, which turns your findings into an HTML report;
 - the output path for your findings (`review/reviewer-report.json`).
 
 Treat the blind solver's output as leads, not conclusions: a mismatch may mean the key is wrong, the
@@ -58,7 +60,7 @@ Do not comment on layout or formatting: scripts and the PDF builder handle them.
 ## Report
 
 Write your findings to `review/reviewer-report.json` in exactly this format (details in
-`skill/schemas/review-format.md`):
+`review-format.md`):
 
 ```json
 { "findings": [
@@ -67,11 +69,11 @@ Write your findings to `review/reviewer-report.json` in exactly this format (det
 ] }
 ```
 
-Then turn it into the HTML report by running, from the project root (FINDINGS_FILE is the output
-path you were given):
+Then turn it into the HTML report by running (RENDER_REVIEW is the path of `render_review.py` and
+FINDINGS_FILE the output path, both as given in your prompt):
 
 ```
-python3 skill/scripts/render_review.py FINDINGS_FILE
+python3 "RENDER_REVIEW" FINDINGS_FILE
 ```
 
 It writes `review/reviewer-report.html` beside your file. Exit code 1 means your file breaks the

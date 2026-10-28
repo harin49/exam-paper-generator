@@ -1,5 +1,10 @@
 __pycache__/
 *.pyc
 
-# Generated papers (one folder per paper, made by skill/scripts/new_paper.py)
+.DS_Store
+
+# A teacher's workspace, if this repo is used as one: generated papers and copied syllabus packs
+/papers/
+/syllabi/
+# Papers made before the plugin layout
 /output/

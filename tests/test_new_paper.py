@@ -1,4 +1,4 @@
-"""Tests for skill/scripts/new_paper.py. Run from the project root:
+"""Tests for the make-paper skill's scripts/new_paper.py. Run from the project root:
     python3 -m unittest discover tests
 """
 import contextlib
@@ -11,7 +11,7 @@ import tempfile
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(ROOT, "skill", "scripts"))
+sys.path.insert(0, os.path.join(ROOT, "plugins", "exam-papers", "skills", "make-paper", "scripts"))
 import new_paper  # noqa: E402
 
 SPEC = os.path.join(ROOT, "examples", "icse9-physics-ch1-5", "spec.json")
@@ -46,20 +46,20 @@ class Folders(unittest.TestCase):
             code = new_paper.main(["new_paper.py", *args])
         return code, buf.getvalue().strip()
 
-    def test_creates_output_and_task_folder_with_the_spec(self):
-        self.assertFalse(os.path.exists(os.path.join(self.root, "output")))
+    def test_creates_papers_and_task_folder_with_the_spec(self):
+        self.assertFalse(os.path.exists(os.path.join(self.root, "papers")))
         code, out = self.run_main(SPEC, "--root", self.root, "--date", "2026-10-27")
         self.assertEqual(code, 0, out)
-        folder = os.path.join(self.root, "output", "icse-9-physics-2026-10-27")
+        folder = os.path.join(self.root, "papers", "icse-9-physics-2026-10-27")
         self.assertEqual(out, folder)
         self.assertTrue(os.path.isdir(folder))
         with open(SPEC, encoding="utf-8") as a, open(os.path.join(folder, "spec.json"), encoding="utf-8") as b:
             self.assertEqual(json.load(a), json.load(b))
 
-    def test_existing_output_folder_is_kept(self):
-        os.makedirs(os.path.join(self.root, "output", "other-paper"))
+    def test_existing_papers_folder_is_kept(self):
+        os.makedirs(os.path.join(self.root, "papers", "other-paper"))
         self.run_main(SPEC, "--root", self.root, "--date", "2026-10-27")
-        self.assertTrue(os.path.isdir(os.path.join(self.root, "output", "other-paper")))
+        self.assertTrue(os.path.isdir(os.path.join(self.root, "papers", "other-paper")))
 
     def test_same_name_gets_a_number_and_nothing_is_overwritten(self):
         _, first = self.run_main(SPEC, "--root", self.root, "--date", "2026-10-27")
@@ -92,7 +92,7 @@ class Folders(unittest.TestCase):
         code, out = self.run_main(nofield, "--root", self.root)
         self.assertEqual(code, 2)
         self.assertIn("Cannot read the spec", out)
-        self.assertFalse(os.path.exists(os.path.join(self.root, "output")))   # nothing made on failure
+        self.assertFalse(os.path.exists(os.path.join(self.root, "papers")))   # nothing made on failure
 
 
 if __name__ == "__main__":

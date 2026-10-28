@@ -1,1 +1,0 @@
-../../agents/blind-solver.md

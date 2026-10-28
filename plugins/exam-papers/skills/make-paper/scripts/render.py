@@ -7,7 +7,7 @@ Usage:
 The spec and concept list are the files named in QUESTIONS.json's "spec" and "conceptList" fields
 (relative to its folder). The blueprint defaults to blueprint.json in the same folder (it is
 optional here; when it is missing, Q15 is skipped). PDFs go to DIR (default: the folder of
-QUESTIONS.json, which is the paper's task folder under output/).
+QUESTIONS.json, which is the paper's task folder under papers/).
 
 check_questions.py runs first. If any hard rule fails the PDFs are not built (exit code 1);
 warnings are printed and the build goes ahead.

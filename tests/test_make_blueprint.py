@@ -1,4 +1,4 @@
-"""Tests for skill/scripts/make_blueprint.py. Run from the project root:
+"""Tests for the make-paper skill's scripts/make_blueprint.py. Run from the project root:
     python3 -m unittest discover tests
 """
 import copy
@@ -10,14 +10,14 @@ import tempfile
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(ROOT, "skill", "scripts"))
+sys.path.insert(0, os.path.join(ROOT, "plugins", "exam-papers", "skills", "make-paper", "scripts"))
 import make_blueprint as mb  # noqa: E402
 
 # The real (frozen) concept list, because these tests need all ten book chapters, and a full-size
 # 50-mark spec kept as test data, because they test the generator at the scale of a real paper.
-REF = os.path.join(ROOT, "skill", "references", "icse9-physics-selina")
+REF = os.path.join(ROOT, "plugins", "exam-papers", "skills", "make-paper", "assets", "syllabi", "icse9-physics-selina")
 SPEC = os.path.join(ROOT, "tests", "test_data", "spec-50-marks.json")
-TEMPLATE = os.path.join(ROOT, "skill", "schemas", "paper-spec.template.json")
+TEMPLATE = os.path.join(ROOT, "plugins", "exam-papers", "skills", "make-paper", "schemas", "paper-spec.template.json")
 
 
 def load(path):

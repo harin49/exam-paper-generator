@@ -1,14 +1,16 @@
 # Concept list format (`concepts.json`)
 
-A concept list names every topic a paper may test, for one board, class and book. It is kept under
-`skill/references/<board><class>-<subject>-<book>/` beside the syllabus it is drafted from, and is
-shared by every paper for that book. Example: `skill/references/icse9-physics-selina/concepts.json`.
+A concept list names every topic a paper may test, for one board, class and book. It is kept in a
+syllabus pack, `syllabi/<board><class>-<subject>-<book>/` in the teacher's workspace, beside the
+syllabus it is drafted from, and is shared by every paper for that syllabus. Example:
+`syllabi/icse9-physics-selina/concepts.json` (a sample copy ships with the skill, under
+`assets/syllabi/`).
 
 ## How it is made and changed
 
 1. **Drafted once from the syllabus** (`syllabus.md`), roughly one concept per syllabus point, with
    tags named from the syllabus wording. Claude drafts; it is never derived again at paper time.
-2. **Checked** with `skill/scripts/validate_concepts.py` (rules C1–C6 below): every syllabus section
+2. **Checked** with the skill's `scripts/validate_concepts.py` (rules C1–C6 below): every syllabus section
    has a concept, every concept points to a real section, tags are unique.
 3. **Approved by a teacher**, who checks topics, `kinds` and `maxMarks`, then sets `status` to
    `"approved"`. From then on the file is frozen: every paper reads it as it is.

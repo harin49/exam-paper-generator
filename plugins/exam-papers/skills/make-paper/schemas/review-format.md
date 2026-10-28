@@ -99,7 +99,7 @@ file. The report's last line is `Result: NO MISMATCHES` or `Result: N MISMATCH(E
 
 ## `review/reviewer-report.json` and `review/reviewer-report.html` (written by the reviewer)
 
-The reviewer writes its findings as JSON, then runs `skill/scripts/render_review.py` on that file, which
+The reviewer writes its findings as JSON, then runs the skill's `scripts/render_review.py` on that file, which
 checks it and writes the HTML report beside it. Nobody writes or edits the HTML by hand.
 
 ```json

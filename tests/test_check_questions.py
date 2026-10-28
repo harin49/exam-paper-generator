@@ -1,4 +1,4 @@
-"""Tests for skill/scripts/check_questions.py. Run from the project root:
+"""Tests for the make-paper skill's scripts/check_questions.py. Run from the project root:
     python3 -m unittest discover tests
 """
 import copy
@@ -10,7 +10,7 @@ import tempfile
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(ROOT, "skill", "scripts"))
+sys.path.insert(0, os.path.join(ROOT, "plugins", "exam-papers", "skills", "make-paper", "scripts"))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from helpers import TEST_DATA  # noqa: E402
 import check_questions as cq  # noqa: E402

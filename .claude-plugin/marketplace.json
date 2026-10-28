@@ -1,0 +1,12 @@
+{
+  "name": "exam-paper-generator",
+  "description": "Plugins for making exam papers and answer keys from a syllabus and a paper spec.",
+  "owner": { "name": "harin49" },
+  "plugins": [
+    {
+      "name": "exam-papers",
+      "source": "./plugins/exam-papers",
+      "description": "Make an exam question paper and a teacher answer key (two PDFs) from a syllabus and a paper spec, with independent review."
+    }
+  ]
+}

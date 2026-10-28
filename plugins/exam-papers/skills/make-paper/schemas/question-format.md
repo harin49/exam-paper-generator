@@ -11,7 +11,7 @@ Example: `tests/test_data/questions.json` (the small test paper the unit tests u
 ```json
 {
   "spec": "spec.json",
-  "conceptList": "../../skill/references/icse9-physics-selina/concepts.json",
+  "conceptList": "../../syllabi/icse9-physics-selina/concepts.json",
   "questions": [ ... ]
 }
 ```
@@ -189,7 +189,7 @@ structural fields: no wording, answers, marking or computed values.
 ```json
 {
   "spec": "spec.json",
-  "conceptList": "../../skill/references/icse9-physics-selina/concepts.json",
+  "conceptList": "../../syllabi/icse9-physics-selina/concepts.json",
   "status": "approved",
   "questions": [
     { "number": 1, "section": "A", "chapter": 1, "marks": 1,

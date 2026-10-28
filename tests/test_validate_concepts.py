@@ -1,4 +1,4 @@
-"""Tests for skill/scripts/validate_concepts.py. Run from the project root:
+"""Tests for the make-paper skill's scripts/validate_concepts.py. Run from the project root:
     python3 -m unittest discover tests
 """
 import json
@@ -9,10 +9,10 @@ import tempfile
 import unittest
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(ROOT, "skill", "scripts"))
+sys.path.insert(0, os.path.join(ROOT, "plugins", "exam-papers", "skills", "make-paper", "scripts"))
 import validate_concepts as vc  # noqa: E402
 
-REF = os.path.join(ROOT, "skill", "references", "icse9-physics-selina")
+REF = os.path.join(ROOT, "plugins", "exam-papers", "skills", "make-paper", "assets", "syllabi", "icse9-physics-selina")
 
 
 def concept(doc, tag):

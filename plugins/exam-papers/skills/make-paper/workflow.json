@@ -1,5 +1,5 @@
 {
-  "about": "The order of the exam-paper workflow, read by skill/scripts/next_step.py. Steps run one at a time, in this order. A step is next when every step before it is done and it is not. 'by' says who does the step; 'waitsForUser' marks the approval points where work stops until the user answers. 'done' is checked against the task folder (paths are relative to it). Format: see next_step.py.",
+  "about": "The order of the exam-paper workflow, read by scripts/next_step.py. Steps run one at a time, in this order. A step is next when every step before it is done and it is not. 'by' says who does the step; 'waitsForUser' marks the approval points where work stops until the user answers. 'done' is checked against the task folder (paths are relative to it). Format: see next_step.py.",
   "steps": [
     {
       "id": "new_paper",
@@ -7,7 +7,7 @@
       "title": "Make the task folder",
       "by": "script",
       "waitsForUser": false,
-      "run": "python3 skill/scripts/new_paper.py PATH/TO/THE/USERS/spec.json",
+      "run": "python3 \"${CLAUDE_SKILL_DIR}/scripts/new_paper.py\" PATH/TO/THE/USERS/spec.json",
       "done": {"exists": "spec.json"}
     },
     {
@@ -16,9 +16,9 @@
       "title": "Validate the spec",
       "by": "script",
       "waitsForUser": false,
-      "run": "python3 skill/scripts/validate_paper_spec.py TASK/spec.json",
+      "run": "python3 \"${CLAUDE_SKILL_DIR}/scripts/validate_paper_spec.py\" TASK/spec.json",
       "note": "If it fails, show the errors verbatim and stop; the user decides how to fix the spec.",
-      "done": {"passes": "skill/scripts/validate_paper_spec.py", "args": ["spec.json"]}
+      "done": {"passes": "scripts/validate_paper_spec.py", "args": ["spec.json"]}
     },
     {
       "id": "make_blueprint",
@@ -26,7 +26,7 @@
       "title": "Make the blueprint",
       "by": "script",
       "waitsForUser": false,
-      "run": "python3 skill/scripts/make_blueprint.py TASK/spec.json --concepts CONCEPT_LIST",
+      "run": "python3 \"${CLAUDE_SKILL_DIR}/scripts/make_blueprint.py\" TASK/spec.json --concepts CONCEPT_LIST",
       "note": "CONCEPT_LIST is the concept list found in step 0. If the spec changed after the blueprint was made, the blueprint is out of date.",
       "done": {"newer": "blueprint.json", "than": ["spec.json"]}
     },
@@ -54,9 +54,9 @@
       "title": "Check the questions",
       "by": "script",
       "waitsForUser": false,
-      "run": "python3 skill/scripts/check_questions.py TASK/questions.json",
+      "run": "python3 \"${CLAUDE_SKILL_DIR}/scripts/check_questions.py\" TASK/questions.json",
       "note": "Fix every error and rerun until it passes.",
-      "done": {"passes": "skill/scripts/check_questions.py", "args": ["questions.json"]}
+      "done": {"passes": "scripts/check_questions.py", "args": ["questions.json"]}
     },
     {
       "id": "extract_paper",
@@ -64,7 +64,7 @@
       "title": "Prepare the blind paper",
       "by": "script",
       "waitsForUser": false,
-      "run": "python3 skill/scripts/extract_paper.py TASK/questions.json",
+      "run": "python3 \"${CLAUDE_SKILL_DIR}/scripts/extract_paper.py\" TASK/questions.json",
       "done": {"newer": "review/solver-input.json", "than": ["questions.json"]}
     },
     {
@@ -73,7 +73,7 @@
       "title": "Blind solver",
       "by": "subagent",
       "waitsForUser": false,
-      "run": "Start the blind-solver subagent by its type (agents/blind-solver.md; never pasted into a general-purpose subagent) with only two paths: input TASK/review/solver-input.json and output TASK/review/solver-answers.json. Wait for it to finish.",
+      "run": "Start the exam-papers:blind-solver subagent by its type (the plugin's agents/blind-solver.md; never pasted into a general-purpose subagent) with only two paths: input TASK/review/solver-input.json and output TASK/review/solver-answers.json. Wait for it to finish.",
       "done": {"newer": "review/solver-answers.json", "than": ["review/solver-input.json"]}
     },
     {
@@ -82,7 +82,7 @@
       "title": "Compare the solver's answers with the key",
       "by": "script",
       "waitsForUser": false,
-      "run": "python3 skill/scripts/compare_solutions.py TASK/questions.json TASK/review/solver-answers.json --out TASK/review/compare-output.txt",
+      "run": "python3 \"${CLAUDE_SKILL_DIR}/scripts/compare_solutions.py\" TASK/questions.json TASK/review/solver-answers.json --out TASK/review/compare-output.txt",
       "note": "Exit code 1 means mismatches, not a failure. Show the output verbatim.",
       "done": {"newer": "review/compare-output.txt", "than": ["review/solver-answers.json", "questions.json"]}
     },
@@ -92,7 +92,7 @@
       "title": "Independent reviewer",
       "by": "subagent",
       "waitsForUser": false,
-      "run": "Start the reviewer subagent by its type (agents/reviewer.md; never pasted into a general-purpose subagent) with the paths SKILL.md step 5.4 lists; output TASK/review/reviewer-report.json (it makes TASK/review/reviewer-report.html). Wait for it to finish, then print the findings with python3 skill/scripts/render_review.py TASK/review/reviewer-report.json --print, show them verbatim and send the user the HTML report.",
+      "run": "Start the exam-papers:reviewer subagent by its type (the plugin's agents/reviewer.md; never pasted into a general-purpose subagent) with the paths SKILL.md step 5.4 lists; output TASK/review/reviewer-report.json (it makes TASK/review/reviewer-report.html). Wait for it to finish, then print the findings with python3 \"${CLAUDE_SKILL_DIR}/scripts/render_review.py\" TASK/review/reviewer-report.json --print, show them verbatim and send the user the HTML report.",
       "note": "The reviewer runs once, before the first fix decision; later rounds only rerun the blind solver.",
       "done": {"any": [
         {"newer": "review/reviewer-report.html", "than": ["review/compare-output.txt"]},
@@ -133,7 +133,7 @@
       "title": "Build the PDFs",
       "by": "script",
       "waitsForUser": false,
-      "run": "python3 skill/scripts/render.py TASK/questions.json",
+      "run": "python3 \"${CLAUDE_SKILL_DIR}/scripts/render.py\" TASK/questions.json",
       "note": "Open both PDFs and look at them before delivering.",
       "done": {"all": [
         {"newer": "{paper_pdf}", "than": ["questions.json"]},

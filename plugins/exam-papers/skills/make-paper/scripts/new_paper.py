@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Start a new paper: make its task folder under output/ and put a copy of the spec in it.
+"""Start a new paper: make its task folder under papers/ and put a copy of the spec in it.
 
 Usage:
     python3 new_paper.py SPEC.json [--root DIR] [--date YYYY-MM-DD]
 
-Creates DIR/output/ if it does not exist (DIR defaults to the current folder, which should be the
-project root), then a new folder named board-class-subject-date, for example
-    output/icse-9-physics-2026-10-27/
+Creates DIR/papers/ if it does not exist (DIR defaults to the current folder, which should be the
+teacher's workspace folder), then a new folder named board-class-subject-date, for example
+    papers/icse-9-physics-2026-10-27/
 and copies SPEC.json into it as spec.json. The date is today's unless --date is given. If that folder
 already exists, -2, -3, ... is added to the name: an existing task folder is never reused or
 overwritten. Prints the new folder's path.
@@ -76,7 +76,7 @@ def main(argv):
     except (OSError, ValueError, KeyError, TypeError) as e:
         print(f"Cannot read the spec: {e}")
         return 2
-    folder = make_folder(os.path.join(opts.get("--root", "."), "output"), name)
+    folder = make_folder(os.path.join(opts.get("--root", "."), "papers"), name)
     shutil.copyfile(args[0], os.path.join(folder, "spec.json"))
     print(folder)
     return 0

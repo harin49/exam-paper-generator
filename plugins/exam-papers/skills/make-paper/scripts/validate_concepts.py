@@ -7,7 +7,7 @@ Usage:
 The syllabus is the file named in the list's "syllabus" field, relative to the list's folder.
 Section ids are written in the syllabus as [1], [1(i)], [4(ii)] ...
 
-Rules (see skill/schemas/concept-list-format.md):
+Rules (see schemas/concept-list-format.md in this skill):
     C1  fields present with the right types; no unknown fields
     C2  tags are snake_case and unique across the whole list
     C3  kinds is a non-empty list of allowed kinds, without repeats

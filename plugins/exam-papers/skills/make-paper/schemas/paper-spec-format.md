@@ -2,13 +2,13 @@
 
 The paper spec defines one exam paper: what it covers, its pattern of sections and marks, the
 rules its content must follow, and what is produced. Claude writes it from the user's answers to
-the clarifying questions (or the user supplies one), and `skill/scripts/validate_paper_spec.py`
+the clarifying questions (or the user supplies one), and the skill's `scripts/validate_paper_spec.py`
 checks it before anything else happens.
 
-Template: `skill/schemas/paper-spec.template.json`. Example: `examples/icse9-physics-ch1-5/spec.json`.
+Template: `schemas/paper-spec.template.json` in the skill.
 
 Fixed values (section types, difficulty levels, and so on) are defined once in
-`skill/scripts/spec_types.py`.
+the skill's `scripts/spec_types.py`.
 
 ## `exam`: what the paper covers
 

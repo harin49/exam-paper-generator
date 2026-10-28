@@ -48,7 +48,7 @@ into the user's own folder on their computer, not only the cloud workspace.
 | 4 | `skill/scripts/check_questions.py` | Checks the questions (rules Q1-Q15) | nothing |
 | 5.1 | `skill/scripts/extract_paper.py` | Makes the paper with no answers for the blind solver | `TASK/review/solver-input.json` |
 | 5.3 | `skill/scripts/compare_solutions.py` | Compares the solver's answers with the key (rules V1-V6) | `TASK/review/compare-output.txt` |
-| 5.4 | `skill/scripts/render_review.py` | Checks the reviewer's findings and makes the HTML report (run by the reviewer; rerun to print the findings) | `TASK/review/reviewer-report.html` |
+| 5.4 | `skill/scripts/render_review.py` | Checks the reviewer's findings and makes the HTML report (run by the reviewer; `--print` shows the findings again and writes nothing) | `TASK/review/reviewer-report.html` |
 | 6 | `skill/scripts/render.py` | Builds the question paper and answer key PDFs | two PDFs in `TASK` |
 
 Files that are **not** run in the workflow: `skill/scripts/spec_types.py` (a library the other scripts
@@ -195,7 +195,7 @@ Two independent checks; neither edits `questions.json`. File formats:
    its findings to that file and runs `skill/scripts/render_review.py` on it, which writes
    `TASK/review/reviewer-report.html`. When it has finished, print the findings with
    ```
-   python3 skill/scripts/render_review.py TASK/review/reviewer-report.json
+   python3 skill/scripts/render_review.py TASK/review/reviewer-report.json --print
    ```
    and show that output to the user verbatim, then send them `TASK/review/reviewer-report.html`.
    Exit code 1 means the reviewer's file breaks the format: tell the user, and do not fix it yourself.

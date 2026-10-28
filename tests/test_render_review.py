@@ -132,6 +132,38 @@ class CommandLine(unittest.TestCase):
         with open(self.html, encoding="utf-8") as f:
             self.assertEqual(f.read(), first)
 
+    def test_rerun_with_the_same_findings_leaves_the_page_untouched(self):
+        self.run_main(self.path)
+        os.utime(self.html, ns=(1, 1))                  # an old timestamp, as if written long ago
+        code, out = self.run_main(self.path)
+        self.assertEqual(code, 0, out)
+        self.assertEqual(os.stat(self.html).st_mtime_ns, 1)
+        self.assertIn("is already up to date", out)
+
+    def test_changed_findings_rewrite_the_page(self):
+        self.run_main(self.path)
+        os.utime(self.html, ns=(1, 1))
+        doc = copy.deepcopy(FINDINGS)
+        doc["findings"][0]["problem"] = "A different problem."
+        self.write(doc)
+        self.run_main(self.path)
+        self.assertNotEqual(os.stat(self.html).st_mtime_ns, 1)
+
+    def test_print_writes_nothing(self):
+        code, out = self.run_main(self.path, "--print")
+        self.assertEqual(code, 0, out)
+        self.assertIn("## R1  Q18(b)  error", out)
+        self.assertFalse(os.path.exists(self.html))
+
+    def test_print_still_checks_the_format(self):
+        self.write({"findings": [{"id": "R1"}]})
+        code, out = self.run_main(self.path, "--print")
+        self.assertEqual(code, 1)
+        self.assertIn("nothing was written", out)
+
+    def test_print_and_out_together_are_refused(self):
+        self.assertEqual(self.run_main(self.path, "--print", "--out", "x.html")[0], 2)
+
     def test_out_option(self):
         other = os.path.join(self.tmp, "other.html")
         self.assertEqual(self.run_main(self.path, "--out", other)[0], 0)

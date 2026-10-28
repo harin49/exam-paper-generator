@@ -92,7 +92,7 @@
       "title": "Independent reviewer",
       "by": "subagent",
       "waitsForUser": false,
-      "run": "Spawn one subagent with the full text of agents/reviewer.md and the paths SKILL.md step 5.4 lists; output TASK/review/reviewer-report.json (it makes TASK/review/reviewer-report.html). Wait for it to finish, then print the findings with python3 skill/scripts/render_review.py TASK/review/reviewer-report.json, show them verbatim and send the user the HTML report.",
+      "run": "Spawn one subagent with the full text of agents/reviewer.md and the paths SKILL.md step 5.4 lists; output TASK/review/reviewer-report.json (it makes TASK/review/reviewer-report.html). Wait for it to finish, then print the findings with python3 skill/scripts/render_review.py TASK/review/reviewer-report.json --print, show them verbatim and send the user the HTML report.",
       "note": "The reviewer runs once, before the first fix decision; later rounds only rerun the blind solver.",
       "done": {"any": [
         {"newer": "review/reviewer-report.html", "than": ["review/compare-output.txt"]},

@@ -3,9 +3,14 @@
 
 Usage:
     python3 render_review.py REPORT.json [--out FILE]
+    python3 render_review.py REPORT.json --print
 
 The reviewer subagent writes REPORT.json (format: schemas/review-format.md) and runs this script.
-The HTML goes beside REPORT.json with the same name (or to FILE). The paper's details in the page
+The HTML goes beside REPORT.json with the same name (or to FILE). If that file already holds exactly
+the same page, it is left untouched, so a rerun never looks like a change to the workflow.
+
+--print checks the file and prints the findings, and writes nothing. Use it to show the findings
+again after the reviewer has finished. The paper's details in the page
 heading come from spec.json in the task folder (the folder above review/), if it is there.
 
 The findings are also printed as plain text, in the order and wording of the file, so they can be
@@ -17,7 +22,7 @@ Rules checked before anything is written:
     errors come first, then warnings, then suggestions.
 
 Exit codes:
-    0  the HTML was written
+    0  the HTML was written (or was already up to date, or --print)
     1  the findings file breaks a rule above (nothing is written)
     2  the file could not be read or is not valid JSON
 """
@@ -178,6 +183,8 @@ def html_report(findings, spec):
 
 def main(argv):
     args = argv[1:]
+    print_only = "--print" in args
+    args = [a for a in args if a != "--print"]
     out = None
     if "--out" in args:
         i = args.index("--out")
@@ -186,7 +193,7 @@ def main(argv):
             return 2
         out = args[i + 1]
         del args[i:i + 2]
-    if len(args) != 1:
+    if len(args) != 1 or (print_only and out):
         print(__doc__.strip())
         return 2
     path = args[0]
@@ -201,16 +208,26 @@ def main(argv):
         for e in errors:
             print(f"  - {e}")
         return 1
+    if print_only:
+        print(text_report(doc["findings"]))
+        return 0
     spec_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(path))), "spec.json")
     try:
         spec = load(spec_path)
     except (OSError, ValueError):
         spec = {}
     out = out or os.path.splitext(path)[0] + ".html"
-    with open(out, "w", encoding="utf-8") as f:
-        f.write(html_report(doc["findings"], spec))
+    page = html_report(doc["findings"], spec)
+    try:
+        with open(out, encoding="utf-8") as f:
+            unchanged = f.read() == page
+    except OSError:
+        unchanged = False
+    if not unchanged:
+        with open(out, "w", encoding="utf-8") as f:
+            f.write(page)
     print(text_report(doc["findings"]))
-    print(f"\nWrote {out}")
+    print(f"\n{out} is already up to date" if unchanged else f"\nWrote {out}")
     return 0
 
 

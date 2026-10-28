@@ -120,16 +120,18 @@ makes Cowork refuse the whole plugin).
 
 ### D6. Approvals come only from a command the teacher types
 
-The teacher approves by typing a command such as `/exam:approve blueprint`. A `UserPromptSubmit` hook
-(code that runs when the user sends a message) records the approval in the task's `approvals.json`:
-which gate, which file, the file's SHA-256 hash and the time. A `PreToolUse` hook blocks Claude from
+The teacher approves by typing a command such as `/exam:approve blueprint`. A `UserPromptExpansion`
+hook (code that runs when a command the user typed expands, before Claude sees it) records the approval
+in the task's `approvals.json`: which gate, which file, the file's SHA-256 hash and the time. It records
+only when `command_name` is the plugin's approve command, `command_source` is `"plugin"` and there is
+no `agent_id`. A `PreToolUse` hook blocks Claude from
 writing `approvals.json`. A gate counts as passed only while the approved file still has the recorded
 hash, so editing an approved file voids its approval.
 
 ```mermaid
 sequenceDiagram
     actor T as Teacher
-    participant H as UserPromptSubmit hook
+    participant H as UserPromptExpansion hook
     participant A as approvals.json
     participant C as Claude
     participant P as PreToolUse hook
@@ -140,8 +142,14 @@ sequenceDiagram
     C->>A: read: blueprint approved and hash matches?
 ```
 
-*Why:* trust comes from where an action originates. Claude cannot send user messages, so it cannot
-create an approval; the hash ties the approval to the exact content the teacher saw.
+*Why:* trust comes from where an action originates. Only a command the teacher types expands, so
+Claude and its subagents cannot create an approval; the hash ties the approval to the exact content
+the teacher saw.
+
+*Not `UserPromptSubmit`* (the first version of D6): it also fires for subagent hand-backs, messages
+from other sessions and scheduled tasks, with nothing in its input saying which. The probe showed a
+subagent's reply arriving through it as `<agent-message …>` text, so a hook that read approvals from
+`UserPromptSubmit` could be fooled by a subagent that writes `/exam:approve` in its reply.
 
 *Limit:* this guards against mistakes, not a determined adversary. A `PreToolUse` hook can match
 `Write`/`Edit` on the file exactly, but a Bash command can only be pattern-matched, so a creative
@@ -153,7 +161,7 @@ Each gate is passed only by a typed command (D6).
 
 | Gate | When | What the teacher approves |
 |---|---|---|
-| Concept list | Once per book, after `validate_concepts.py` passes | The concepts drafted from the syllabus |
+| Concept list | Once per book, after `validate_concepts.py` passes (and once per paper in cloud Cowork, D18) | The concepts drafted from the syllabus |
 | Blueprint | Every paper, before any wording is written | Chapter, concept, marks, kind and difficulty of every part |
 | Finding decisions | After each review round with warnings or suggestions, and for any finding still open after round 3 | Accept or reject each warning and suggestion (errors are fixed without asking, D1); settle each disagreement (D3) |
 | Final paper | After review ends, before the PDFs are rendered | The reviewed questions and key, and the list of automatic fixes (D2) |
@@ -208,6 +216,32 @@ The plugin holds only code, prompts and formats. Everything a teacher makes live
 
 *Why:* an installed plugin is a cache that should not be written to, and Cowork can only write to
 attached folders. The teacher owns and can see everything.
+
+### D18. In cloud Cowork, one task makes one paper
+
+Where hooks run in a sandbox that ends with the task (Cowork on Pro and Max plans, and on Team and
+Enterprise when cloud sessions are on), a paper is made from start to finish in one task. Approvals,
+`state.json` and `run.log` are trusted only inside that task. At the end, the whole paper folder (PDFs,
+spec, blueprint, questions, review, `approvals.json`, `state.json`, `run.log`) is delivered to the
+teacher's folder as a record. A new task starts a new paper. Syllabus packs are read from the teacher's
+folder and checked again with `validate_concepts.py` in every task.
+
+Where hooks run beside the teacher's folder (Claude Code on their computer, local Cowork), D12 applies
+as written and a paper can span several sessions.
+
+*Why:* Anthropic's Cowork architecture article says cloud sessions run in a sandbox that is "destroyed
+when it ends", and that Cowork runs in the cloud on Pro and Max plans. The probe showed hooks writing
+inside that sandbox. A file Claude copies out and back in is a Claude action, which D6 does not trust,
+so trust cannot carry from one cloud task to the next. Which plans teachers will use is not known yet,
+so the design has to work in the cloud case.
+
+Each cloud task also re-approves the concept list: before the blueprint, it shows the list's summary
+and hash and asks for a typed `/exam:approve concepts`. The record delivered from an earlier task is
+shown for reference only.
+
+*Why re-approve:* the earlier record is a copy Claude wrote into the teacher's folder; a changed list
+together with a changed record would pass a hash check. One typed command per paper keeps D6's rule
+that only typed commands create trust.
 
 ### D13. A writer subagent drafts and revises the questions
 
@@ -306,12 +340,46 @@ From Anthropic's [plugin platform-support page](https://claude.com/docs/plugins/
 | Hooks (`hooks/hooks.json`) | Ignored | Loads | Loads |
 | Top-level `bin/` | Plugin refused | Plugin refused | Loads |
 
-Not documented, so to be tested before relying on them in Cowork:
+### Probe results (2026-10-28)
 
-- whether a hook fires inside a subagent and can block its file reads;
-- whether a subagent's `tools` allowlist is applied;
-- whether `reportlab` and `matplotlib` are available in Cowork's VM;
-- whether `UserPromptSubmit` hooks fire for typed plugin commands (D6).
+A throwaway plugin (`probe`) tested what the docs leave open. It ran in a Cowork task, which ran in a
+cloud workspace (`/home/claude`, Linux, Python 3.13) linked to the desktop app, not on the user's Mac.
+The raw `probe-hook.log` confirms every result below. The Claude Code baseline has not run.
+
+| Test | Result |
+|---|---|
+| Plugin hooks fire | Yes: `PreToolUse`, `UserPromptSubmit`, `UserPromptExpansion`, `SubagentStart`, `SubagentStop` |
+| A hook can block a subagent's file read | Yes. Hook input inside a subagent has `agent_id` and `agent_type` (`probe:solver`), so the solver's calls can be told apart |
+| A plugin agent's `tools` list is enforced | Yes: Grep, Edit and Bash were "not available" to an agent limited to Read and Write |
+| A hook can block Claude's writes to a file | Yes, for Write and for a Bash `echo … >` |
+| A typed plugin command triggers | `UserPromptExpansion` with `command_name: "probe:approve"`, `command_source: "plugin"` (recorded the approval) |
+| A subagent's reply `/probe:approve …` triggers | `UserPromptSubmit` only, as `<agent-message …>` text; no `UserPromptExpansion`, so no forged approval |
+| `reportlab` and `matplotlib` | Already installed (5.0.1, 3.11.2); pip works |
+| Plugin agent names | Prefixed with the plugin name: `probe:solver` |
+
+Also seen:
+
+- `UserPromptSubmit` text is not what the user typed: the app puts `<system-reminder>` text in front
+  of it, so even the user's own `/probe:approve` did not start with the command.
+- The Bash guard denied a harmless `ls -la approvals.json 2>&1; cat approvals.json`, because `2>&1`
+  contains `>` (pattern matching gives false alarms as well as misses; see D6's limit).
+- Every subagent ends with a `SubagentHandback` tool call, which `PreToolUse` sees with the subagent's
+  `agent_id`.
+
+Problem found: **files and hooks live in the cloud workspace, not the teacher's folder.** Hooks ran
+in `/home/claude` and wrote `approvals.json` and their logs there. The user's picked folders were
+reachable only by Claude copying files across, and the files reached the Mac only when Claude sent
+them. So approvals, `state.json`, `run.log`, syllabus packs and papers would be lost when the workspace
+goes, and copying them to the teacher's folder is a step Claude performs, which D6 does not trust.
+This affects D6, D12 and D14 for Cowork tasks that run in the cloud.
+
+Still to find out:
+
+- ~~whether a Cowork task can run on the user's computer~~: answered by D18 (plan and admin settings
+  decide; Pro and Max are cloud only);
+- whether a cloud workspace survives between turns of the same task (the article says the sandbox is
+  destroyed when the session ends);
+- the same probe in a Claude Code session on the Mac (baseline).
 
 ## Open questions
 

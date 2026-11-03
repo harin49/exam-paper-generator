@@ -7,16 +7,43 @@ the architecture and every decision are in [`docs/harness-design.md`](docs/harne
 
 ## Install
 
-The repo is a plugin marketplace. In Claude Code:
+The repo is a plugin marketplace: `.claude-plugin/marketplace.json` names the marketplace
+`exam-paper-generator` and lists one plugin, `exam-papers`. Add the marketplace from GitHub, then
+install the plugin. The plugin needs Python 3 with the packages in `requirements.txt` (reportlab for
+the PDFs, matplotlib for diagrams).
+
+**Claude desktop app or Cowork:** open **Customize > Plugins**, choose **Add marketplace**, and enter
+`harin49/exam-paper-generator` (or `https://github.com/harin49/exam-paper-generator`). If the repo
+is private, connect your GitHub account when asked and give the Claude GitHub App access to it. Then
+install **exam-papers** from that marketplace.
+
+**Claude Code (terminal):**
 
 ```
-/plugin marketplace add /path/to/exam-paper-generator
+/plugin marketplace add harin49/exam-paper-generator
 /plugin install exam-papers@exam-paper-generator
 ```
 
-Installed from a local folder, the plugin's files are read straight from this repo, so an edit takes
-effect after `/reload-plugins` or in the next session. The plugin needs Python 3 with the packages in
-`requirements.txt` (reportlab for the PDFs, matplotlib for diagrams).
+`/plugin install` opens the plugin's page so you can choose where to install it. For a private repo,
+Claude Code uses the git credentials already on your machine: an SSH key that works for
+`ssh -T git@github.com`, or an HTTPS credential helper.
+
+### Updating
+
+Claude Code copies a new version of the plugin only when the `version` in
+`plugins/exam-papers/.claude-plugin/plugin.json` changes. To release a change: commit it, raise the
+version (for example `0.1.0` to `0.2.0`), and push. Users then pick it up with **Check for updates**
+on the marketplace (desktop app or Cowork; **Sync automatically** does it for them), or in Claude Code
+with `/plugin marketplace update exam-paper-generator` and `claude plugin update
+exam-papers@exam-paper-generator`. A session already open keeps the version it started with; a new
+session, or `/reload-plugins`, loads the new one.
+
+### Developing
+
+To try edits without pushing, add the marketplace from your clone instead:
+`/plugin marketplace add /path/to/exam-paper-generator`. The plugin's files are then read straight
+from the repo, so an edit takes effect after `/reload-plugins` or in the next session, with no version
+change.
 
 ## Using it
 

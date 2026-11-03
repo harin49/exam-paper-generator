@@ -515,6 +515,11 @@ metrics and golden papers show whether a change made things better or worse.
 - **Development:** the plugin is installed from this repo's own marketplace, so names and loading
   match what teachers get. A plugin installed from a local folder is read in place, so edits take
   effect after `/reload-plugins`.
+- **Releases (2026-11-03):** teachers add the marketplace from GitHub
+  (`harin49/exam-paper-generator`). Claude Code re-copies a GitHub-installed plugin only when its
+  `version` changes, so `plugin.json` keeps a version that is raised for each release. Dropping it
+  (each commit becomes the version) was considered and not chosen: a readable version per release
+  was preferred, at the cost of remembering the bump.
 
 *Why:* a permanent name that is specific but short to type at every gate; only the plugin ships; one
 sample pack lets a teacher try a paper without writing a concept list first.

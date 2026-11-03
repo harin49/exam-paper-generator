@@ -70,7 +70,8 @@ There are two places:
 | 6 | `${CLAUDE_SKILL_DIR}/scripts/render.py` | Builds the question paper and answer key PDFs | two PDFs in `TASK` |
 
 Files that are **not** run in the workflow: `${CLAUDE_SKILL_DIR}/scripts/spec_types.py`,
-`${CLAUDE_SKILL_DIR}/scripts/approvals.py`, `${CLAUDE_SKILL_DIR}/scripts/latex.py` and
+`${CLAUDE_SKILL_DIR}/scripts/approvals.py`, `${CLAUDE_SKILL_DIR}/scripts/latex.py`,
+`${CLAUDE_SKILL_DIR}/scripts/paper.py`, `${CLAUDE_SKILL_DIR}/scripts/report.py` and
 `${CLAUDE_SKILL_DIR}/scripts/task_files.py` (libraries
 the other scripts and the plugin's approval hook import) and
 `${CLAUDE_SKILL_DIR}/scripts/number_syllabus.py` (used by the make-pack skill) and

@@ -92,11 +92,12 @@ plugins/exam-papers/                # the plugin: the only part that is installe
     workflow.json                   # the steps in order: who does each, approval points, when done
     schemas/                        # spec (S-rules), questions + blueprint (Q-rules), concept list
                                     # (C-rules), review files (V-rules); spec template
-    scripts/                        # validate_paper_spec, validate_concepts, make_blueprint,
+    scripts/                        # run: validate_paper_spec, validate_concepts, make_blueprint,
                                     # check_questions, render, new_paper, extract_paper,
-                                    # compare_solutions, next_step, render_review, spec_types,
-                                    # approvals, task_files, review_status,
-                                    # number_syllabus
+                                    # compare_solutions, next_step, render_review, review_status,
+                                    # number_syllabus; libraries: paper (labels, part walk, names),
+                                    # report (Report, value checks), task_files (JSON, hashes,
+                                    # run log), approvals, spec_types, latex
     assets/syllabi/icse9-physics-selina/   # sample pack: syllabus.md, concepts.json (approve once copied)
 docs/harness-design.md              # goal, architecture, decisions D1–D21
 examples/icse9-physics-units1-4/    # example paper: spec + draft blueprint

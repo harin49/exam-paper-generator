@@ -30,12 +30,12 @@ Exit codes:
     2  the file could not be read or is not valid JSON
 """
 import html
-import json
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from render import chapter_list, class_text  # noqa: E402
+from paper import chapter_list, class_text  # noqa: E402
+from task_files import load_json  # noqa: E402
 
 SEVERITIES = ["error", "warning", "suggestion"]
 STATUSES = ["open", "resolved"]
@@ -44,11 +44,6 @@ OPTIONAL = ["note"]
 LABELS = [("problem", "Problem"), ("evidence", "Evidence"), ("suggestedFix", "Suggested fix"),
           ("note", "Note")]
 DISMISSED_FIELDS = ["mismatch", "reason"]
-
-
-def load(path):
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
 
 
 def check(doc):
@@ -238,7 +233,7 @@ def main(argv):
         return 2
     path = args[0]
     try:
-        doc = load(path)
+        doc = load_json(path)
     except (OSError, ValueError) as e:   # JSONDecodeError is a ValueError
         print(f"Cannot read input: {e}")
         return 2
@@ -254,7 +249,7 @@ def main(argv):
         return 0
     spec_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(path))), "spec.json")
     try:
-        spec = load(spec_path)
+        spec = load_json(spec_path)
     except (OSError, ValueError):
         spec = {}
     out = out or os.path.splitext(path)[0] + ".html"

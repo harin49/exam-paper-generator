@@ -18,7 +18,7 @@ from helpers import TEST_DATA, load_json  # noqa: E402
 import next_step as ns  # noqa: E402
 from approvals import record_approval  # noqa: E402
 import review_status as rs  # noqa: E402
-from render import output_names  # noqa: E402
+from paper import output_names  # noqa: E402
 
 STEPS = ns.read_workflow(ns.WORKFLOW)
 

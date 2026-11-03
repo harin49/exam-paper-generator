@@ -35,10 +35,10 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from check_questions import where  # noqa: E402
-from extract_paper import part_id, plain_text  # noqa: E402
-from render import leaves  # noqa: E402
-from validate_paper_spec import Report, fmt, is_num  # noqa: E402
+from next_step import record_own_step  # noqa: E402
+from paper import leaves, part_id, plain_text, where  # noqa: E402
+from report import Report, fmt, is_num  # noqa: E402
+from task_files import load_json  # noqa: E402
 
 TOLERANCE = 0.01          # relative: solvers round to 3 or 4 significant figures
 
@@ -165,11 +165,6 @@ def compare_values(r, loc, leaf, got):
                          .rstrip() + ")", "V4")
 
 
-def load(path):
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
-
-
 def main(argv):
     args = argv[1:]
     as_json = "--json" in args
@@ -186,7 +181,7 @@ def main(argv):
         print(__doc__.strip())
         return 2
     try:
-        qdoc, sdoc = load(args[0]), load(args[1])
+        qdoc, sdoc = load_json(args[0]), load_json(args[1])
         r = compare(qdoc, sdoc)
     except (OSError, ValueError, KeyError, TypeError) as e:
         print(f"Cannot read input: {e}")
@@ -208,7 +203,6 @@ def main(argv):
         with open(out, "w", encoding="utf-8") as f:
             f.write(report + "\n")
         # Mismatches (exit 1) are a finished comparison too; the step is the report being written.
-        from next_step import record_own_step                 # here: next_step imports render
         recorded = record_own_step(os.path.dirname(os.path.abspath(args[0])), "compare_solutions")
         if recorded and not as_json:
             print(recorded)

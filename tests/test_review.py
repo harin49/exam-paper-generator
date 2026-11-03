@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from helpers import TEST_DATA  # noqa: E402
 import compare_solutions as cs  # noqa: E402
 import extract_paper as ep  # noqa: E402
-from render import leaves  # noqa: E402
+from paper import leaves, part_id, plain_text  # noqa: E402
 
 EXAMPLE = TEST_DATA
 
@@ -35,7 +35,7 @@ def perfect_solver(qdoc):
             answers.append({"number": q["number"], "choice": q["correctOption"]})
             continue
         for labels, leaf in leaves(q["parts"]):
-            a = {"number": q["number"], "id": ep.part_id(labels), "answer": "text"}
+            a = {"number": q["number"], "id": part_id(labels), "answer": "text"}
             if "computed" in leaf:          # a solver reports what is asked for, not the working
                 a["values"] = [{"value": c["value"], "unit": c["unit"]} for c in leaf["computed"]
                                if not c.get("working")]
@@ -45,14 +45,14 @@ def perfect_solver(qdoc):
 
 class PlainText(unittest.TestCase):
     def test_markup_becomes_plain_text(self):
-        self.assertEqual(ep.plain_text("9.8 m s<sup>−2</sup> and F<sub>2</sub>"), "9.8 m s^(−2) and F_2")
-        self.assertEqual(ep.plain_text("does <b>not</b> <i>depend</i><br/>on"), "does not depend\non")
-        self.assertIsNone(ep.plain_text(None))
+        self.assertEqual(plain_text("9.8 m s<sup>−2</sup> and F<sub>2</sub>"), "9.8 m s^(−2) and F_2")
+        self.assertEqual(plain_text("does <b>not</b> <i>depend</i><br/>on"), "does not depend\non")
+        self.assertIsNone(plain_text(None))
 
     def test_part_ids(self):
-        self.assertEqual(ep.part_id(("a",)), "a")
-        self.assertEqual(ep.part_id(("b", "ii")), "b(ii)")
-        self.assertEqual(ep.part_id(("",)), "")
+        self.assertEqual(part_id(("a",)), "a")
+        self.assertEqual(part_id(("b", "ii")), "b(ii)")
+        self.assertEqual(part_id(("",)), "")
 
 
 class Extract(unittest.TestCase):
@@ -72,10 +72,10 @@ class Extract(unittest.TestCase):
         # model answers and explanations from the key must not appear in the solver's input
         for q in self.qdoc["questions"]:
             if "options" in q:
-                self.assertNotIn(ep.plain_text(q["explanation"]), text)
+                self.assertNotIn(plain_text(q["explanation"]), text)
             else:
                 for _, leaf in leaves(q["parts"]):
-                    self.assertNotIn(ep.plain_text(leaf["answer"]), text)
+                    self.assertNotIn(plain_text(leaf["answer"]), text)
 
     def test_every_question_and_part_is_present(self):
         self.assertEqual([q["number"] for q in self.data["questions"]],

@@ -15,6 +15,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "plugins", "exam-papers", "skills", "make-paper", "scripts"))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from helpers import TEST_DATA  # noqa: E402
+from paper import chapter_list, output_names  # noqa: E402
 import render  # noqa: E402
 
 try:
@@ -96,9 +97,9 @@ class Wording(unittest.TestCase):
         self.assertEqual(render.duration_text(61), "1 hour 1 minute")
 
     def test_chapter_list(self):
-        self.assertEqual(render.chapter_list([5, 1, 2, 3, 4]), "1–5")
-        self.assertEqual(render.chapter_list([1, 3, 5]), "1, 3, 5")
-        self.assertEqual(render.chapter_list([2, 3]), "2, 3")
+        self.assertEqual(chapter_list([5, 1, 2, 3, 4]), "1–5")
+        self.assertEqual(chapter_list([1, 3, 5]), "1, 3, 5")
+        self.assertEqual(chapter_list([2, 3]), "2, 3")
 
     def test_section_wording(self):
         self.assertEqual(render.section_subtitle(self.secs["A"]),
@@ -179,7 +180,7 @@ class Build(unittest.TestCase):
         return code, buf.getvalue()
 
     def paths(self):
-        paper, key = render.output_names(load(os.path.join(self.tmp, "spec.json")))
+        paper, key = output_names(load(os.path.join(self.tmp, "spec.json")))
         return os.path.join(self.out, paper), os.path.join(self.out, key)
 
     def test_both_pdfs_are_built(self):

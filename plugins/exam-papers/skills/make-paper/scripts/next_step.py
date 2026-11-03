@@ -50,8 +50,8 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from approvals import GATES, is_approved  # noqa: E402
-from render import output_names  # noqa: E402
-from task_files import file_hash, log_event, now  # noqa: E402
+from paper import output_names  # noqa: E402
+from task_files import file_hash, load_json, log_event, now, write_json  # noqa: E402
 
 SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 WORKFLOW = os.path.join(SKILL_DIR, "workflow.json")
@@ -64,13 +64,8 @@ class WorkflowError(ValueError):
     pass
 
 
-def load(path):
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
-
-
 def read_workflow(path):
-    doc = load(path)
+    doc = load_json(path)
     steps = doc.get("steps") if isinstance(doc, dict) else None
     if not isinstance(steps, list) or not steps:
         raise WorkflowError("the workflow has no 'steps' list")
@@ -115,7 +110,7 @@ class Task:
         self.ignore = set(ignore)       # paths whose conditions count as holding (see record_done)
         spath = os.path.join(folder, "spec.json")
         if os.path.isfile(spath):
-            paper, key = output_names(load(spath))
+            paper, key = output_names(load_json(spath))
             self.names = {"{paper_pdf}": paper, "{key_pdf}": key}
 
     def path(self, p):
@@ -166,7 +161,7 @@ def read_state(folder):
     path = os.path.join(folder, STATE)
     if not os.path.isfile(path):
         return {}
-    doc = load(path)
+    doc = load_json(path)
     if not isinstance(doc, dict) or not isinstance(doc.get("steps"), dict):
         raise WorkflowError(f"{path} has no 'steps' object")
     return doc["steps"]
@@ -209,11 +204,7 @@ def record_done(folder, steps, step_id):
     task.records = records
     if step["done"] != {"never": True} and not task.holds(step["done"], step):
         return f"step '{step_id}' is not finished: its done condition in workflow.json does not hold"
-    tmp = os.path.join(folder, STATE + ".tmp")
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump({"steps": records}, f, indent=2)
-        f.write("\n")
-    os.replace(tmp, os.path.join(folder, STATE))
+    write_json(os.path.join(folder, STATE), {"steps": records})
     log_event(folder, "done", step=step_id, inputs=record["inputs"], outputs=record["outputs"])
     return None
 

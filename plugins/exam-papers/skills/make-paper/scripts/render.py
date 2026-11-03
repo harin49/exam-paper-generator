@@ -35,7 +35,10 @@ from fractions import Fraction
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import latex  # noqa: E402
 from check_questions import check  # noqa: E402
+from next_step import record_own_step  # noqa: E402
+from paper import chapter_list, class_text, leaves, output_names  # noqa: E402
 from spec_types import SectionType  # noqa: E402
+from task_files import load_json  # noqa: E402
 
 # --------------------------------------------------------------------------------------------
 # Text helpers (pure functions, no reportlab needed)
@@ -44,7 +47,6 @@ NBSP = "\u00a0"
 WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
          "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen",
          "nineteen", "twenty"]
-ROMAN_CLASS = {5: "V", 6: "VI", 7: "VII", 8: "VIII", 9: "IX", 10: "X", 11: "XI", 12: "XII"}
 
 # Unit symbols that are kept on the same line as the number before them.
 UNIT_TOKENS = ["km", "m", "cm", "mm", "kg", "g", "mg", "s", "ms", "min", "h", "N", "kN", "Pa", "kPa", "J",
@@ -91,18 +93,6 @@ def duration_text(minutes):
     if m:
         parts.append(f"{m} minute{'s' if m != 1 else ''}")
     return " ".join(parts) or "0 minutes"
-
-
-def chapter_list(chapters):
-    """[1, 2, 3, 4, 5] -> '1–5'; [1, 3, 5] -> '1, 3, 5'."""
-    cs = sorted(chapters)
-    if len(cs) > 2 and cs == list(range(cs[0], cs[-1] + 1)):
-        return f"{cs[0]}–{cs[-1]}"
-    return ", ".join(str(c) for c in cs)
-
-
-def class_text(n):
-    return ROMAN_CLASS.get(n, str(n))
 
 
 def markup(text, inline=None):
@@ -209,14 +199,6 @@ def instructions(spec, has_numerical, has_subparts):
 # --------------------------------------------------------------------------------------------
 # Walking the questions
 # --------------------------------------------------------------------------------------------
-def leaves(parts, prefix=()):
-    for p in parts:
-        if "parts" in p:
-            yield from leaves(p["parts"], prefix + (p["label"],))
-        else:
-            yield prefix + (p["label"],), p
-
-
 def paper_facts(qs):
     """(has_numerical, has_subparts) over the whole paper."""
     num = sub = False
@@ -661,17 +643,6 @@ class Renderer:
 # --------------------------------------------------------------------------------------------
 # Command line
 # --------------------------------------------------------------------------------------------
-def load(path):
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
-
-
-def output_names(spec):
-    ex = spec["exam"]
-    base = f"{ex['subject']}_Class{ex['class']}".replace(" ", "_")
-    return f"{base}_Question_Paper.pdf", f"{base}_Answer_Key.pdf"
-
-
 def main(argv):
     args = argv[1:]
     out_dir = bpath = None
@@ -692,13 +663,13 @@ def main(argv):
     qpath = args[0]
     folder = os.path.dirname(os.path.abspath(qpath))
     try:
-        qdoc = load(qpath)
+        qdoc = load_json(qpath)
         if not isinstance(qdoc, dict):
             raise ValueError("questions file must be a JSON object")
-        spec = load(os.path.join(folder, qdoc.get("spec", "spec.json")))
-        concepts = load(os.path.normpath(os.path.join(folder, qdoc.get("conceptList", ""))))
+        spec = load_json(os.path.join(folder, qdoc.get("spec", "spec.json")))
+        concepts = load_json(os.path.normpath(os.path.join(folder, qdoc.get("conceptList", ""))))
         bpath = bpath or os.path.join(folder, "blueprint.json")
-        bdoc = load(bpath) if os.path.isfile(bpath) else None
+        bdoc = load_json(bpath) if os.path.isfile(bpath) else None
     except (OSError, ValueError) as e:
         print(f"Cannot read input: {e}")
         return 2
@@ -748,7 +719,6 @@ def main(argv):
             print(f"  - Q{n}: {f or '(no file named)'}: {desc}")
         print("The step is not recorded until the PDFs are built with every image.")
         return 0
-    from next_step import record_own_step                     # here: next_step imports this module
     recorded = record_own_step(folder, "render") if os.path.abspath(out_dir) == os.path.abspath(folder) else None
     if recorded:
         print(recorded)

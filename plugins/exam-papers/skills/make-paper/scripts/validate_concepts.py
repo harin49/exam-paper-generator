@@ -24,7 +24,8 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from spec_types import Kind  # noqa: E402
-from validate_paper_spec import Report, is_int, is_num  # noqa: E402
+from report import Report, is_int, is_num, keys_ok  # noqa: E402
+from task_files import load_json  # noqa: E402
 
 TOP_KEYS = {"board", "class", "book", "syllabus", "syllabusYear", "chapters", "note", "notTested"}
 TOP_REQUIRED = {"board", "class", "syllabus", "chapters"}
@@ -39,19 +40,12 @@ def syllabus_points(text):
     return POINT_RE.findall(text)
 
 
-def keys_ok(r, obj, allowed, required, loc):
-    for k in sorted(required - set(obj)):
-        r.error(loc, f"'{k}' is required", "C1")
-    for k in sorted(set(obj) - allowed):
-        r.error(loc, f"unknown field '{k}'", "C1")
-
-
 def validate(doc, syllabus_text):
     r = Report()
     if not isinstance(doc, dict):
         r.error("file", "must be a JSON object", "C1")
         return r
-    keys_ok(r, doc, TOP_KEYS, TOP_REQUIRED, "file")
+    keys_ok(r, doc, TOP_KEYS, TOP_REQUIRED, "file", "C1")
     for k in ("board", "book", "syllabus"):                  # book is optional
         if k in doc and not (isinstance(doc[k], str) and doc[k].strip()):
             r.error("file", f"{k} must be non-empty text", "C1")
@@ -77,7 +71,7 @@ def validate(doc, syllabus_text):
         if not isinstance(entry, dict):
             r.error(cloc, "must be an object", "C1")
             continue
-        keys_ok(r, entry, CHAPTER_KEYS, CHAPTER_KEYS, cloc)
+        keys_ok(r, entry, CHAPTER_KEYS, CHAPTER_KEYS, cloc, "C1")
         if "title" in entry and not (isinstance(entry["title"], str) and entry["title"].strip()):
             r.error(cloc, "title must be non-empty text", "C1")
         concepts = entry.get("concepts")
@@ -92,7 +86,7 @@ def validate(doc, syllabus_text):
             tag = c.get("tag")
             if isinstance(tag, str):
                 loc = f"{cloc} '{tag}'"
-            keys_ok(r, c, CONCEPT_KEYS, CONCEPT_KEYS, loc)
+            keys_ok(r, c, CONCEPT_KEYS, CONCEPT_KEYS, loc, "C1")
 
             if "tag" in c:
                 if not (isinstance(tag, str) and TAG_RE.match(tag)):
@@ -154,8 +148,7 @@ def main(argv):
         return 2
     path = args[0]
     try:
-        with open(path, encoding="utf-8") as f:
-            doc = json.load(f)
+        doc = load_json(path)
         spath = os.path.join(os.path.dirname(path), doc.get("syllabus", "") if isinstance(doc, dict) else "")
         with open(spath, encoding="utf-8") as f:
             text = f.read()

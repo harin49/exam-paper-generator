@@ -10,10 +10,9 @@ record names the gate, the approved file and that file's SHA-256 hash:
 A gate is approved while its latest record's hash matches the file now, so editing an approved file
 voids its approval.
 """
-import json
 import os
 
-from task_files import file_hash, log_event, now
+from task_files import file_hash, load_json, log_event, now, write_json
 
 APPROVALS = "approvals.json"
 GATES = {"blueprint": "blueprint.json", "paper": "questions.json", "concepts": "concepts.json"}
@@ -24,8 +23,7 @@ def read_approvals(folder):
     path = os.path.join(folder, APPROVALS)
     if not os.path.isfile(path):
         return []
-    with open(path, encoding="utf-8") as f:
-        doc = json.load(f)
+    doc = load_json(path)
     if not isinstance(doc, list):
         raise ValueError(f"{path} must be a list of approval records")
     return doc
@@ -47,10 +45,6 @@ def record_approval(folder, gate, command):
     record = {"gate": gate, "file": name, "sha256": file_hash(os.path.join(folder, name)),
               "time": now(), "command": command}
     records = read_approvals(folder) + [record]
-    tmp = os.path.join(folder, APPROVALS + ".tmp")
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(records, f, indent=2, ensure_ascii=False)
-        f.write("\n")
-    os.replace(tmp, os.path.join(folder, APPROVALS))
+    write_json(os.path.join(folder, APPROVALS), records)
     log_event(folder, "approved", gate=gate, file=name, sha256=record["sha256"])
     return record

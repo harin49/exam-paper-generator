@@ -17,8 +17,10 @@ from fractions import Fraction
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+from report import Report, frac, fmt, is_int, is_num  # noqa: E402
 from spec_types import (PACK_NAME, Audience, Diagrams, Difficulty, KeyPart, MeasureOn,  # noqa: E402
                         Numbering, OutputFormat, SectionType, SubParts, WeightMode)
+from task_files import load_json  # noqa: E402
 
 SECTION_TYPES = SectionType.values()
 SUBPARTS = SubParts.values()
@@ -43,38 +45,6 @@ ALLOWED_KEYS = {
     "output": {"header", "paperFormat", "answerKey"},
     "answerKey": {"format", "audience", "include"},
 }
-
-
-class Report:
-    def __init__(self):
-        self.errors, self.warnings, self.info = [], [], []
-
-    @staticmethod
-    def _fmt(path, msg, rule):
-        text = f"{path}: {msg}" if path else msg
-        return f"[{rule}] {text}" if rule else text
-
-    def error(self, path, msg, rule=None):
-        self.errors.append(self._fmt(path, msg, rule))
-
-    def warn(self, path, msg, rule=None):
-        self.warnings.append(self._fmt(path, msg, rule))
-
-
-def is_int(x):
-    return isinstance(x, int) and not isinstance(x, bool)
-
-
-def is_num(x):
-    return isinstance(x, (int, float)) and not isinstance(x, bool)
-
-
-def frac(x):
-    return Fraction(str(x))
-
-
-def fmt(x):
-    return f"{x:g}" if isinstance(x, float) else str(x)
 
 
 def check_keys(r, obj, kind, path):
@@ -357,8 +327,7 @@ def main(argv):
         print(__doc__.strip())
         return 2
     try:
-        with open(args[0], encoding="utf-8") as f:
-            spec = json.load(f)
+        spec = load_json(args[0])
     except (OSError, json.JSONDecodeError) as e:
         print(f"Cannot read {args[0]}: {e}")
         return 2

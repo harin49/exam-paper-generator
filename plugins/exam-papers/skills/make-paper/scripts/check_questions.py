@@ -47,10 +47,10 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import latex  # noqa: E402
 from approvals import is_approved  # noqa: E402
 from spec_types import Difficulty, Kind, Numbering, SectionType, SubParts  # noqa: E402
-from validate_paper_spec import Report, fmt, frac, is_int, is_num, validate as validate_spec  # noqa: E402
-
-LETTERS = "abcdefghijklmnopqrstuvwxyz"
-ROMAN = ["i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x"]
+from paper import LETTERS, ROMAN, where  # noqa: E402
+from report import Report, fmt, frac, is_int, is_num, keys_ok  # noqa: E402
+from task_files import load_json  # noqa: E402
+from validate_paper_spec import validate as validate_spec  # noqa: E402
 
 TOP_KEYS = {"spec", "conceptList", "questions"}
 Q_COMMON = {"number", "section", "chapter", "concepts", "marks"}
@@ -65,11 +65,6 @@ COMPUTED_KEYS = {"label", "expression", "value", "unit", "working"}
 DIAGRAM_KEYS = {"description", "file"}
 
 
-def where(qnum, labels=()):
-    """Readable location, e.g. Q21(b)(ii)."""
-    return f"Q{qnum}" + "".join(f"({l})" for l in labels if l)
-
-
 def show(v):
     return json.dumps(v, ensure_ascii=False)
 
@@ -79,13 +74,6 @@ def nonempty_str(x):
 
 
 # ---------------- Q1: fields, types and values ----------------
-def keys_ok(r, obj, allowed, required, loc):
-    for k in sorted(required - set(obj)):
-        r.error(loc, f"'{k}' is required", "Q1")
-    for k in sorted(set(obj) - allowed):
-        r.error(loc, f"unknown field '{k}'", "Q1")
-
-
 def field(r, obj, key, loc, check, desc):
     if key in obj and not check(obj[key]):
         r.error(loc, f"{key} must be {desc} (got {show(obj[key])})", "Q1")
@@ -100,7 +88,7 @@ def check_computed(r, comp, loc):
         if not isinstance(c, dict):
             r.error(cl, "must be an object", "Q1")
             continue
-        keys_ok(r, c, COMPUTED_KEYS, {"expression", "value", "unit"}, cl)
+        keys_ok(r, c, COMPUTED_KEYS, {"expression", "value", "unit"}, cl, "Q1")
         field(r, c, "expression", cl, nonempty_str, "a non-empty formula")
         field(r, c, "value", cl, is_num, "a number")
         field(r, c, "unit", cl, lambda x: isinstance(x, str), "text ('' for no unit)")
@@ -120,7 +108,7 @@ def check_diagram(r, obj, key, loc):
     if not isinstance(d, dict):
         r.error(loc, f"{key} must be an object", "Q1")
         return
-    keys_ok(r, d, DIAGRAM_KEYS, {"description"}, f"{loc} {key}")
+    keys_ok(r, d, DIAGRAM_KEYS, {"description"}, f"{loc} {key}", "Q1")
     field(r, d, "description", f"{loc} {key}", nonempty_str, "non-empty text")
     field(r, d, "file", f"{loc} {key}", nonempty_str, "a file name")
 
@@ -136,7 +124,7 @@ def check_part_fields(r, p, qnum, labels, depth):
     if "parts" in p:  # group
         if depth > 1:
             r.error(loc, "sub-parts cannot have their own parts (one level of nesting only)", "Q1")
-        keys_ok(r, p, GROUP_KEYS, GROUP_KEYS, loc)
+        keys_ok(r, p, GROUP_KEYS, GROUP_KEYS, loc, "Q1")
         field(r, p, "label", loc, lambda x: isinstance(x, str), "text")
         field(r, p, "text", loc, nonempty_str, "non-empty text")
         field(r, p, "marks", loc, lambda x: is_num(x) and x > 0, "a positive number")
@@ -149,7 +137,7 @@ def check_part_fields(r, p, qnum, labels, depth):
             else:
                 r.error(loc, "each sub-part must be an object", "Q1")
         return
-    keys_ok(r, p, LEAF_KEYS, LEAF_REQUIRED, loc)
+    keys_ok(r, p, LEAF_KEYS, LEAF_REQUIRED, loc, "Q1")
     field(r, p, "label", loc, lambda x: isinstance(x, str), "text")
     field(r, p, "text", loc, nonempty_str, "non-empty text")
     field(r, p, "marks", loc, lambda x: is_num(x) and x > 0, "a positive number")
@@ -166,7 +154,7 @@ def check_part_fields(r, p, qnum, labels, depth):
                 if not isinstance(item, dict):
                     r.error(ml, "must be an object", "Q1")
                     continue
-                keys_ok(r, item, {"marks", "for"}, {"marks", "for"}, ml)
+                keys_ok(r, item, {"marks", "for"}, {"marks", "for"}, ml, "Q1")
                 field(r, item, "marks", ml, lambda x: is_num(x) and x > 0, "a positive number")
                 field(r, item, "for", ml, nonempty_str, "non-empty text")
     if "computed" in p:
@@ -177,7 +165,7 @@ def check_part_fields(r, p, qnum, labels, depth):
 
 def check_fields(r, qdoc, sections):
     """Q1 for the whole file. Returns the list of well-formed question objects."""
-    keys_ok(r, qdoc, TOP_KEYS, TOP_KEYS, "file")
+    keys_ok(r, qdoc, TOP_KEYS, TOP_KEYS, "file", "Q1")
     field(r, qdoc, "spec", "file", nonempty_str, "a file path")
     field(r, qdoc, "conceptList", "file", nonempty_str, "a file path")
     qs = qdoc.get("questions")
@@ -193,9 +181,9 @@ def check_fields(r, qdoc, sections):
         sec = sections.get(q.get("section"))
         is_mcq = sec["type"] == SectionType.MCQ if sec else ("options" in q)
         if is_mcq:
-            keys_ok(r, q, MCQ_KEYS, MCQ_REQUIRED, loc)
+            keys_ok(r, q, MCQ_KEYS, MCQ_REQUIRED, loc, "Q1")
         else:
-            keys_ok(r, q, PARTED_KEYS, PARTED_REQUIRED, loc)
+            keys_ok(r, q, PARTED_KEYS, PARTED_REQUIRED, loc, "Q1")
         field(r, q, "number", loc, lambda x: is_int(x) and x > 0, "a positive whole number")
         field(r, q, "section", loc, nonempty_str, "a section id")
         field(r, q, "chapter", loc, lambda x: is_int(x) and x > 0, "a chapter number")
@@ -886,11 +874,6 @@ def check(qdoc, bdoc=None, spec=None, concepts=None, blueprint_approved=None):
     return r
 
 
-def load(path):
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
-
-
 def main(argv):
     args = argv[1:]
     as_json = "--json" in args
@@ -910,12 +893,12 @@ def main(argv):
     folder = os.path.dirname(qpath)
     bpath = bpath or os.path.join(folder, "blueprint.json")
     try:
-        qdoc = load(qpath)
+        qdoc = load_json(qpath)
         if not isinstance(qdoc, dict):
             raise ValueError("questions file must be a JSON object")
         spath = os.path.join(folder, qdoc.get("spec", "spec.json"))
         cpath = os.path.normpath(os.path.join(folder, qdoc.get("conceptList", "")))
-        spec, bdoc, concepts = load(spath), load(bpath), load(cpath)
+        spec, bdoc, concepts = load_json(spath), load_json(bpath), load_json(cpath)
         approved = is_approved(os.path.dirname(bpath), "blueprint", bpath)
     except (OSError, ValueError) as e:   # JSONDecodeError is a ValueError
         print(f"Cannot read input: {e}")

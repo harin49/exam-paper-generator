@@ -47,11 +47,14 @@ from itertools import product
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import check_questions as cq  # noqa: E402
 from approvals import is_approved  # noqa: E402
+from next_step import record_own_step  # noqa: E402
+from paper import LETTERS  # noqa: E402
+from report import Report, frac  # noqa: E402
 from spec_types import PACK_NAME, Kind, Numbering, SectionType, SubParts  # noqa: E402
 from validate_concepts import validate as validate_concepts  # noqa: E402
-from validate_paper_spec import Report, frac, validate as validate_spec  # noqa: E402
+from task_files import load_json, write_json  # noqa: E402
+from validate_paper_spec import validate as validate_spec  # noqa: E402
 
-LETTERS = "abcdefghijklmnopqrstuvwxyz"
 LEVEL_ORDER = ("easy", "medium", "hard")
 
 
@@ -418,15 +421,13 @@ def main(argv):
     spath = args[0]
     out = opts.get("--out") or os.path.join(os.path.dirname(spath), "blueprint.json")
     try:
-        with open(spath, encoding="utf-8") as f:
-            spec = json.load(f)
+        spec = load_json(spath)
         cpath = opts.get("--concepts") or find_concept_list(spath, spec)
         if cpath is None:
             print(f"Cannot find the concept list: no syllabi/<pack>/concepts.json above {spath} for the "
                   "pack the spec names in exam.syllabusPack (make the pack with the make-pack skill)")
             return 2
-        with open(cpath, encoding="utf-8") as f:
-            concepts = json.load(f)
+        concepts = load_json(cpath)
         syl = concepts.get("syllabus") if isinstance(concepts, dict) else None
         if not syl or not isinstance(syl, str):
             print(f"Cannot check the concept list: {cpath} has no \"syllabus\" field naming its syllabus file")
@@ -463,12 +464,9 @@ def main(argv):
         doc = {"spec": os.path.relpath(os.path.realpath(spath), base),
                "conceptList": os.path.relpath(os.path.realpath(cpath), base),
                "questions": questions}
-        with open(out, "w", encoding="utf-8") as f:
-            json.dump(doc, f, indent=2, ensure_ascii=False)
-            f.write("\n")
+        write_json(out, doc)
     recorded = None
     if not r.errors:
-        from next_step import record_own_step                 # here: next_step imports this skill's scripts
         recorded = record_own_step(os.path.dirname(os.path.abspath(out)), "make_blueprint")
 
     if as_json:

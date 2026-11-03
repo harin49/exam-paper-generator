@@ -16,34 +16,17 @@ repeats in its answers file (see schemas/review-format.md).
 
 Exit codes: 0 written, 2 a file could not be read.
 """
-import json
 import os
-import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from render import leaves  # noqa: E402
+from next_step import record_own_step  # noqa: E402
+from paper import leaves, part_id, plain_text  # noqa: E402
+from task_files import load_json, write_json  # noqa: E402
 
 # Keys that must never appear in the solver's input.
 FORBIDDEN = {"answer", "marking", "explanation", "correctOption", "computed", "kind", "difficulty",
              "chapter", "concepts", "concept", "answerDiagram", "conceptList"}
-
-
-def plain_text(s):
-    """Question markup -> plain text a model can read exactly."""
-    if s is None:
-        return None
-    s = re.sub(r"<sup>(.*?)</sup>", r"^(\1)", s)
-    s = re.sub(r"<sub>(.*?)</sub>", r"_\1", s)
-    s = re.sub(r"<br\s*/?>", "\n", s)
-    s = re.sub(r"</?(?:b|i)>", "", s)
-    return s.replace(" ", " ")
-
-
-def part_id(labels):
-    """('b', 'ii') -> 'b(ii)'; ('',) -> ''."""
-    first, rest = labels[0], labels[1:]
-    return first if not rest else first + "".join(f"({x})" for x in rest)
 
 
 def diagram_of(obj):
@@ -125,10 +108,8 @@ def main(argv):
     qpath = args[0]
     folder = os.path.dirname(os.path.abspath(qpath))
     try:
-        with open(qpath, encoding="utf-8") as f:
-            qdoc = json.load(f)
-        with open(os.path.join(folder, qdoc.get("spec", "spec.json")), encoding="utf-8") as f:
-            spec = json.load(f)
+        qdoc = load_json(qpath)
+        spec = load_json(os.path.join(folder, qdoc.get("spec", "spec.json")))
         data = extract(qdoc, spec)
     except (OSError, ValueError, KeyError, TypeError) as e:
         print(f"Cannot read input: {e}")
@@ -139,11 +120,9 @@ def main(argv):
         return 2
     out = out or os.path.join(folder, "review", "solver-input.json")
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
-    with open(out, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    write_json(out, data)
     n_parts = sum(len(v) for v in answerable_ids(qdoc).values())
     print(f"Wrote {out}: {len(data['questions'])} questions, {n_parts} answerable parts, no answers.")
-    from next_step import record_own_step                     # here: next_step imports render
     recorded = record_own_step(folder, "extract_paper")
     if recorded:
         print(recorded)

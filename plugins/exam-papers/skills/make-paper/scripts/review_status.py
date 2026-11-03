@@ -55,7 +55,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from render_review import check as check_report  # noqa: E402
-from task_files import file_hash, log_event, now  # noqa: E402
+from task_files import file_hash, load_json, log_event, now, write_json  # noqa: E402
 
 MAX_ROUNDS = 3
 STATES = ("close", "decide", "revise", "done")
@@ -76,15 +76,10 @@ class StatusError(ValueError):
     pass
 
 
-def load(path):
-    with open(path, encoding="utf-8") as f:
-        return json.load(f)
-
-
 def read_report(task):
     path = os.path.join(task, REPORT)
     try:
-        doc = load(path)
+        doc = load_json(path)
     except (OSError, ValueError) as e:
         raise StatusError(f"cannot read {path}: {e}")
     problems = check_report(doc)
@@ -97,7 +92,7 @@ def read_rounds(task):
     path = os.path.join(task, ROUNDS)
     if not os.path.isfile(path):
         return []
-    doc = load(path)
+    doc = load_json(path)
     if not isinstance(doc, dict) or not isinstance(doc.get("rounds"), list):
         raise StatusError(f"{path} has no 'rounds' list")
     return doc["rounds"]
@@ -107,7 +102,7 @@ def read_decisions(task, ids):
     path = os.path.join(task, DECISIONS)
     if not os.path.isfile(path):
         return []
-    doc = load(path)
+    doc = load_json(path)
     if not isinstance(doc, dict) or not isinstance(doc.get("decisions"), list):
         raise StatusError(f"{path} has no 'decisions' list")
     for i, d in enumerate(doc["decisions"], 1):
@@ -133,11 +128,11 @@ def read_responses(task):
     for r in read_rounds(task):
         path = os.path.join(task, ROUNDS_DIR, str(r["round"]), "writer-response.json")
         if r.get("writerResponse") and os.path.isfile(path):
-            out += [dict(e, round=r["round"]) for e in load(path).get("responses", []) if isinstance(e, dict)]
+            out += [dict(e, round=r["round"]) for e in load_json(path).get("responses", []) if isinstance(e, dict)]
             last = r["writerResponse"]
     current = os.path.join(task, WRITER_RESPONSE)
     if os.path.isfile(current) and file_hash(current) != last:
-        out += [dict(e, round=None) for e in load(current).get("responses", []) if isinstance(e, dict)]
+        out += [dict(e, round=None) for e in load_json(current).get("responses", []) if isinstance(e, dict)]
     return out
 
 
@@ -261,16 +256,12 @@ def record_decision(task, accepted, rejected, command):
     if problems:
         return problems
     path = os.path.join(task, DECISIONS)
-    doc = load(path) if os.path.isfile(path) else {"decisions": []}
+    doc = load_json(path) if os.path.isfile(path) else {"decisions": []}
     undo = [i for i in rejected if i in s["fixed"]]
     entry = {"round": s["round"], "report": file_hash(os.path.join(task, REPORT)),
              "accepted": accepted, "rejected": rejected, "undo": undo, "time": now(), "command": command}
     doc["decisions"].append(entry)
-    tmp = path + ".tmp"
-    with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(doc, f, indent=2)
-        f.write("\n")
-    os.replace(tmp, path)
+    write_json(path, doc)
     log_event(task, "decided", round=s["round"], accepted=accepted, rejected=rejected, undo=undo)
     return []
 
@@ -284,7 +275,7 @@ def close_round(task):
         print(f"Round {len(rounds)} is already closed.")
         return 0
     if rounds:
-        previous = load(os.path.join(task, ROUNDS_DIR, str(len(rounds)), "reviewer-report.json"))
+        previous = load_json(os.path.join(task, ROUNDS_DIR, str(len(rounds)), "reviewer-report.json"))
         problems = cross_round_problems(report, previous)
         if problems:
             print("The report cannot close the round; the reviewer must fix:")
@@ -305,15 +296,13 @@ def close_round(task):
     rounds.append({"round": n, "key": key, "report": sha,
                    "questions": file_hash(os.path.join(task, "questions.json")),
                    "writerResponse": response, "time": now()})
-    with open(os.path.join(task, ROUNDS), "w", encoding="utf-8") as f:
-        json.dump({"rounds": rounds}, f, indent=2)
-        f.write("\n")
+    write_json(os.path.join(task, ROUNDS), {"rounds": rounds})
     log_event(task, "round_closed", round=n, report=sha)
     print(f"Closed round {n}.")
     return 0
 
 
-def leaves(questions):
+def fields_by_location(questions):
     """(location, fields without nested parts) for every question and part, in order."""
     def walk(node, loc):
         yield loc, {k: v for k, v in node.items() if k != "parts"}
@@ -332,8 +321,8 @@ def show(value):
 
 def diff(old_path, new_path):
     """[(location, field, before, after)] for every field that differs between two questions files."""
-    old, new = load(old_path).get("questions", []), load(new_path).get("questions", [])
-    before, after = dict(leaves(old)), dict(leaves(new))
+    old, new = load_json(old_path).get("questions", []), load_json(new_path).get("questions", [])
+    before, after = dict(fields_by_location(old)), dict(fields_by_location(new))
     out = []
     for loc in list(after) + [x for x in before if x not in after]:
         a, b = before.get(loc, {}), after.get(loc, {})
@@ -382,8 +371,8 @@ def fixes(task):
     unclaimed = []
     for k in range(2, len(rounds) + 1):
         folder = os.path.join(task, ROUNDS_DIR, str(k))
-        prev = load(os.path.join(task, ROUNDS_DIR, str(k - 1), "reviewer-report.json"))["findings"]
-        now_report = {f["id"]: f for f in load(os.path.join(folder, "reviewer-report.json"))["findings"]}
+        prev = load_json(os.path.join(task, ROUNDS_DIR, str(k - 1), "reviewer-report.json"))["findings"]
+        now_report = {f["id"]: f for f in load_json(os.path.join(folder, "reviewer-report.json"))["findings"]}
         severity = {f["id"]: f["severity"] for f in prev}
         items = diff(os.path.join(task, ROUNDS_DIR, str(k - 1), "questions.json"),
                      os.path.join(folder, "questions.json"))

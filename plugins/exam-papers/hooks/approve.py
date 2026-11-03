@@ -24,6 +24,7 @@ sys.path.insert(0, os.path.join(PLUGIN, "skills", "make-paper", "scripts"))
 from approvals import GATES, is_approved, record_approval  # noqa: E402
 from next_step import WORKFLOW, next_step, read_workflow  # noqa: E402
 from review_status import record_decision, status  # noqa: E402
+from task_files import load_json  # noqa: E402
 import validate_concepts  # noqa: E402
 
 COMMAND = "exam-papers:approve"
@@ -158,8 +159,7 @@ def on_approve_concepts(root, name, text):
                          f"Type /{COMMAND} concepts PACK with one of them.")
         pack = waiting[0]
     try:
-        with open(os.path.join(pack, "concepts.json"), encoding="utf-8") as f:
-            doc = json.load(f)
+        doc = load_json(os.path.join(pack, "concepts.json"))
         with open(os.path.join(pack, doc.get("syllabus", "syllabus.md")), encoding="utf-8") as f:
             report = validate_concepts.validate(doc, f.read())
     except (OSError, ValueError, AttributeError) as e:

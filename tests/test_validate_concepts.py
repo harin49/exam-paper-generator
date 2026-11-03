@@ -102,12 +102,10 @@ class ConceptList(unittest.TestCase):
         del self.doc["book"]
         self.assertEqual(vc.validate(self.doc, self.syllabus).errors, [])
 
-    def test_status_is_ignored_with_a_warning(self):
-        self.assertEqual(vc.validate(self.doc, self.syllabus).warnings, [])
+    def test_status_is_not_a_field(self):
+        # Approval is the typed /exam-papers:approve concepts, never a field in the list.
         self.doc["status"] = "approved"
-        r = vc.validate(self.doc, self.syllabus)
-        self.assertEqual(r.errors, [])
-        self.assertTrue(any("status is ignored" in w for w in r.warnings))
+        self.assertIn("unknown field 'status'", self.errors())
 
 
 class CommandLine(unittest.TestCase):

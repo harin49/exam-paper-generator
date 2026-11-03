@@ -1,4 +1,4 @@
-"""Tests for the plugin's hooks (hooks/approve.py, hooks/guard_agents.py), each run as Claude Code
+"""Tests for the plugin's hooks (hooks/approve.py, hooks/guard.py), each run as Claude Code
 runs it: a separate process given the hook's JSON on stdin. Run from the project root:
     python3 -m unittest discover tests
 """
@@ -16,6 +16,7 @@ import unittest
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PLUGIN = os.path.join(ROOT, "plugins", "exam-papers")
 HOOK = os.path.join(PLUGIN, "hooks", "approve.py")
+GUARD = os.path.join(PLUGIN, "hooks", "guard.py")
 sys.path.insert(0, os.path.join(PLUGIN, "skills", "make-paper", "scripts"))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from helpers import TEST_DATA, load_json  # noqa: E402
@@ -299,14 +300,33 @@ class Decide(Hook):
         self.assertEqual(self.decisions(folder), [])
 
 
-class Guard(Hook):
-    def tool(self, name, **tool_input):
-        out = self.run_hook({"hook_event_name": "PreToolUse", "tool_name": name, "tool_input": tool_input})
-        if not out:
+class GuardHook(unittest.TestCase):
+    """hooks/guard.py, run as a separate process like the approval hook."""
+
+    def call(self, agent_type, tool, **tool_input):
+        event = {"hook_event_name": "PreToolUse", "tool_name": tool, "tool_input": tool_input}
+        if agent_type:
+            event.update(agent_id="a1", agent_type=agent_type)
+        run = subprocess.run([sys.executable, GUARD], input=json.dumps(event), capture_output=True, text=True)
+        self.assertEqual(run.returncode, 0, run.stderr)
+        if not run.stdout.strip():
             return None
-        doc = json.loads(out)["hookSpecificOutput"]
+        doc = json.loads(run.stdout)["hookSpecificOutput"]
         self.assertEqual(doc["hookEventName"], "PreToolUse")
         return doc["permissionDecision"]
+
+
+class Guard(GuardHook):
+    """Nobody writes approvals.json or decisions.json."""
+
+    def setUp(self):
+        self.root = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.root)
+
+    def tool(self, name, **tool_input):
+        return self.call(None, name, **tool_input)
 
     def test_writing_approvals_is_denied(self):
         path = os.path.join(self.root, "papers", "x", "approvals.json")
@@ -326,18 +346,17 @@ class Guard(Hook):
         self.assertIsNone(self.tool("Write", file_path=os.path.join(self.root, "questions.json"), content=""))
         self.assertIsNone(self.tool("Bash", command="ls 2>&1"))
 
+    def test_reading_approvals_with_the_read_tool_is_allowed(self):
+        self.assertIsNone(self.tool("Read", file_path=os.path.join(self.root, "papers", "x", "approvals.json")))
 
-class AgentGuard(unittest.TestCase):
-    """hooks/guard_agents.py, run as a separate process like the approval hook."""
+    def test_subagents_cannot_write_them_either(self):
+        path = os.path.join(self.root, "papers", "x", "approvals.json")
+        for agent in ("exam-papers:writer", "exam-papers:reviewer"):
+            self.assertEqual(self.call(agent, "Write", file_path=path, content="[]"), "deny")
 
-    def call(self, agent_type, tool, **tool_input):
-        event = {"hook_event_name": "PreToolUse", "tool_name": tool, "tool_input": tool_input}
-        if agent_type:
-            event.update(agent_id="a1", agent_type=agent_type)
-        run = subprocess.run([sys.executable, os.path.join(PLUGIN, "hooks", "guard_agents.py")],
-                             input=json.dumps(event), capture_output=True, text=True)
-        self.assertEqual(run.returncode, 0, run.stderr)
-        return json.loads(run.stdout)["hookSpecificOutput"]["permissionDecision"] if run.stdout.strip() else None
+
+class AgentGuard(GuardHook):
+    """The blind solver and the writer see only what their role allows."""
 
     def test_solver_sees_only_the_blind_paper(self):
         solver = "exam-papers:blind-solver"
@@ -373,7 +392,9 @@ class PluginFiles(unittest.TestCase):
         for a in args:
             self.assertTrue(os.path.isfile(a.replace("${CLAUDE_PLUGIN_ROOT}", PLUGIN)), a)
         self.assertEqual(set(doc["hooks"]), {"UserPromptExpansion", "PreToolUse"})
-        self.assertIn("${CLAUDE_PLUGIN_ROOT}/hooks/guard_agents.py", args)
+        # One process per tool call: only guard.py runs before tools; approve.py only on typed commands.
+        pre = [a for g in doc["hooks"]["PreToolUse"] for h in g["hooks"] for a in h["args"]]
+        self.assertEqual(pre, ["${CLAUDE_PLUGIN_ROOT}/hooks/guard.py"])
 
     def test_typed_commands_cannot_be_run_by_claude(self):
         self.assertEqual(sorted(os.listdir(os.path.join(PLUGIN, "commands"))), ["approve.md", "decide.md"])

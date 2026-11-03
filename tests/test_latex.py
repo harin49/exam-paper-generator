@@ -24,7 +24,7 @@ class Split(unittest.TestCase):
 
     def test_plain_text(self):
         self.assertEqual(latex.split("no maths here"), [("text", "no maths here")])
-        self.assertFalse(latex.has_math("costs \\$5"))
+        self.assertEqual(latex.split("costs \\$5"), [("text", "costs $5")])
 
     def test_unclosed_or_empty_is_an_error(self):
         for bad in ("open $x", "$$", "$ $"):

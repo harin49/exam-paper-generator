@@ -53,10 +53,6 @@ def split(text):
     return out
 
 
-def has_math(text):
-    return any(kind != TEXT for kind, _ in split_quiet(text))
-
-
 def split_quiet(text):
     """split(), but an unclosed $ is treated as text (for code that must not fail, e.g. messages)."""
     try:

@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-"""The plugin's hooks for the teacher's typed commands (D6, D20). Reads the hook's JSON on stdin.
-
-UserPromptExpansion: only a command the user types expands, so Claude and its subagents cannot get
-here.
+"""The plugin's UserPromptExpansion hook: records the teacher's typed commands (D6, D20). Reads the
+hook's JSON on stdin. Only a command the user types expands, so Claude and its subagents cannot get
+here. (guard.py stops them from writing the files this hook writes.)
 - /exam-papers:approve GATE [TASK] records the approval in that task's approvals.json.
 - /exam-papers:approve concepts [PACK] records the approval of a syllabus pack's concept list in
   syllabi/PACK/approvals.json, if the list passes validate_concepts.py. Without PACK it goes to the
@@ -13,10 +12,6 @@ here.
   made, which undoes it).
 TASK is a folder under papers/ (its name or its path); without it, the command goes to the one task
 that is waiting for it. If it cannot be recorded, the command is blocked and the reason shown.
-
-PreToolUse: deny any Write or Edit of a file named approvals.json or decisions.json, and any Bash
-command that mentions one, whoever asks (Claude or a subagent). A Bash command that builds the name
-some other way is not caught: this guards against mistakes, not a determined adversary.
 """
 import glob
 import json
@@ -26,7 +21,7 @@ import sys
 
 PLUGIN = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(PLUGIN, "skills", "make-paper", "scripts"))
-from approvals import APPROVALS, GATES, is_approved, record_approval  # noqa: E402
+from approvals import GATES, is_approved, record_approval  # noqa: E402
 from next_step import WORKFLOW, next_step, read_workflow  # noqa: E402
 from review_status import record_decision, status  # noqa: E402
 import validate_concepts  # noqa: E402
@@ -37,19 +32,11 @@ USAGE = (f"Type /{COMMAND} followed by one of: {', '.join(GATES)}, and optionall
          "(for concepts: the pack's folder under syllabi/).")
 DECIDE_USAGE = (f"Type /{DECIDE} accept R2 R4 reject R5 (each finding listed to decide, accepted or "
                 "rejected), and optionally the paper's folder at the end.")
-PROTECTED = (APPROVALS, "decisions.json")
 FINDING = re.compile(r"R[1-9][0-9]*")
 
 
 def block(reason):
     print(json.dumps({"decision": "block", "reason": reason}))
-    return 0
-
-
-def deny(reason):
-    print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse",
-                                             "permissionDecision": "deny",
-                                             "permissionDecisionReason": reason}}))
     return 0
 
 
@@ -89,9 +76,9 @@ def where_papers_are(root, steps):
     return lines
 
 
-def pick_task(root, folder, waiting, what, retype, where=()):
-    """(the task, None) or (None, the reason to block). where: where_papers_are() lines, shown when
-    no paper is waiting."""
+def pick_task(root, folder, waiting, what, retype, where=None):
+    """(the task, None) or (None, the reason to block). where: a function giving where_papers_are()
+    lines, called only when no paper is waiting (it works out every paper's next step)."""
     if folder:
         named = os.path.realpath(os.path.join(root, "papers", folder) if os.sep not in folder
                                  else os.path.join(root, folder))
@@ -104,7 +91,7 @@ def pick_task(root, folder, waiting, what, retype, where=()):
         return waiting[0], None
     if not waiting:
         return None, (f"No paper under {os.path.join(root, 'papers')} is waiting for {what}."
-                      + ("".join(f"\n- {w}" for w in where) if where else ""))
+                      + ("".join(f"\n- {w}" for w in where()) if where else ""))
     names = ", ".join(os.path.basename(t) for t in waiting)
     return None, f"Several papers are waiting for {what} ({names}). Type {retype} FOLDER with one of them."
 
@@ -133,7 +120,7 @@ def on_expansion(event):
         return on_approve_concepts(root, words[1] if len(words) == 2 else None, text)
     task, reason = pick_task(root, words[1] if len(words) == 2 else None,
                              waiting_tasks(root, {f"approve_{gate}"}, steps), f"a {gate} approval",
-                             f"/{COMMAND} {gate}", where_papers_are(root, steps))
+                             f"/{COMMAND} {gate}", lambda: where_papers_are(root, steps))
     if reason:
         return block(reason)
     rec = record_approval(task, gate, text)
@@ -200,7 +187,7 @@ def on_decide(event, root, steps):
             return block(DECIDE_USAGE)
     waiting = waiting_tasks(root, {"decide_fixes", "apply_fixes", "approve_paper"}, steps)
     task, reason = pick_task(root, folder, waiting, "a decision on review findings", f"/{DECIDE} ...",
-                             where_papers_are(root, steps))
+                             lambda: where_papers_are(root, steps))
     if reason:
         return block(reason)
     try:
@@ -217,32 +204,13 @@ def on_decide(event, root, steps):
     return 0
 
 
-def on_tool(event):
-    tool = event.get("tool_name")
-    args = event.get("tool_input") or {}
-    if tool == "Bash":
-        named = [f for f in PROTECTED if f in (args.get("command") or "")]
-        if named:
-            return deny(f"{named[0]} is written only by the plugin's hook, and Bash may not touch it. "
-                        f"Read it with the Read tool; the teacher types /{COMMAND} or /{DECIDE}.")
-        return 0
-    name = os.path.basename(args.get("file_path") or args.get("notebook_path") or "")
-    if name in PROTECTED:
-        return deny(f"{name} is written only by the plugin's hook. The teacher types /{COMMAND} or "
-                    f"/{DECIDE}; never write it yourself.")
-    return 0
-
-
 def main():
     try:
         event = json.load(sys.stdin)
     except ValueError:
         return 0
-    name = event.get("hook_event_name")
-    if name == "UserPromptExpansion":
+    if event.get("hook_event_name") == "UserPromptExpansion":
         return on_expansion(event)
-    if name == "PreToolUse":
-        return on_tool(event)
     return 0
 
 

@@ -59,7 +59,6 @@ it comes from.
 | `board`, `class`, `book` | Must match the paper spec's `exam` (checked by rule Q8). `book` is optional; it is compared only when both name one. |
 | `syllabus` | The numbered syllabus file, relative to this file. Its points carry ids `[S1]`, `[S2]`, ... (from `number_syllabus.py`). |
 | `syllabusYear` | Optional: the syllabus year it was drafted from. |
-| `status` | No longer used (approval is by the typed command); a list that still has it gets a warning. |
 | `note` | Optional free text (where the syllabus came from, anything changed in it). |
 | `notTested` | Optional: syllabus points with no concept, each with the reason (`{"S17": "Heading only..."}`). Shown to the teacher at approval. |
 | `chapters` | The syllabus's units, keyed by the syllabus's number for each: `title` (the unit's heading) and `concepts`. |
@@ -86,8 +85,6 @@ Every message starts with its rule number, e.g. `[C6] syllabus [S45]: has no con
   `notTested` id is one of them.
 - **C6.** Every syllabus point has at least one concept, or is in `notTested` with a reason
   (coverage). A point in `notTested` that also has concepts is a warning.
-
-**Warning:** C1 warns if the list still has the old `status` field, which no longer approves anything.
 
 The validator also reports, as information, the number of concepts per chapter (and how many allow
 numerical questions) and how many syllabus points are covered, and which are not tested and why.

@@ -35,9 +35,6 @@ render.py uses for the spec):
                                                   beyond its args (used by --done, see record_done)
     {"approved": GATE}                            the teacher approved GATE's file (approvals.py) and
                                                   the file has not changed since
-    {"equals": PATH, "field": F, "value": V}      JSON file PATH has field F equal to V
-    {"empty": PATH, "field": F}                   JSON file PATH has field F as an empty list
-    {"contains": PATH, "text": T}                 the file contains the text T
     {"all": [...]} / {"any": [...]}               every / at least one condition holds
     {"never": true}                               never done (the last step)
 
@@ -127,12 +124,6 @@ class Task:
     def hashes(self, paths):
         return {p: file_hash(self.path(p)) for p in paths}
 
-    def read_json(self, p):
-        try:
-            return load(self.path(p))
-        except (OSError, ValueError):
-            return None
-
     def holds(self, cond, step):
         if not isinstance(cond, dict) or len(cond) == 0:
             raise WorkflowError(f"a condition must be a non-empty object: {cond!r}")
@@ -142,8 +133,7 @@ class Task:
             return any(self.holds(c, step) for c in cond["any"])
         if "never" in cond:
             return False
-        read = ([cond[k] for k in ("exists", "equals", "empty", "contains") if k in cond]
-                + cond.get("args", []) + cond.get("reads", []))
+        read = ([cond["exists"]] if "exists" in cond else []) + cond.get("args", []) + cond.get("reads", [])
         if "approved" in cond:
             if cond["approved"] not in GATES:
                 raise WorkflowError(f"unknown gate in {cond!r}: one of {', '.join(GATES)}")
@@ -156,8 +146,8 @@ class Task:
             record = self.records.get(step["id"])
             if record is None or not all(os.path.isfile(self.path(o)) for o in step["outputs"]):
                 return False
-            now = self.hashes([p for p in cond["recorded"] if p not in self.ignore])
-            return all(p in record["inputs"] and record["inputs"][p] == h for p, h in now.items())
+            current = self.hashes([p for p in cond["recorded"] if p not in self.ignore])
+            return all(p in record["inputs"] and record["inputs"][p] == h for p, h in current.items())
         if "passes" in cond:
             args = [os.path.abspath(self.path(a)) for a in cond.get("args", [])]
             if not all(os.path.exists(a) for a in args):
@@ -168,18 +158,6 @@ class Task:
             return run.returncode == 0
         if "approved" in cond:
             return is_approved(self.folder, cond["approved"])
-        if "equals" in cond:
-            doc = self.read_json(cond["equals"])
-            return isinstance(doc, dict) and doc.get(cond["field"]) == cond["value"]
-        if "empty" in cond:
-            doc = self.read_json(cond["empty"])
-            return isinstance(doc, dict) and doc.get(cond["field"]) == []
-        if "contains" in cond:
-            try:
-                with open(self.path(cond["contains"]), encoding="utf-8") as f:
-                    return cond["text"] in f.read()
-            except OSError:
-                return False
         raise WorkflowError(f"unknown condition: {cond!r}")
 
 

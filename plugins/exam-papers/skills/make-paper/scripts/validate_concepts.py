@@ -26,7 +26,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from spec_types import Kind  # noqa: E402
 from validate_paper_spec import Report, is_int, is_num  # noqa: E402
 
-TOP_KEYS = {"board", "class", "book", "syllabus", "syllabusYear", "status", "chapters", "note", "notTested"}
+TOP_KEYS = {"board", "class", "book", "syllabus", "syllabusYear", "chapters", "note", "notTested"}
 TOP_REQUIRED = {"board", "class", "syllabus", "chapters"}
 CHAPTER_KEYS = {"title", "concepts"}
 CONCEPT_KEYS = {"tag", "source", "kinds", "maxMarks"}
@@ -57,9 +57,6 @@ def validate(doc, syllabus_text):
             r.error("file", f"{k} must be non-empty text", "C1")
     if "class" in doc and not (is_int(doc["class"]) and doc["class"] > 0):
         r.error("file", "class must be a positive whole number", "C1")
-    if "status" in doc:
-        r.warn("file", "status is ignored: a concept list is approved by the teacher typing "
-                       "/exam-papers:approve concepts (the field can be deleted)", "C1")
 
     chapters = doc.get("chapters")
     if not (isinstance(chapters, dict) and chapters):

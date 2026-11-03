@@ -83,9 +83,9 @@ plugins/exam-papers/                # the plugin: the only part that is installe
   agents/                           # writer.md (drafts and revises), blind-solver.md, reviewer.md
   commands/                         # approve.md: /exam-papers:approve concepts|blueprint|paper;
                                     # decide.md: /exam-papers:decide accept … reject … (typed by the teacher)
-  hooks/                            # hooks.json; approve.py (typed approvals and decisions, guards
-                                    # approvals.json and decisions.json);
-                                    # guard_agents.py (what the solver and the writer may see)
+  hooks/                            # hooks.json; approve.py (records typed approvals and decisions);
+                                    # guard.py (nobody writes approvals.json or decisions.json;
+                                    # what the solver and the writer may see)
   skills/make-pack/SKILL.md         # turns a syllabus into a syllabus pack (uses make-paper's scripts)
   skills/make-paper/
     SKILL.md                        # main workflow

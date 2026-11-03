@@ -166,9 +166,11 @@ command could still slip through.
 - The gate's file holds no approval field (the blueprint's `status` is gone): `approvals.json` is the
   only record. `workflow.json` checks it with `{"approved": GATE}`; `make_blueprint.py` and
   `check_questions.py` read it too. The latest record for a gate is the one that counts.
-- The guard denies `Write`, `Edit`, `MultiEdit` and `NotebookEdit` of any file named
-  `approvals.json`, and every Bash command that mentions the name (reading uses the Read tool), so
-  the probe's `2>&1` false alarm cannot happen.
+- The guard (`hooks/guard.py`, the plugin's only `PreToolUse` hook) denies `Write`, `Edit`,
+  `MultiEdit` and `NotebookEdit` of any file named `approvals.json`, and every Bash command that
+  mentions the name (reading uses the Read tool), so the probe's `2>&1` false alarm cannot happen.
+  It imports none of the skill's scripts, so the check before each tool call stays cheap; until
+  2026-11-03 it lived in `approve.py`, which loaded the whole script stack on every tool call.
 - Each approval is also appended to `run.jsonl` as an `approved` event.
 
 ### D7. Four approval gates
@@ -187,8 +189,8 @@ The spec is not a gate: the teacher writes it, and `validate_paper_spec.py` chec
 *Built:* all four. Gate 1 is `/exam-papers:approve concepts [PACK]`: the hook runs
 `validate_concepts.py`, refuses a list with errors, and records the list's hash in
 `syllabi/<pack>/approvals.json` (without PACK it picks the one pack whose list is not approved as it
-is now); `make_blueprint.py` refuses an unapproved list, and the list's old `status` field is ignored
-with a warning. Gate 2 is `/exam-papers:approve blueprint`, gate 3 `/exam-papers:decide` (D20) and
+is now); `make_blueprint.py` refuses an unapproved list. The list's old `status` field is gone:
+`validate_concepts.py` refuses it as an unknown field (C1). Gate 2 is `/exam-papers:approve blueprint`, gate 3 `/exam-papers:decide` (D20) and
 gate 4 `/exam-papers:approve paper` (the `approve_paper` step before rendering).
 
 *Why:* each gate sits where a teacher's judgement is needed and a mistake would be costly to undo
@@ -337,7 +339,7 @@ findings.
 - **Rounds are counted from `review/rounds.json`**, which `review_status.py --close-round` appends to
   after each review (it also saves the round's questions and report in `review/rounds/N/`). This
   replaced "count from `run.jsonl`": a repeated `--done` could double-count there.
-- **Guards:** a `PreToolUse` hook (`hooks/guard_agents.py`) uses `agent_type` to keep the blind
+- **Guards:** the `PreToolUse` hook (`hooks/guard.py`) uses `agent_type` to keep the blind
   solver to the blind paper (`solver-input.json` in, `solver-answers.json` out) and the writer away
   from the solver's answers and the comparison; the writer may read the blueprint but not change it.
 

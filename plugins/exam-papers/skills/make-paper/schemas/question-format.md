@@ -128,11 +128,21 @@ key for `answerDiagram`. If the file is missing, `render.py` prints a labelled p
 - Line break inside an answer: `<br/>`.
 - Use the minus sign `−` in units and negative values, `×` for multiplication and `÷` where
   division is written out.
+- **Maths that needs layout** (fractions, roots, equations, indices on symbols, Greek letters) is
+  written in LaTeX between dollar signs, in any printed field (text, stem, options, answer,
+  explanation, marking items, diagram descriptions, units): `$\frac{v-u}{t}$` sits in the line, and
+  `$$v^2 = u^2 + 2as$$` on its own is centred on a line of its own. A literal dollar sign is `\$`.
+  Units and simple powers stay in the marks above (`m s<sup>−2</sup>`), so a value reads
+  `$\frac{1}{2}$ m s<sup>−2</sup>` or `4.5 × 10<sup>3</sup> N`. In an MCQ option, a number may also
+  be written `$4.5 \times 10^{3}$` (rule Q4 reads both).
+- LaTeX is typeset by matplotlib's mathtext, which covers fractions, roots, powers and indices,
+  Greek letters, integrals, sums and relations, but no environments (`\begin{...}`: matrices,
+  aligned equations). Rule Q16 reports a formula it cannot typeset.
 - No other markup. The PDF builder handles spacing and keeps values with their units.
 
 ## Rules the question checker will enforce
 
-Rules are numbered Q1–Q15 (the paper spec's own rules are S1–S19, in `paper-spec-format.md`).
+Rules are numbered Q1–Q16 (the paper spec's own rules are S1–S19, in `paper-spec-format.md`).
 Every message from `check_questions.py` starts with its rule number, e.g. `[Q4] Q12: has 3 options
 but the spec says 4`. If the spec itself is invalid, the checker reports `[S]` and skips the rules
 that depend on it.
@@ -222,3 +232,6 @@ Additional hard rule for the question checker:
 - **Q15.** `questions.json` must match its blueprint exactly on every structural field: the same questions
   in the same order with the same number, section, chapter, marks and concepts (and, for MCQs, the
   same `correctOption`), and the same parts with the same labels, marks, kind, difficulty and concept. Claude adds wording; it never changes a slot.
+- **Q16.** Every LaTeX formula in a printed field is closed (`$...$`, `$$...$$`; a literal dollar is
+  `\$`) and can be typeset by mathtext. The message quotes the formula and the reason (for example
+  `Unknown symbol: \begin`).

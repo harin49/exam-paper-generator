@@ -50,7 +50,10 @@ field is the blueprint's `conceptList`, copied exactly. For every question:
   a numerical MCQ it starts with the computed value (rule Q4). Wrong options are real mistakes (a
   unit slip, an inverted ratio). `explanation` says why the answer is right and why the tempting
   wrong options are wrong.
-- Use only the text markup in the format doc, and the spec's constants. Respect the spec's
+- Use only the text markup in the format doc, and the spec's constants. Write maths that needs
+  layout (fractions, roots, equations) in LaTeX between dollar signs: `$\frac{a}{b}$` in the line,
+  `$$...$$` for an equation on its own line. Keep units and simple powers in the HTML-style marks
+  (`m s<sup>−2</sup>`). No `\begin{...}` environments: the checker rejects them (Q16). Respect the spec's
   `diagrams` setting.
 - Use clean numbers. A question must be solvable from the paper alone.
 - **Diagrams:** draw each with a small matplotlib script saved as `make_diagrams.py` in the paper's

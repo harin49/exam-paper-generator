@@ -62,7 +62,7 @@ There are two places:
 | 0 | `${CLAUDE_SKILL_DIR}/scripts/new_paper.py` | Makes `TASK` and copies the user's spec into it | `TASK/spec.json` |
 | 1 | `${CLAUDE_SKILL_DIR}/scripts/validate_paper_spec.py` | Checks the spec (rules S1-S20) | nothing |
 | 2 | `${CLAUDE_SKILL_DIR}/scripts/make_blueprint.py` | Plans every question slot from the spec and concept list | `TASK/blueprint.json` |
-| 4 | `${CLAUDE_SKILL_DIR}/scripts/check_questions.py` | Checks the questions (rules Q1-Q15) | nothing |
+| 4 | `${CLAUDE_SKILL_DIR}/scripts/check_questions.py` | Checks the questions (rules Q1-Q16) | nothing |
 | 5.1 | `${CLAUDE_SKILL_DIR}/scripts/extract_paper.py` | Makes the paper with no answers for the blind solver | `TASK/review/solver-input.json` |
 | 5.3 | `${CLAUDE_SKILL_DIR}/scripts/compare_solutions.py` | Compares the solver's answers with the key (rules V1-V6) | `TASK/review/compare-output.txt` |
 | 5.4 | `${CLAUDE_SKILL_DIR}/scripts/render_review.py` | Checks the reviewer's findings and makes the HTML report (run by the reviewer; `--print` shows the findings again and writes nothing) | `TASK/review/reviewer-report.html` |
@@ -70,7 +70,8 @@ There are two places:
 | 6 | `${CLAUDE_SKILL_DIR}/scripts/render.py` | Builds the question paper and answer key PDFs | two PDFs in `TASK` |
 
 Files that are **not** run in the workflow: `${CLAUDE_SKILL_DIR}/scripts/spec_types.py`,
-`${CLAUDE_SKILL_DIR}/scripts/approvals.py` and `${CLAUDE_SKILL_DIR}/scripts/task_files.py` (libraries
+`${CLAUDE_SKILL_DIR}/scripts/approvals.py`, `${CLAUDE_SKILL_DIR}/scripts/latex.py` and
+`${CLAUDE_SKILL_DIR}/scripts/task_files.py` (libraries
 the other scripts and the plugin's approval hook import) and
 `${CLAUDE_SKILL_DIR}/scripts/number_syllabus.py` (used by the make-pack skill) and
 `${CLAUDE_SKILL_DIR}/scripts/validate_concepts.py` (only when the user asks

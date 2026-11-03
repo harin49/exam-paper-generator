@@ -219,6 +219,23 @@ stays for simple cases.
 *Why:* stacked fractions, roots and equations look wrong in HTML-style markup, and maths is in scope
 (D8).
 
+*As built (2026-11-03):*
+
+- `$...$` is inline maths and `$$...$$` a centred equation on its own line, in every printed field;
+  `\$` is a literal dollar sign. The shared `latex.py` splits text, checks formulas and draws them.
+- Formulas are typeset by **matplotlib's mathtext**, not a TeX installation, so it works wherever
+  the plugin runs (Cowork's sandbox has no TeX). It covers fractions, roots, powers and indices,
+  Greek letters, integrals, sums and relations, but no environments (matrices, aligned equations).
+- `render.py` draws each formula as a 600 dpi transparent image, sized to the text, dropped by its
+  depth so it sits on the baseline; lines holding a tall formula grow (`autoLeading`). A displayed
+  formula makes the text a list of flowables, which every table cell holding question text accepts.
+  The images are drawn in a temporary folder and removed after the build.
+- Rule **Q16** reports a formula that is unclosed or cannot be typeset, quoting it and the reason,
+  at the check step rather than as a crash at the build. Rule **Q4** reads an MCQ option written
+  `$4.5 \times 10^{3}$` as 4500.
+- The blind solver gets the LaTeX source as written (`extract_paper.py` leaves it), which a language
+  model reads directly.
+
 ### D11. Chapters are the syllabus's own units
 
 A concept list is organised by the syllabus's units or sections, and a spec selects units. The book

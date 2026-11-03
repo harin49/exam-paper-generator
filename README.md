@@ -55,7 +55,7 @@ file's hash, in `TASK/approvals.json`, and editing an approved file voids its ap
    first checks the concept list against its syllabus (`validate_concepts.py`, rules C1–C6). The user
    approves the blueprint.
 3. **Draft**: the writer subagent writes `questions.json` from the approved blueprint (wording only).
-4. **Check**: `check_questions.py` runs hard rules (block) and soft rules (warn), Q1–Q15.
+4. **Check**: `check_questions.py` runs hard rules (block) and soft rules (warn), Q1–Q16.
 5. **Review**: `extract_paper.py` writes the paper without answers; the `exam-papers:blind-solver`
    agent solves it; `compare_solutions.py` compares its answers with the key (rules V1–V6); the
    `exam-papers:reviewer` agent writes its findings as JSON and runs `render_review.py`, which makes
@@ -147,7 +147,7 @@ requirements.txt, requirements-dev.txt
 ## Status
 
 - [x] Paper spec format + `validate_paper_spec.py` (rules S1–S20)
-- [x] Question and blueprint formats (rules Q1–Q15) + `check_questions.py`
+- [x] Question and blueprint formats (rules Q1–Q16) + `check_questions.py`
 - [x] Shared enums (`spec_types.py`); rule numbers in every message (`[S6] ...`, `[Q4] ...`, `[C6] ...`)
 - [x] Syllabus 2026–2027 saved as the sample pack's `syllabus.md`
 - [x] Concept list redrafted from the syllabus (94 concepts, all 22 syllabus sections covered)
@@ -161,6 +161,8 @@ requirements.txt, requirements-dev.txt
 - [x] `workflow.json` + `next_step.py`: one step at a time, in a fixed order, checked against the task folder
 - [x] State by content hashes (`state.json`, `run.jsonl`, `next_step.py --done`) instead of file times
 - [x] Script steps record themselves; a gate refused for an unrecorded step says which step and how to fix it
+- [x] LaTeX maths (D10): `$...$` inline and `$$...$$` displayed, drawn by matplotlib's mathtext;
+      rule Q16 checks every formula; MCQ options may be written in LaTeX
 - [x] Blueprint puts easier parts first; the writer fits wording to each part's tag; a writer
       disagreement the reviewer keeps open goes to the teacher at once
 - [x] Typed approvals for the blueprint and the final paper (`/exam-papers:approve`, hooks, `approvals.json`)
@@ -180,7 +182,7 @@ requirements.txt, requirements-dev.txt
       with `notTested` reasons; the ICSE Physics sample moved to point ids
 - [x] Final approval shows every change made in the review loop (`review_status.py --fixes`), and any
       automatic fix can be undone with `/exam-papers:decide reject ID`
-- [x] Unit tests moved to their own test data (`tests/test_data/`); 399 tests, all passing
+- [x] Unit tests moved to their own test data (`tests/test_data/`); 411 tests, all passing
 - [ ] New example: approve the `icse9-physics-units1-4` blueprint, write its questions, review, render
 
 Open question: the syllabus includes spherical mirrors (with mirror-formula numericals) and

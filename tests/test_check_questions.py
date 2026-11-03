@@ -323,6 +323,26 @@ class McqQ4(WithSpec):
         q1["options"][2] = "1.23 × 10<sup>3</sup> kg m<sup>−3</sup>"
         self.assertNotIn("[Q4] Q1", self.errors())
 
+    def test_latex_options_are_read_as_numbers(self):
+        q1 = q(self.qdoc, 1)
+        q1["computed"][0].update(expression="3700 / 3", value=1233.3333)
+        q1["options"][2] = r"$1.23 \times 10^{3}$ kg m<sup>−3</sup>"
+        self.assertNotIn("[Q4] Q1", self.errors())
+        q1["options"][2] = r"$1.5 \times 10^{3}$ kg m<sup>−3</sup>"
+        self.assertIn("[Q4] Q1: the correct option (c) shows", self.errors())
+
+    def test_latex_that_cannot_be_typeset_is_reported(self):
+        part = next(p for p in q(self.qdoc, 7)["parts"] if "answer" in p)
+        part["answer"] = r"Use $\frac{v-u}{t}$, then $\begin{pmatrix}1\end{pmatrix}$."
+        errors = self.errors()
+        self.assertIn("[Q16] Q7(", errors)
+        self.assertIn(r"cannot be typeset: Unknown symbol: \begin", errors)
+        self.assertNotIn(r"\frac{v-u}{t}$ cannot", errors)
+        part["answer"] = "costs $5"
+        self.assertIn("has no closing $", self.errors())
+        part["answer"] = "costs \\$5 and $$v^2 = u^2 + 2as$$"
+        self.assertNotIn("[Q16]", self.errors())
+
     def test_theory_mcq_options_are_not_checked(self):
         self.assertEqual(q(self.qdoc, 2)["kind"], "theory")
         q(self.qdoc, 2)["options"][0] = "5 m"

@@ -69,6 +69,11 @@ class Markup(unittest.TestCase):
         self.assertIn("slope = g", render.markup("slope = g/4π"))          # a word, not a symbol
         self.assertIn("Δp = m(v", render.markup("Δp = m(v − u)"))         # no number after '='
 
+    def test_maths_becomes_an_image_tag_or_stays_as_written(self):
+        self.assertIn("<img \\frac{a}{b}/>", render.markup(r"so $\frac{a}{b}$ m", inline=lambda tex: f"<img {tex}/>"))
+        self.assertEqual(render.markup(r"$x^2$"), "$x^2$")
+        self.assertEqual(render.markup("costs \\$5"), "costs $5")
+
     def test_plain_strips_tags(self):
         self.assertEqual(render.plain("m s<sup>−2</sup> <b>x</b>"), "m s−2 x")
 
@@ -222,6 +227,31 @@ class Build(unittest.TestCase):
         self.assertIn("Unit 2: Motion in One Dimension", text)
 
     @unittest.skipUnless(pypdf, "pypdf not installed")
+    @unittest.skipUnless(pypdf, "pypdf not installed")
+    def test_latex_maths_is_drawn_into_both_pdfs(self):
+        def images(path):
+            n = 0
+            for page in pypdf.PdfReader(path).pages:
+                xo = page.get("/Resources", {}).get("/XObject") or {}
+                n += sum(1 for v in xo.values() if v.get_object().get("/Subtype") == "/Image")
+            return n
+        self.assertEqual(self.run_main()[0], 0)
+        plain_paper, plain_key = (images(p) for p in self.paths())
+
+        def add_maths(d):
+            part = next(p for x in d["questions"] for p in x.get("parts", []) if "answer" in p)
+            part["text"] += r" Use $\frac{v-u}{t}$."
+            part["answer"] = r"$$a = \frac{v-u}{t}$$ so the answer follows. " + part["answer"]
+        self.set_questions(add_maths)
+        before = set(os.listdir(tempfile.gettempdir()))
+        code, out = self.run_main()
+        self.assertEqual(code, 0, out)
+        paper, key = self.paths()
+        self.assertEqual(images(paper), plain_paper + 1)       # the inline formula in the question
+        self.assertEqual(images(key), plain_key + 1)           # the displayed one in the answer
+        left = [f for f in set(os.listdir(tempfile.gettempdir())) - before if f.startswith("exam-math-")]
+        self.assertEqual(left, [])                             # formula images are cleaned up
+
     def test_missing_diagram_gets_a_placeholder_and_a_warning(self):
         os.remove(os.path.join(self.tmp, "vt_graph.png"))
         code, out = self.run_main()

@@ -33,6 +33,7 @@ import sys
 from fractions import Fraction
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import latex  # noqa: E402
 from check_questions import check  # noqa: E402
 from spec_types import SectionType  # noqa: E402
 
@@ -104,12 +105,31 @@ def class_text(n):
     return ROMAN_CLASS.get(n, str(n))
 
 
-def markup(text):
+def markup(text, inline=None):
     """Convert question text (the small HTML-like markup) into reportlab paragraph markup.
 
     Allowed tags are <sup>, <sub>, <b>, <i> and <br/>; any other '<', '>' or '&' is printed as
     written. A value is kept on one line with its unit (a normal space becomes a no-break space).
+    LaTeX maths ($...$, see latex.py) becomes inline(tex), an <img/> tag, or is printed as written
+    when inline is None; a \\$ is a literal dollar sign.
     """
+    return markup_parts(latex.split_quiet(text), inline)
+
+
+def markup_parts(parts, inline=None):
+    """markup() for text already split by latex.split()."""
+    out = []
+    for kind, content in parts:
+        if kind == latex.TEXT:
+            out.append(_markup_text(content))
+        elif inline is not None:
+            out.append(inline(content))
+        else:
+            out.append(_escape(f"${content}$"))
+    return "".join(out)
+
+
+def _markup_text(text):
     out, pos = [], 0
     for m in RE_ALLOWED_TAG.finditer(text):
         out.append(_escape(text[pos:m.start()]))
@@ -133,7 +153,7 @@ def _escape(s):
 
 
 def plain(text):
-    """Text with markup removed (for font coverage and messages)."""
+    """Text with markup removed (for font coverage and messages); maths is kept as its LaTeX."""
     return re.sub(r"<[^>]*>", "", text or "")
 
 
@@ -305,7 +325,8 @@ class Styles:
         from reportlab.lib.enums import TA_CENTER, TA_RIGHT
         from reportlab.lib.styles import ParagraphStyle
         self.colors = colors
-        self.body = ParagraphStyle("body", fontName="Body", fontSize=10.5, leading=14)
+        # autoLeading: a line holding a tall formula grows instead of running into the line above
+        self.body = ParagraphStyle("body", fontName="Body", fontSize=10.5, leading=14, autoLeading="max")
         self.small = ParagraphStyle("small", parent=self.body, fontSize=9.5, leading=13)
         self.center = ParagraphStyle("center", parent=self.body, alignment=TA_CENTER)
         self.right = ParagraphStyle("right", parent=self.body, alignment=TA_RIGHT)
@@ -340,11 +361,52 @@ class Renderer:
         self.sections = {s["id"]: s for s in spec["pattern"]["sections"]}
         self.st = Styles()
         self.missing = []          # (question number, description, file)
+        self.math_dir = None       # where formula images are drawn (made on first use; see close())
 
     # ---- small helpers ----
     def P(self, text, style=None):
-        from reportlab.platypus import Paragraph
-        return Paragraph(markup(text), style or self.st.body)
+        """A paragraph of question text. Inline maths sits on the line as an image. Displayed maths
+        ($$...$$) is centred on a line of its own, so the result is then a list of flowables: a
+        table cell takes one as it is (question text, answers and explanations are all in cells)."""
+        from reportlab.platypus import Image, Paragraph, Spacer
+        style = style or self.st.body
+        parts = latex.split_quiet(text)
+        if not any(k == latex.DISPLAY for k, _ in parts):
+            return Paragraph(markup(text, self.inline_math(style)), style)
+        flow, run = [], []
+
+        def flush():
+            if any(k != latex.TEXT or c.strip() for k, c in run):
+                flow.append(Paragraph(markup_parts(run, self.inline_math(style)), style))
+            run.clear()
+        for kind, content in parts:
+            if kind == latex.DISPLAY:
+                flush()
+                path, w, h, _ = latex.image(content, style.fontSize, self.math_folder(), display=True)
+                flow += [Spacer(1, 3), Image(path, width=w, height=h, hAlign="CENTER"), Spacer(1, 3)]
+            else:
+                run.append((kind, content))
+        flush()
+        return flow
+
+    def math_folder(self):
+        if self.math_dir is None:
+            import tempfile
+            self.math_dir = tempfile.mkdtemp(prefix="exam-math-")
+        return self.math_dir
+
+    def inline_math(self, style):
+        def tag(tex):
+            path, w, h, depth = latex.image(tex, style.fontSize, self.math_folder())
+            return f'<img src="{path}" width="{w:.2f}" height="{h:.2f}" valign="{-depth:.2f}"/>'
+        return tag
+
+    def close(self):
+        """Remove the formula images once the PDFs are built (they are embedded in them)."""
+        if self.math_dir:
+            import shutil
+            shutil.rmtree(self.math_dir, ignore_errors=True)
+            self.math_dir = None
 
     def chapter_title(self, n):
         try:
@@ -668,10 +730,13 @@ def main(argv):
     os.makedirs(out_dir, exist_ok=True)
     paper_name, key_name = output_names(spec)
     r = Renderer(qdoc, spec, concepts, folder)
-    r.build_paper(os.path.join(out_dir, paper_name))
-    paper_missing, r.missing = r.missing, []
-    r.build_key(os.path.join(out_dir, key_name))
-    key_missing = r.missing
+    try:
+        r.build_paper(os.path.join(out_dir, paper_name))
+        paper_missing, r.missing = r.missing, []
+        r.build_key(os.path.join(out_dir, key_name))
+        key_missing = r.missing
+    finally:
+        r.close()
 
     print(f"Font: {family}")
     print(f"Question paper: {os.path.join(out_dir, paper_name)}")

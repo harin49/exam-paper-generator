@@ -31,6 +31,7 @@ Rules implemented so far (see schemas/question-format.md in this skill):
     Q14  (warning) questions sharing a concept tag, listed for review
 Balance (Q11-Q13) is measured on marks offered, as the spec's measureOn requires.
     Q15  questions.json matches its approved blueprint on every structural field
+    Q16  every LaTeX formula ($...$, $$...$$) is closed and can be typeset
 Every message starts with its rule number, e.g. "[Q4] Q12: ...".
 """
 import ast
@@ -43,6 +44,7 @@ import sys
 from fractions import Fraction
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import latex  # noqa: E402
 from approvals import is_approved  # noqa: E402
 from spec_types import Difficulty, Kind, Numbering, SectionType, SubParts  # noqa: E402
 from validate_paper_spec import Report, fmt, frac, is_int, is_num, validate as validate_spec  # noqa: E402
@@ -328,6 +330,7 @@ OPTION_NUMBER = re.compile(r"\s*([−-]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d+))?)"
 def option_number(text):
     """(value, step) for the number an option starts with, or None. step is the place value of the
     option's last digit (0.01 for "1.25", 1000 for "5 × 10<sup>3</sup>")."""
+    text = latex.number_marks(text) if isinstance(text, str) else text      # "$4.5 \\times 10^{3}$"
     m = OPTION_NUMBER.match(text) if isinstance(text, str) else None
     if not m:
         return None
@@ -362,6 +365,42 @@ def check_option_values(r, q, opts, correct, loc):
         if j != i and isinstance(opt, str) and shows_value(opt):
             r.error(loc, f"option ({LETTERS[j]}) also shows the computed value {computed}: two options "
                          "would be correct", "Q4")
+
+
+# ---------------- Q16: LaTeX maths ----------------
+PRINTED = {"text", "stem", "answer", "explanation", "for", "description", "unit"}
+
+
+def printed_text(node, loc):
+    """(location, text) for every printed text field in a question or part, options included."""
+    if isinstance(node, dict):
+        for k, v in node.items():
+            if k in PRINTED and isinstance(v, str):
+                yield f"{loc} {k}", v
+            elif k == "options" and isinstance(v, list):
+                for j, o in enumerate(v):
+                    if isinstance(o, str):
+                        yield f"{loc} option ({LETTERS[j] if j < len(LETTERS) else j})", o
+            elif k == "parts" and isinstance(v, list):
+                for p in v:
+                    if isinstance(p, dict):
+                        yield from printed_text(p, f"{loc}({p.get('label')})" if p.get("label") else loc)
+            elif isinstance(v, (dict, list)) and k not in ("parts", "options"):
+                yield from printed_text(v, loc)
+    elif isinstance(node, list):
+        for x in node:
+            yield from printed_text(x, loc)
+
+
+def check_math(r, qs):
+    for q in qs:
+        if not isinstance(q, dict):
+            continue
+        for loc, text in printed_text(q, f"Q{q.get('number')}"):
+            if "$" not in text:
+                continue
+            for problem in latex.problems(text):
+                r.error(loc, problem, "Q16")
 
 
 # ---------------- Q5: number of parts ----------------
@@ -832,6 +871,7 @@ def check(qdoc, bdoc=None, spec=None, concepts=None, blueprint_approved=None):
         check_part_counts(r, qs, spec_sections)
     check_marks(r, qs, smu)
     check_answers(r, qs)
+    check_math(r, qs)
     tags = read_concept_list(r, concepts, spec if spec_sections else None) if concepts is not None else None
     check_concepts(r, qs, tags, chapters)
     if content_rules:

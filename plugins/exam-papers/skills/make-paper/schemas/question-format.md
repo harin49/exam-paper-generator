@@ -1,7 +1,7 @@
 # Question format (`questions.json`)
 
 `questions.json` holds every question in one paper, together with its answer key and marking
-scheme. Claude writes it from the blueprint; scripts check it; the PDF builder renders both the
+scheme. The writer subagent writes it from the blueprint; scripts check it; the PDF builder renders both the
 question paper and the answer key from it. Nobody needs to write it by hand.
 
 Example: `tests/test_data/questions.json` (the small test paper the unit tests use).
@@ -142,7 +142,7 @@ key for `answerDiagram`. If the file is missing, `render.py` prints a labelled p
 
 ## Rules the question checker will enforce
 
-Rules are numbered Q1–Q16 (the paper spec's own rules are S1–S19, in `paper-spec-format.md`).
+Rules are numbered Q1–Q16 (the paper spec's own rules are S1–S20, in `paper-spec-format.md`).
 Every message from `check_questions.py` starts with its rule number, e.g. `[Q4] Q12: has 3 options
 but the spec says 4`. If the spec itself is invalid, the checker reports `[S]` and skips the rules
 that depend on it.
@@ -163,7 +163,7 @@ Hard rules (the paper cannot be built until they pass):
 - **Q7.** Every numerical leaf or MCQ has `computed`; every `expression` uses only the allowed
   arithmetic and recalculates to its `value` (to about 4 significant figures). Q7 cannot tell whether
   the formula fits the question: that is the blind solver's job.
-- **Q8.** The concept list is for the spec's board, class and book, and lists each tag under one
+- **Q8.** The concept list is for the spec's board and class (and book, when both name one), and lists each tag under one
   chapter only. Each question's `chapter` is one of the spec's chapters; its concept tags are all in
   the concept list, all belong to that chapter, and none is repeated. (Every question has exactly one
   `chapter`, so `singleChapterPerQuestion` is always met.) Where parts (or an MCQ) name their

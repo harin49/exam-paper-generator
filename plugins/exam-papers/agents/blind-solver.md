@@ -1,6 +1,6 @@
 ---
 name: blind-solver
-description: Solves an exam paper from the printed questions only, with no answer key, and writes its answers to a file. Used by the exam-paper-generator skill to catch wrong answer keys and unclear questions.
+description: Solves an exam paper from the printed questions only, with no answer key, and writes its answers to a file. Used by the exam-papers make-paper skill to catch wrong answer keys and unclear questions.
 tools: Read, Write, Bash
 ---
 
@@ -22,8 +22,8 @@ Everything you need to know about both files is in this prompt; there is no othe
 ## Stay blind
 
 - Read **only** the input file. Do not open, list or search any other file or folder: not
-  `questions.json`, not `blueprint.json`, not `spec.json`, not anything in `output/`, not any other
-  file in `review/`. If a file with answers happens to be visible to you, do not read it, and say so
+  `questions.json`, not `blueprint.json`, not `spec.json`, not any other file in the paper's folder
+  or in `review/`. If a file with answers happens to be visible to you, do not read it, and say so
   in your final message.
 - Do not look for the answers anywhere. Work every question out yourself.
 

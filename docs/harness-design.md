@@ -96,10 +96,11 @@ hooks. This project supplies the parts it runs:
 |---|---|
 | Skill (`SKILL.md`) | The playbook: the steps and the rules |
 | Scripts | Deterministic tools: validate, plan, check, compare, render |
-| Agents | Independent roles: blind solver, reviewer |
+| Agents | Independent roles: writer, blind solver, reviewer |
 | Hooks | Enforcement: block actions that break the rules |
 
-The user starts a paper by invoking the skill with a spec and a syllabus; nothing else to set up.
+The user starts a paper by invoking the skill with a spec whose syllabus pack exists (a pack is made
+once per syllabus with `/exam-papers:make-pack`); nothing else to set up.
 
 *Why:* teachers should not need an API key or a Python orchestrator to run. Trade-off accepted: the
 model still chooses to follow the playbook. Hooks can block a wrong action (the solver reading the key,
@@ -191,7 +192,8 @@ with a warning. Gate 2 is `/exam-papers:approve blueprint`, gate 3 `/exam-papers
 gate 4 `/exam-papers:approve paper` (the `approve_paper` step before rendering).
 
 *Why:* each gate sits where a teacher's judgement is needed and a mistake would be costly to undo
-later. The final gate is new: today nothing asks the teacher to sign off the finished paper.
+later. The final gate was added by this design: before it, nothing asked the teacher to sign off
+the finished paper.
 
 ### D8. First-version scope: science, maths and theory-only subjects
 
@@ -330,13 +332,14 @@ findings.
   round with the teacher's instruction; `reject` leaves the paper as it is. To fix it themselves,
   the teacher edits `questions.json`, then rejects the finding.
 - **Automatic fixes stay visible (D2):** every change the writer makes without asking is listed at
-  gate 4; the teacher can ask in chat for any to be undone (a reversal is not an approval).
+  gate 4; the teacher can undo any of them with `/exam-papers:decide reject ID` (piece 4). (The
+  first plan had the teacher ask in chat; a typed command keeps D6's rule.)
 - **Rounds are counted from `review/rounds.json`**, which `review_status.py --close-round` appends to
   after each review (it also saves the round's questions and report in `review/rounds/N/`). This
   replaced "count from `run.jsonl`": a repeated `--done` could double-count there.
 - **Guards:** a `PreToolUse` hook (`hooks/guard_agents.py`) uses `agent_type` to keep the blind
   solver to the blind paper (`solver-input.json` in, `solver-answers.json` out) and the writer away
-  from the solver's answers and the comparison, and from the blueprint.
+  from the solver's answers and the comparison; the writer may read the blueprint but not change it.
 
 *Why:* bounded rounds with stable finding IDs make the cap in D3 checkable; typed decisions keep
 D6's rule that only the teacher's own commands create trust; the writer learning only from findings
@@ -359,7 +362,8 @@ gate-4 list of automatic fixes (done 2026-10-28).
 - **A decision is tied to its round number,** not the report's hash: a dispute accepted in round 3
   gives exactly one more round, even if round 4's report repeats round 3's.
 - `fixes.json` became `review/decisions.json`: one entry per decision, `{round, report, accepted,
-  rejected}`. Claude writes it until piece 3, when the decide hook takes over in the same format.
+  rejected}`. Claude wrote it until piece 3, when the decide hook took over in the same format
+  (piece 4 added the `undo` list).
 - The reviewer may change a finding's severity, with a `note`; after an automatic round the teacher
   sees the status summary and the writer's responses, and the loop goes on without waiting; a
   teacher's edit after the loop is a new round, and at the cap anything flagged in it is a dispute.
@@ -431,8 +435,8 @@ meaning, so gate 1 shows each one beside its text.
   and outputs. Claude records a step with `next_step.py TASK --done STEP_ID` when it finishes.
 - A step that is checked by its inputs (`"recorded"` in `workflow.json`) is done while its inputs still
   have the recorded hashes and its outputs exist. Changing an input makes that step and every step
-  after it due again. Steps whose files prove them (a check that passes, `"status": "approved"`)
-  keep those conditions.
+  after it due again. Steps whose files prove them (a check that passes, an approval in
+  `approvals.json`) keep those conditions.
 - Output hashes are recorded for the audit trail but are not checked. The teacher may edit
   `questions.json` by hand after `apply_fixes`; checking outputs would send the paper back to
   applying the same fixes again. (The first version also had to allow for the approval setting
@@ -442,9 +446,10 @@ meaning, so gate 1 shows each one beside its text.
   while its own done condition would still fail. Conditions that read the step's own outputs are
   ignored for the "earlier step" test: `apply_fixes` edits `questions.json`, which makes the check
   and the blind solver due again, as it should.
-- `run.jsonl` is an append-only record with times, one JSON object per line. It has every `--done`
-  so far; script results, agent calls, approvals and automatic fixes are to be added with the hooks
-  (D6) and the writer loop (D13).
+- `run.jsonl` is an append-only record with times, one JSON object per line. Its events are `done`
+  (every recorded step, by `--done` or by a script that records itself), `approved` (D6), `decided`
+  (D20) and `round_closed` (D20). Agent calls and script results are not logged yet; the run
+  metrics in D17 will need them.
 - Task folders made before this have no `state.json` and start again (no migration).
 - *Changed after the live run (2026-11-03):* Claude once wrote the blueprint and forgot `--done`, and
   the blueprint approval was then refused with "no paper is waiting", which pointed the teacher the
@@ -494,8 +499,9 @@ metrics and golden papers show whether a change made things better or worse.
 
 - **Name:** `exam-papers`. It is permanent and prefixes everything: the skills are
   `/exam-papers:make-paper` and `/exam-papers:make-pack` (a short skill that makes a syllabus pack
-  with make-paper's scripts; no workflow file, since a pack is made once), the agents are `exam-papers:blind-solver` and `exam-papers:reviewer`, and
-  the approve command will be `/exam-papers:approve`.
+  with make-paper's scripts; no workflow file, since a pack is made once), the agents are
+  `exam-papers:writer`, `exam-papers:blind-solver` and `exam-papers:reviewer`, and the commands are
+  `/exam-papers:approve` and `/exam-papers:decide`.
 - **Layout:** the repo is a marketplace (`.claude-plugin/marketplace.json`) listing one plugin,
   `plugins/exam-papers/`. Tests, docs and examples stay in the repo and are not installed.
 - **Paths:** the skill names its own files as `${CLAUDE_SKILL_DIR}/…` and runs every command from the
@@ -518,8 +524,8 @@ flowchart LR
     subgraph Plugin["Plugin (installed, read-only)"]
         SK[Skill: playbook, scripts, formats]
         AG[Agents: writer, blind solver, reviewer]
-        CM[Commands: /exam-papers:approve]
-        HK[Hooks: record approvals, block leaks]
+        CM[Commands: /exam-papers:approve, /exam-papers:decide]
+        HK[Hooks: record approvals and decisions, block leaks]
     end
     subgraph WS["Teacher's workspace"]
         SY["syllabi/&lt;pack&gt;/"]

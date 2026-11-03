@@ -74,7 +74,8 @@ Files that are **not** run in the workflow: `${CLAUDE_SKILL_DIR}/scripts/spec_ty
 `${CLAUDE_SKILL_DIR}/scripts/task_files.py` (libraries
 the other scripts and the plugin's approval hook import) and
 `${CLAUDE_SKILL_DIR}/scripts/number_syllabus.py` (used by the make-pack skill) and
-`${CLAUDE_SKILL_DIR}/scripts/validate_concepts.py` (only when the user asks
+`${CLAUDE_SKILL_DIR}/scripts/validate_concepts.py` (at step 0 when the pack's concept list is not
+approved yet, or when the user asks
 you to check a concept list).
 
 ### Other files used

@@ -1,7 +1,8 @@
 # Concept list format (`concepts.json`)
 
-A concept list names every topic a paper may test, for one board, class and book. It is kept in a
-syllabus pack, `syllabi/<board><class>-<subject>-<book>/` in the teacher's workspace, beside the
+A concept list names every topic a paper may test, for one board, class and syllabus (and,
+optionally, book). It is kept in a syllabus pack, `syllabi/<board><class>-<subject>[-<book>]/` in
+the teacher's workspace, beside the
 syllabus it is drafted from, and is shared by every paper for that syllabus. Example:
 `syllabi/icse9-physics-selina/concepts.json` (a sample copy ships with the skill, under
 `assets/syllabi/`).

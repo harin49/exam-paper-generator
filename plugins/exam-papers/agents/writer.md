@@ -17,8 +17,8 @@ The prompt gives you the full path of each of these:
 - `blueprint.json`: the approved plan, one slot per question part (chapter, concept, marks, kind,
   difficulty, MCQ answer letter). It is fixed: you never change it.
 - `spec.json`: the paper's pattern and content rules (constants, diagrams setting).
-- `concepts.json` and `syllabus.md`: the book's concept list and syllabus.
-- `question-format.md`: the format of `questions.json` and its rules (Q1-Q15).
+- `concepts.json` and `syllabus.md`: the syllabus pack's concept list and numbered syllabus.
+- `question-format.md`: the format of `questions.json` and its rules (Q1-Q16).
 - the script `check_questions.py`;
 - the output `questions.json` (in the paper's folder);
 - in revise mode also: `reviewer-report.json` (the findings), the list of finding IDs to address,

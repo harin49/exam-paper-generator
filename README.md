@@ -81,7 +81,7 @@ paper, plus a 50-mark spec for the blueprint generator), never `examples/` or ge
 plugins/exam-papers/                # the plugin: the only part that is installed
   .claude-plugin/plugin.json
   agents/                           # writer.md (drafts and revises), blind-solver.md, reviewer.md
-  commands/                         # approve.md: /exam-papers:approve blueprint|paper;
+  commands/                         # approve.md: /exam-papers:approve concepts|blueprint|paper;
                                     # decide.md: /exam-papers:decide accept … reject … (typed by the teacher)
   hooks/                            # hooks.json; approve.py (typed approvals and decisions, guards
                                     # approvals.json and decisions.json);
@@ -108,23 +108,28 @@ requirements.txt, requirements-dev.txt
 
 - Sections are a list; each has `questionsOffered`, `questionsToAttempt`,
   `marksPerQuestion` and `sectionTotal` (kept on purpose as a cross-check).
-- Balance rules (chapters, numerical/theory, difficulty) are **soft** with tolerances:
-  chapter weightage ±5 marks, numerical/theory ±5%, difficulty ±10%.
+- Balance rules (chapters, numerical/theory, difficulty) are **soft**, with tolerances set in the
+  spec (the template uses chapter weightage ±5 marks, numerical/theory ±5%, difficulty ±10%).
 - Balance is measured on marks **offered**, not attempted.
-- Every chapter must appear in the compulsory section.
-- Totals, sub-part sums, question counts, constants and "no hard questions" are **hard** rules.
-- Questions: text markup is HTML-style (`<sup>`, `<sub>`, `<b>`, `<i>`); every numerical answer has a
-  `computed` expression that a script evaluates; concept tags come from a fixed list per chapter;
-  numerical/theory and difficulty are tagged per part (one kind per part); parts nest one level at most.
+- A spec can require every chapter to appear in the compulsory section
+  (`everyChapterInCompulsorySection`, on in the template).
+- Totals, sub-part sums, question counts, constants and difficulty levels the spec excludes (0%, e.g.
+  no hard questions) are **hard** rules.
+- Questions: text markup is HTML-style (`<sup>`, `<sub>`, `<b>`, `<i>`), with LaTeX for maths that
+  needs layout; every numerical answer has a `computed` expression that a script evaluates; concept
+  tags come from a fixed list per syllabus unit; numerical/theory and difficulty are tagged per part
+  (one kind per part); parts nest one level at most.
 - Pipeline: `spec.json` (user-supplied, checked by script) → `blueprint.json` (script,
-  approved by user) → `questions.json` (Claude, checked by script and reviewers) → PDFs (script).
-- Difficulty target stays 50/50 ± 10%.
+  approved by user) → `questions.json` (writer subagent, checked by script and reviewers) → PDFs
+  (script).
+- The template's difficulty target is easy 50, medium 50, hard 0, ±10%.
 - Determinism: code decides structure (blueprint, marks, concepts, arithmetic); Claude writes the wording.
 - The concept list is drafted once from the syllabus, checked for coverage, approved by a teacher and
   then frozen. Each concept records its syllabus `source`, the `kinds` it supports (encoding syllabus
   limits such as "no numerical problems on callipers and screw gauge") and `maxMarks`.
-- Concepts are organised by book chapter; the syllabus numbers its sections differently
-  (syllabus 4 "Fluids" = book chapters 4 and 5; syllabus 5–8 = book chapters 6–10).
+- Concepts are organised by the syllabus's own units, not book chapters (D11): in the ICSE Physics
+  sample, unit 4 "Fluids" is book chapters 4 and 5, and unit 8 is book chapters 9 and 10. The field
+  names keep the word `chapter`.
 - The blueprint names a concept for every part, so the approved blueprint says what each part tests.
 - Rendering: everything printed that is not question wording comes from the spec (time, maximum marks,
   section headings, general instructions, constants, numbering, chapter names, what the answer key

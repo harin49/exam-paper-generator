@@ -1,9 +1,9 @@
 # Paper spec format (`spec.json`)
 
 The paper spec defines one exam paper: what it covers, its pattern of sections and marks, the
-rules its content must follow, and what is produced. Claude writes it from the user's answers to
-the clarifying questions (or the user supplies one), and the skill's `scripts/validate_paper_spec.py`
-checks it before anything else happens.
+rules its content must follow, and what is produced. The user supplies it (Claude does not write
+one from a chat description), and the skill's `scripts/validate_paper_spec.py` checks it before
+anything else happens.
 
 Template: `schemas/paper-spec.template.json` in the skill.
 

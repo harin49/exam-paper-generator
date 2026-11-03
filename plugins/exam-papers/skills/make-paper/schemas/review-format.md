@@ -150,7 +150,8 @@ Suggested fix: ...
 
 ```json
 { "rounds": [
-  { "round": 1, "key": "...", "report": "<sha256>", "questions": "<sha256>", "time": "..." }
+  { "round": 1, "key": "...", "report": "<sha256>", "questions": "<sha256>", "writerResponse": null,
+    "time": "..." }
 ] }
 ```
 
@@ -183,8 +184,9 @@ is fixed by the writer like an error. From round 3 on, an `accepted` ID in the e
 round gives the writer one more round for it.
 
 `review_status.py TASK` reads the report, the rounds and the decisions and says what is next:
-`decide` (gate 3), `revise` (the writer, without asking: open errors and accepted findings before
-round 3), or `done`.
+`close` (the latest review is not closed as a round yet), `decide` (gate 3), `revise` (the writer,
+without asking: open errors and accepted findings before round 3, the findings accepted for one
+more round from round 3 on, and any fix the user undid), or `done`.
 
 ## `review/writer-response.json` (written by the writer)
 

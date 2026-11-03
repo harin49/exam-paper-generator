@@ -103,7 +103,7 @@
       "title": "Reviewer subagent checks the paper",
       "by": "subagent",
       "waitsForUser": false,
-      "run": "Start the exam-papers:reviewer subagent by its type (the plugin's agents/reviewer.md; never pasted into a general-purpose subagent) with the paths SKILL.md step 5.4 lists (from round 2 on, also the previous round's report and questions, the writer's responses and the output of review_status.py TASK --changes); output TASK/review/reviewer-report.json (it makes TASK/review/reviewer-report.html). Wait for it to finish, then print the findings with python3 \"${CLAUDE_SKILL_DIR}/scripts/render_review.py\" TASK/review/reviewer-report.json --print, show them verbatim and send the user the HTML report.",
+      "run": "Start the exam-papers:reviewer subagent by its type (the plugin's agents/reviewer.md; never pasted into a general-purpose subagent) with the paths SKILL.md step 5.4 lists (from round 2 on, also the previous round's report, the writer's responses, decisions.json if there is one and the output of review_status.py TASK --changes); output TASK/review/reviewer-report.json (it makes TASK/review/reviewer-report.html). Wait for it to finish, then print the findings with python3 \"${CLAUDE_SKILL_DIR}/scripts/render_review.py\" TASK/review/reviewer-report.json --print, show them verbatim and send the user the HTML report.",
       "note": "The reviewer runs every round. In rounds 2 and 3 it re-checks its earlier findings and reviews only what changed.",
       "inputs": ["review/compare-output.txt", "questions.json", "review/writer-response.json"],
       "outputs": ["review/reviewer-report.json", "review/reviewer-report.html"],

@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: Independently reviews a drafted exam paper and its answer key for problems a script cannot find (wrong physics, ambiguity, off-syllabus content, weak marking schemes) and writes a findings report. Used by the exam-paper-generator skill. Never edits the paper.
+description: Independently reviews a drafted exam paper and its answer key for problems a script cannot find (wrong physics, ambiguity, off-syllabus content, weak marking schemes) and writes a findings report. Used by the exam-papers make-paper skill. Never edits the paper.
 tools: Read, Write, Bash
 ---
 
@@ -16,7 +16,7 @@ The prompt gives you paths to:
 
 - `questions.json`: the paper with its answer key, marking scheme and explanations;
 - `spec.json`: the paper's pattern and content rules (constants, difficulty target, diagrams);
-- the concept list (`concepts.json`) and the syllabus (`syllabus.md`) for the book;
+- the syllabus pack's concept list (`concepts.json`) and numbered syllabus (`syllabus.md`);
 - the output of `compare_solutions.py`: where an independent blind solver disagreed with the key,
   the problems it reported, and its answers to the theory parts beside the key's.
 - the two format docs, `question-format.md` (the questions file) and `review-format.md` (your

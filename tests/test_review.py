@@ -342,3 +342,47 @@ class CompareCommandLine(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class StepsRecordThemselves(unittest.TestCase):
+    """extract_paper.py and compare_solutions.py record their own workflow step in a task folder."""
+
+    def setUp(self):
+        import next_step as ns
+        from approvals import record_approval
+        self.ns = ns
+        self.task = tempfile.mkdtemp()
+        for f in ("spec.json", "blueprint.json", "concepts.json", "questions.json"):
+            shutil.copy(os.path.join(TEST_DATA, f), self.task)
+        steps = ns.read_workflow(ns.WORKFLOW)
+        self.assertIsNone(ns.record_done(self.task, steps, "make_blueprint"))
+        record_approval(self.task, "blueprint", "/exam-papers:approve blueprint")
+        self.q = os.path.join(self.task, "questions.json")
+
+    def tearDown(self):
+        shutil.rmtree(self.task)
+
+    def recorded(self):
+        with open(os.path.join(self.task, "state.json"), encoding="utf-8") as f:
+            return set(json.load(f)["steps"])
+
+    def test_extract_then_compare(self):
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            self.assertEqual(ep.main(["extract_paper.py", self.q]), 0)
+        self.assertIn("Recorded: extract_paper", buf.getvalue())
+        self.assertIn("extract_paper", self.recorded())
+        self.assertEqual(self.ns.next_step(self.task, self.ns.read_workflow(self.ns.WORKFLOW))[1]["id"],
+                         "blind_solver")
+
+    def test_compare_records_even_with_mismatches_but_not_out_of_order(self):
+        answers = os.path.join(self.task, "review", "solver-answers.json")
+        os.makedirs(os.path.dirname(answers), exist_ok=True)
+        with open(answers, "w", encoding="utf-8") as f:
+            json.dump({"answers": {}}, f)
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            cs.main(["compare_solutions.py", self.q, answers, "--out",
+                     os.path.join(self.task, "review", "compare-output.txt")])
+        self.assertIn("Step not recorded", buf.getvalue())         # extract_paper and the solver never ran
+        self.assertNotIn("compare_solutions", self.recorded())

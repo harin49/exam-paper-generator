@@ -198,6 +198,11 @@ class CommandLine(unittest.TestCase):
         self.assertEqual(mb.main(["make_blueprint.py", self.spec]), 2)
         self.assertIsNone(mb.find_concept_list(self.spec, doc))
 
+    def test_records_its_own_step_in_a_task_folder(self):
+        self.assertEqual(self.run_main(), 0)
+        state = load(os.path.join(self.dir, "state.json"))
+        self.assertIn("make_blueprint", state["steps"])
+
     def test_an_unapproved_concept_list_is_refused(self):
         os.remove(os.path.join(self.pack, "approvals.json"))
         self.assertEqual(self.run_main(), 1)

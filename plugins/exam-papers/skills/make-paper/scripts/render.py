@@ -681,6 +681,12 @@ def main(argv):
         print(f"\nWARNING: {len(seen)} diagram image(s) are missing; a placeholder box was printed:")
         for n, desc, f in paper_missing + key_missing:
             print(f"  - Q{n}: {f or '(no file named)'}: {desc}")
+        print("The step is not recorded until the PDFs are built with every image.")
+        return 0
+    from next_step import record_own_step                     # here: next_step imports this module
+    recorded = record_own_step(folder, "render") if os.path.abspath(out_dir) == os.path.abspath(folder) else None
+    if recorded:
+        print(recorded)
     return 0
 
 

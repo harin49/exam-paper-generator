@@ -398,6 +398,18 @@ class CommandLine(unittest.TestCase):
         self.assertEqual(doc["next"]["id"], "approve_blueprint")
         self.assertTrue(doc["next"]["waitsForUser"])
 
+    def test_a_step_that_records_itself_says_so(self):
+        os.remove(os.path.join(self.tmp, "state.json"))
+        code, out = self.run_main(self.tmp)
+        self.assertIn("NEXT: step 2, make_blueprint", out)
+        self.assertIn("The script records the step itself", out)
+        self.assertNotIn("--done make_blueprint", out)
+
+    def test_record_own_step(self):
+        self.assertIsNone(ns.record_own_step(os.path.join(self.tmp, "nope"), "render"))   # not a task folder
+        self.assertIn("Step not recorded", ns.record_own_step(self.tmp, "render"))
+        self.assertIn("Recorded: make_blueprint", ns.record_own_step(self.tmp, "make_blueprint"))
+
     def test_bad_workflow_and_usage(self):
         path = os.path.join(self.tmp, "w.json")
         with open(path, "w") as f:

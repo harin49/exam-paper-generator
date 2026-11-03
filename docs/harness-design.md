@@ -416,6 +416,15 @@ meaning, so gate 1 shows each one beside its text.
   so far; script results, agent calls, approvals and automatic fixes are to be added with the hooks
   (D6) and the writer loop (D13).
 - Task folders made before this have no `state.json` and start again (no migration).
+- *Changed after the live run (2026-11-03):* Claude once wrote the blueprint and forgot `--done`, and
+  the blueprint approval was then refused with "no paper is waiting", which pointed the teacher the
+  wrong way. So the four script steps (`make_blueprint`, `extract_paper`, `compare_solutions`,
+  `render`, marked `"recordsItself"` in `workflow.json`) now record themselves when they succeed,
+  through the same `record_done`; `render` does not while a diagram image is missing. Subagent and
+  user steps still use `--done` (Claude recorded every one in the live run). When a gate command
+  finds no paper waiting, the hook now lists each paper's next step and, if that step's output is
+  already there, says it is unrecorded and gives the `--done` command. Recording on "the output
+  exists" alone was rejected: a file can be left from an older input.
 
 *Why:* file timestamps break on a copy, a `git checkout` or any re-save (re-printing the review findings
 once sent a finished paper back to an earlier step). Hashes depend only on content. The log gives the

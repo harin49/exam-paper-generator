@@ -207,6 +207,11 @@ def main(argv):
     if out:
         with open(out, "w", encoding="utf-8") as f:
             f.write(report + "\n")
+        # Mismatches (exit 1) are a finished comparison too; the step is the report being written.
+        from next_step import record_own_step                 # here: next_step imports render
+        recorded = record_own_step(os.path.dirname(os.path.abspath(args[0])), "compare_solutions")
+        if recorded and not as_json:
+            print(recorded)
     return 0 if not r.errors else 1
 
 

@@ -28,6 +28,7 @@
       "waitsForUser": false,
       "run": "python3 \"${CLAUDE_SKILL_DIR}/scripts/make_blueprint.py\" TASK/spec.json",
       "note": "It reads the concept list of the pack the spec names (syllabi/<exam.syllabusPack>/concepts.json). If the spec changed after the blueprint was made, the blueprint is out of date.",
+      "recordsItself": true,
       "inputs": ["spec.json"],
       "outputs": ["blueprint.json"],
       "done": {"recorded": ["spec.json"]}
@@ -67,6 +68,7 @@
       "by": "script",
       "waitsForUser": false,
       "run": "python3 \"${CLAUDE_SKILL_DIR}/scripts/extract_paper.py\" TASK/questions.json",
+      "recordsItself": true,
       "inputs": ["questions.json"],
       "outputs": ["review/solver-input.json"],
       "done": {"recorded": ["questions.json"]}
@@ -90,6 +92,7 @@
       "waitsForUser": false,
       "run": "python3 \"${CLAUDE_SKILL_DIR}/scripts/compare_solutions.py\" TASK/questions.json TASK/review/solver-answers.json --out TASK/review/compare-output.txt",
       "note": "Exit code 1 means mismatches, not a failure. Show the output verbatim.",
+      "recordsItself": true,
       "inputs": ["review/solver-answers.json", "questions.json"],
       "outputs": ["review/compare-output.txt"],
       "done": {"recorded": ["review/solver-answers.json", "questions.json"]}
@@ -157,6 +160,7 @@
       "waitsForUser": false,
       "run": "python3 \"${CLAUDE_SKILL_DIR}/scripts/render.py\" TASK/questions.json",
       "note": "Open both PDFs and look at them before delivering.",
+      "recordsItself": true,
       "inputs": ["questions.json"],
       "outputs": ["{paper_pdf}", "{key_pdf}"],
       "done": {"recorded": ["questions.json"]}

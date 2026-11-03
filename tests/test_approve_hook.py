@@ -79,6 +79,18 @@ class Approve(Hook):
         self.typed("blueprint", prompt="<system-reminder>x</system-reminder>\n/exam-papers:approve blueprint")
         self.assertTrue(is_approved(folder, "blueprint"))
 
+    def test_an_unrecorded_step_is_named_with_the_fix(self):
+        # The live run: blueprint.json written, but make_blueprint never recorded.
+        folder = os.path.join(self.root, "papers", "icse-9-physics")
+        os.makedirs(folder)
+        for f in ("spec.json", "blueprint.json", "concepts.json"):
+            shutil.copy(os.path.join(TEST_DATA, f), folder)
+        reason = self.blocked(self.typed("blueprint"))
+        self.assertIn("icse-9-physics: next step is make_blueprint (blueprint.json already there but the "
+                      "step is not recorded: ask Claude to run next_step.py icse-9-physics --done make_blueprint", reason)
+        self.assertIsNone(ns.record_done(folder, STEPS, "make_blueprint"))
+        self.assertIn("Approval recorded", self.typed("blueprint"))
+
     def test_no_waiting_task_is_blocked(self):
         self.assertIn("No paper", self.blocked(self.typed("blueprint")))
 

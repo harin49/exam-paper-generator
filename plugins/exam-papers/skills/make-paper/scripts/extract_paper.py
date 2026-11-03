@@ -143,6 +143,10 @@ def main(argv):
         json.dump(data, f, ensure_ascii=False, indent=2)
     n_parts = sum(len(v) for v in answerable_ids(qdoc).values())
     print(f"Wrote {out}: {len(data['questions'])} questions, {n_parts} answerable parts, no answers.")
+    from next_step import record_own_step                     # here: next_step imports render
+    recorded = record_own_step(folder, "extract_paper")
+    if recorded:
+        print(recorded)
     return 0
 
 

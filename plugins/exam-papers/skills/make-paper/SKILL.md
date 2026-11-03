@@ -98,7 +98,10 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/next_step.py" TASK
 
 - Run it before every step (from step 1 on; before step 0 there is no `TASK`). Do the step it prints,
   and nothing else, until that step has finished.
-- When the step has finished, record it with the command it printed:
+- The four script steps (`make_blueprint.py`, `extract_paper.py`, `compare_solutions.py`,
+  `render.py`) record themselves when they succeed: they print "Recorded: ...". If one prints
+  "Step not recorded", show the message to the user. Every other step (the subagents', yours, the
+  user's) you record when it has finished, with the command `next_step.py` printed:
   `python3 "${CLAUDE_SKILL_DIR}/scripts/next_step.py" TASK --done STEP_ID`. This saves the hashes of
   the step's files in `TASK/state.json` and appends to `TASK/run.jsonl`. A step that is not recorded
   is not done, and `next_step.py` will print it again. At an approval point, record it only after

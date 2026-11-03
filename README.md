@@ -160,6 +160,7 @@ requirements.txt, requirements-dev.txt
       (run once end to end with real subagents)
 - [x] `workflow.json` + `next_step.py`: one step at a time, in a fixed order, checked against the task folder
 - [x] State by content hashes (`state.json`, `run.jsonl`, `next_step.py --done`) instead of file times
+- [x] Script steps record themselves; a gate refused for an unrecorded step says which step and how to fix it
 - [x] Typed approvals for the blueprint and the final paper (`/exam-papers:approve`, hooks, `approvals.json`)
 - [x] Writer subagent drafts and revises the questions; hooks keep the solver blind and the writer
       away from the solver's answers; the reviewer judges every solver mismatch
@@ -177,7 +178,7 @@ requirements.txt, requirements-dev.txt
       with `notTested` reasons; the ICSE Physics sample moved to point ids
 - [x] Final approval shows every change made in the review loop (`review_status.py --fixes`), and any
       automatic fix can be undone with `/exam-papers:decide reject ID`
-- [x] Unit tests moved to their own test data (`tests/test_data/`); 390 tests, all passing
+- [x] Unit tests moved to their own test data (`tests/test_data/`); 396 tests, all passing
 - [ ] New example: approve the `icse9-physics-units1-4` blueprint, write its questions, review, render
 
 Open question: the syllabus includes spherical mirrors (with mirror-formula numericals) and

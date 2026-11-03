@@ -445,10 +445,14 @@ def main(argv):
         with open(out, "w", encoding="utf-8") as f:
             json.dump(doc, f, indent=2, ensure_ascii=False)
             f.write("\n")
+    recorded = None
+    if not r.errors:
+        from next_step import record_own_step                 # here: next_step imports this skill's scripts
+        recorded = record_own_step(os.path.dirname(os.path.abspath(out)), "make_blueprint")
 
     if as_json:
         print(json.dumps({"written": not r.errors, "out": out, "errors": r.errors, "warnings": r.warnings,
-                          "info": r.info}, indent=2, ensure_ascii=False))
+                          "info": r.info, "recorded": recorded}, indent=2, ensure_ascii=False))
     else:
         print(f"Spec:         {spath}\nConcept list: {cpath}")
         for title, items in (("ERRORS", r.errors), ("WARNINGS", r.warnings), ("INFO", r.info)):
@@ -458,6 +462,8 @@ def main(argv):
                     print(f"  - {m}")
         print("\nResult: " + (f"WRITTEN to {out} (not approved yet)" if not r.errors
                               else f"NOT WRITTEN ({len(r.errors)} error(s))"))
+        if recorded:
+            print(recorded)
     return 0 if not r.errors else 1
 
 

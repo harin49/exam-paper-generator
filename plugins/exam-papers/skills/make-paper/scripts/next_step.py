@@ -10,7 +10,9 @@ The steps and their order come from workflow.json in this skill's folder (or FIL
 against TASK; the next step is the first one that is not done. Steps are never run side by side:
 do the step this prints, wait for it to finish, then run this script again.
 
-When a step has finished, record it with --done STEP_ID. That saves the SHA-256 hashes of the step's
+When a step has finished, record it with --done STEP_ID. A step marked "recordsItself" in the workflow
+(the four script steps: make_blueprint, extract_paper, compare_solutions, render) is recorded by its
+script when it succeeds (record_own_step), so nobody has to remember it. That saves the SHA-256 hashes of the step's
 "inputs" and "outputs" in TASK/state.json (the latest record of each step) and appends the record to
 TASK/run.jsonl (one JSON object per line, never rewritten). --done refuses a step while an earlier
 step is not done, while one of the step's outputs is missing, or while the step's own "done"
@@ -86,6 +88,8 @@ def read_workflow(path):
         for key in ("inputs", "outputs"):
             if not isinstance(s.get(key, []), list):
                 raise WorkflowError(f"step '{s['id']}': '{key}' must be a list of paths")
+        if not isinstance(s.get("recordsItself", False), bool):
+            raise WorkflowError(f"step '{s['id']}': 'recordsItself' must be true or false")
         for paths in recorded_paths(s["done"]):
             if not s.get("outputs"):
                 raise WorkflowError(f"step '{s['id']}': a 'recorded' condition needs the step's 'outputs'")
@@ -236,6 +240,20 @@ def record_done(folder, steps, step_id):
     return None
 
 
+def record_own_step(folder, step_id):
+    """For a step's script, once it has succeeded: record the step as --done would. Returns the line
+    to print, or None when folder is not a paper's task folder (no spec.json), e.g. in a test."""
+    if not os.path.isfile(os.path.join(folder, "spec.json")):
+        return None
+    try:
+        error = record_done(folder, read_workflow(WORKFLOW), step_id)
+    except (OSError, ValueError, KeyError, TypeError) as e:
+        error = str(e)
+    if error:
+        return f"Step not recorded: {error}"
+    return f"Recorded: {step_id} (this script records its own step; no --done needed)."
+
+
 def main(argv):
     args = argv[1:]
     as_json = "--json" in args
@@ -295,6 +313,10 @@ def main(argv):
         print(f"  Note: {step['note']}")
     if step["waitsForUser"]:
         print("\nSTOP after this step: wait for the user's answer before anything else.")
+    if step.get("recordsItself"):
+        print("\nDo this step only. The script records the step itself when it succeeds (it prints")
+        print("\"Recorded: ...\"); then run next_step.py again.")
+        return 0
     script = os.path.join(SKILL_DIR, "scripts", "next_step.py")
     print("\nDo this step only. When it has finished, record it:")
     print(f'  python3 "{script}" {folder.rstrip("/")} --done {step["id"]}')

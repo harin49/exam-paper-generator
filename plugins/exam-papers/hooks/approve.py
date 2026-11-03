@@ -66,8 +66,32 @@ def waiting_tasks(root, step_ids, steps):
     return found
 
 
-def pick_task(root, folder, waiting, what, retype):
-    """(the task, None) or (None, the reason to block)."""
+def where_papers_are(root, steps):
+    """One line per paper under root/papers/: its next step, and a hint when that step's output is
+    already there but the step was never recorded (Claude forgot next_step.py --done)."""
+    lines = []
+    for folder in sorted(glob.glob(os.path.join(root, "papers", "*", ""))):
+        name = os.path.basename(folder.rstrip(os.sep))
+        try:
+            step = next_step(folder, steps)[1]
+        except (OSError, ValueError, KeyError, TypeError) as e:
+            lines.append(f"{name}: cannot work out its next step ({e})")
+            continue
+        if step is None:
+            lines.append(f"{name}: every step is done")
+            continue
+        line = f"{name}: next step is {step['id']}"
+        outputs = step.get("outputs", [])
+        if outputs and all(os.path.isfile(os.path.join(folder, o)) for o in outputs):
+            line += (f" ({', '.join(outputs)} already there but the step is not recorded: ask Claude to "
+                     f"run next_step.py {name} --done {step['id']}, then type the command again)")
+        lines.append(line)
+    return lines
+
+
+def pick_task(root, folder, waiting, what, retype, where=()):
+    """(the task, None) or (None, the reason to block). where: where_papers_are() lines, shown when
+    no paper is waiting."""
     if folder:
         named = os.path.realpath(os.path.join(root, "papers", folder) if os.sep not in folder
                                  else os.path.join(root, folder))
@@ -79,7 +103,8 @@ def pick_task(root, folder, waiting, what, retype):
     if len(waiting) == 1:
         return waiting[0], None
     if not waiting:
-        return None, f"No paper under {os.path.join(root, 'papers')} is waiting for {what}."
+        return None, (f"No paper under {os.path.join(root, 'papers')} is waiting for {what}."
+                      + ("".join(f"\n- {w}" for w in where) if where else ""))
     names = ", ".join(os.path.basename(t) for t in waiting)
     return None, f"Several papers are waiting for {what} ({names}). Type {retype} FOLDER with one of them."
 
@@ -108,7 +133,7 @@ def on_expansion(event):
         return on_approve_concepts(root, words[1] if len(words) == 2 else None, text)
     task, reason = pick_task(root, words[1] if len(words) == 2 else None,
                              waiting_tasks(root, {f"approve_{gate}"}, steps), f"a {gate} approval",
-                             f"/{COMMAND} {gate}")
+                             f"/{COMMAND} {gate}", where_papers_are(root, steps))
     if reason:
         return block(reason)
     rec = record_approval(task, gate, text)
@@ -174,8 +199,8 @@ def on_decide(event, root, steps):
         else:
             return block(DECIDE_USAGE)
     waiting = waiting_tasks(root, {"decide_fixes", "apply_fixes", "approve_paper"}, steps)
-    task, reason = pick_task(root, folder, waiting,
-                             "a decision on review findings", f"/{DECIDE} ...")
+    task, reason = pick_task(root, folder, waiting, "a decision on review findings", f"/{DECIDE} ...",
+                             where_papers_are(root, steps))
     if reason:
         return block(reason)
     try:

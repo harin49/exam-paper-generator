@@ -110,7 +110,7 @@ class AgentFiles(unittest.TestCase):
                 head = f.read().split("---")[1]
             self.assertIn(f"name: {name}", head)
             self.assertIn(f"tools: {allowed}\n", head, name)
-        self.assertEqual(sorted(f[:-3] for f in os.listdir(AGENTS)), sorted(tools))
+        self.assertEqual(sorted(f[:-3] for f in os.listdir(AGENTS) if f.endswith(".md")), sorted(tools))
 
     def test_agents_name_no_repo_paths(self):
         # Agents run from the teacher's workspace; they get every path in their prompt.

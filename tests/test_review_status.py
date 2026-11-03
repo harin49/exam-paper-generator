@@ -110,6 +110,30 @@ class Status(Task):
         self.close()
         self.assertEqual(self.state()["disputes"], ["R1"])            # the extra round is spent
 
+    def test_a_disagreement_the_reviewer_keeps_open_is_a_dispute_at_once(self):
+        self.report(finding("R1"), finding("R2"))
+        self.close()
+        self.revise("Round 2.")
+        self.write("review/writer-response.json", {"responses": [
+            {"id": "R1", "action": "disagree", "location": "Q1", "reason": "The key is right."},
+            {"id": "R2", "action": "fixed", "location": "Q2", "change": "c"}]})
+        self.report(finding("R1", note="Still wrong."), finding("R2", status="resolved"))
+        self.close()
+        s = self.state()
+        self.assertEqual((s["round"], s["next"], s["disputes"], s["toAddress"]), (2, "decide", ["R1"], []))
+        self.decide(2, accepted=["R1"])                    # one more round, with the teacher's instruction
+        self.assertEqual((self.state()["next"], self.state()["toAddress"]), ("revise", ["R1"]))
+
+    def test_a_disagreement_the_reviewer_accepts_is_resolved(self):
+        self.report(finding("R1"))
+        self.close()
+        self.revise("Round 2.")
+        self.write("review/writer-response.json", {"responses": [
+            {"id": "R1", "action": "disagree", "location": "Q1", "reason": "The key is right."}]})
+        self.report(finding("R1", status="resolved", note="The writer is right."))
+        self.close()
+        self.assertEqual(self.state()["next"], "done")
+
     def test_a_new_undecided_warning_after_the_cap_is_asked_about(self):
         self.report(finding("R1", "warning"))
         for text in ("x", "y", "z"):

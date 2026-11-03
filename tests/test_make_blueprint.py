@@ -74,6 +74,15 @@ class Blueprint(unittest.TestCase):
         self.assertFalse(any(runs), f"three in a row: {''.join(letters)}")
         self.assertTrue(all("correctOption" not in x for x in qs if x["section"] not in mcq_ids))
 
+    def test_easier_parts_come_first(self):
+        qs, _ = self.build()
+        rank = {"easy": 0, "medium": 1, "hard": 2}
+        for q in qs:
+            levels = [rank[p["difficulty"]] for p in q.get("parts", [])]
+            self.assertEqual(levels, sorted(levels), f"Q{q['number']}")
+            if "parts" in q:
+                self.assertEqual(sum(p["marks"] for p in q["parts"]), q["marks"])
+
     def test_respects_syllabus_kinds(self):
         qs, _ = self.build()
         theory_only = {c["tag"] for e in self.concepts["chapters"].values() for c in e["concepts"]

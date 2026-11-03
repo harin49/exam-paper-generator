@@ -313,17 +313,17 @@
       "parts": [
         {
           "label": "a",
-          "marks": 1,
-          "kind": "theory",
-          "difficulty": "medium",
-          "concept": "newtons_third_law"
-        },
-        {
-          "label": "b",
           "marks": 2,
           "kind": "numerical",
           "difficulty": "easy",
           "concept": "force_units_cgs_si"
+        },
+        {
+          "label": "b",
+          "marks": 1,
+          "kind": "theory",
+          "difficulty": "medium",
+          "concept": "newtons_third_law"
         }
       ]
     },
@@ -395,28 +395,28 @@
           "label": "a",
           "marks": 2,
           "kind": "theory",
-          "difficulty": "medium",
+          "difficulty": "easy",
           "concept": "si_units_and_symbols"
         },
         {
           "label": "b",
-          "marks": 2,
-          "kind": "theory",
+          "marks": 3,
+          "kind": "numerical",
           "difficulty": "easy",
-          "concept": "least_count_and_accuracy"
+          "concept": "pendulum_time_period_formula"
         },
         {
           "label": "c",
-          "marks": 3,
-          "kind": "numerical",
+          "marks": 2,
+          "kind": "theory",
           "difficulty": "medium",
-          "concept": "pendulum_time_period_formula"
+          "concept": "least_count_and_accuracy"
         },
         {
           "label": "d",
           "marks": 3,
           "kind": "numerical",
-          "difficulty": "easy",
+          "difficulty": "medium",
           "concept": "pendulum_l_t2_graph"
         }
       ]
@@ -437,28 +437,28 @@
           "label": "a",
           "marks": 2,
           "kind": "theory",
-          "difficulty": "medium",
+          "difficulty": "easy",
           "concept": "speed_velocity"
         },
         {
           "label": "b",
           "marks": 3,
           "kind": "numerical",
-          "difficulty": "medium",
+          "difficulty": "easy",
           "concept": "acceleration_retardation"
         },
         {
           "label": "c",
           "marks": 2,
           "kind": "theory",
-          "difficulty": "easy",
+          "difficulty": "medium",
           "concept": "velocity_time_graph_slope"
         },
         {
           "label": "d",
           "marks": 3,
           "kind": "numerical",
-          "difficulty": "easy",
+          "difficulty": "medium",
           "concept": "distance_time_graph"
         }
       ]
@@ -477,31 +477,31 @@
       "parts": [
         {
           "label": "a",
-          "marks": 2,
-          "kind": "theory",
-          "difficulty": "medium",
-          "concept": "non_contact_forces"
-        },
-        {
-          "label": "b",
           "marks": 3,
           "kind": "numerical",
-          "difficulty": "medium",
+          "difficulty": "easy",
           "concept": "force_momentum_numericals"
         },
         {
-          "label": "c",
-          "marks": 3,
-          "kind": "numerical",
-          "difficulty": "easy",
-          "concept": "universal_law_of_gravitation"
-        },
-        {
-          "label": "d",
+          "label": "b",
           "marks": 2,
           "kind": "theory",
           "difficulty": "easy",
+          "concept": "non_contact_forces"
+        },
+        {
+          "label": "c",
+          "marks": 2,
+          "kind": "theory",
+          "difficulty": "medium",
           "concept": "newtons_first_law"
+        },
+        {
+          "label": "d",
+          "marks": 3,
+          "kind": "numerical",
+          "difficulty": "medium",
+          "concept": "universal_law_of_gravitation"
         }
       ]
     },
@@ -519,31 +519,31 @@
       "parts": [
         {
           "label": "a",
-          "marks": 3,
-          "kind": "numerical",
-          "difficulty": "medium",
-          "concept": "thrust_and_pressure"
-        },
-        {
-          "label": "b",
           "marks": 2,
           "kind": "theory",
-          "difficulty": "medium",
+          "difficulty": "easy",
           "concept": "liquid_pressure_daily_examples"
         },
         {
-          "label": "c",
-          "marks": 2,
-          "kind": "theory",
-          "difficulty": "easy",
-          "concept": "pascals_law"
-        },
-        {
-          "label": "d",
+          "label": "b",
           "marks": 3,
           "kind": "theory",
           "difficulty": "easy",
+          "concept": "thrust_and_pressure"
+        },
+        {
+          "label": "c",
+          "marks": 3,
+          "kind": "numerical",
+          "difficulty": "medium",
           "concept": "liquid_pressure_formula"
+        },
+        {
+          "label": "d",
+          "marks": 2,
+          "kind": "theory",
+          "difficulty": "medium",
+          "concept": "pascals_law"
         }
       ]
     }

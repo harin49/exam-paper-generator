@@ -361,6 +361,19 @@ gate-4 list of automatic fixes (done 2026-10-28).
   while the writer is due to fix it.
 - The guard that protects `approvals.json` now protects `decisions.json` the same way.
 
+*Changed after the live run (2026-11-03):* finding R4 ("part (a) is tagged medium but is plain
+recall") used rounds 2 and 3 with no change: the writer said the blueprint fixes tags, the reviewer
+kept it open. Three changes:
+
+- `make_blueprint.py` puts each question's easier parts first (marks and kind move with the
+  difficulty, so no balance changes). Before, every Section B question came out (a) medium,
+  (b) easy, because difficulty went to the biggest parts first and ties by position.
+- The writer treats a difficulty or kind tag as a target its wording must meet, and fixes a "does
+  not fit its tag" finding by changing the question; the reviewer words its suggested fix that way.
+- A finding the writer disagreed with, which the reviewer keeps open in the next round, is a dispute
+  at once (gate 3), not only after round 3: the writer has given its reason, and another automatic
+  round would repeat it.
+
 *As built in piece 4:*
 
 - Closing a round also saves the writer's response that led to it (`review/rounds/N/

@@ -21,7 +21,9 @@ blueprint:
      through the best splits so questions in a section vary.
   3. Kinds: each part becomes numerical or theory to approach the spec's split within each
      section, using only kinds that some concept in its chapter supports at that many marks.
-  4. Difficulty: each part gets the level furthest below its target (levels at 0% are never used).
+  4. Difficulty: each part gets the level furthest below its target (levels at 0% are never used);
+     then each question's parts are reordered so the easier ones come first (marks and kind move
+     with them, so no balance changes).
   5. Concepts: each part gets the least-used concept of its chapter that allows its kind and marks,
      preferring one not already used in the same question and one whose maxMarks fits the part
      (a concept meant for parts 3+ marks bigger counts as already used once).
@@ -193,6 +195,24 @@ def assign_difficulty(leaves, targets_pct, offered):
         got[lvl] += leaf["marks"]
 
 
+def easier_parts_first(leaves):
+    """Within each question, reorder its parts so difficulty rises (a easy, b medium, ...). Each part's
+    marks and kind move with its difficulty, so every balance (section kinds, difficulty mix) stays
+    the same; only the order inside the question changes."""
+    by_question = {}
+    for leaf in leaves:
+        by_question.setdefault(id(leaf["question"]), []).append(leaf)
+    for qleaves in by_question.values():
+        if len(qleaves) < 2:
+            continue
+        qleaves.sort(key=lambda l: l["seq"])
+        slots = sorted(((LEVEL_ORDER.index(l["difficulty"]), l["marks"], l["obj"]["marks"], l["kind"],
+                         l["difficulty"]) for l in qleaves), key=lambda t: t[0])
+        for leaf, (_, marks, shown, kind, level) in zip(qleaves, slots):
+            leaf.update(marks=marks, kind=kind, difficulty=level)
+            leaf["obj"]["marks"] = shown
+
+
 def assign_concepts(leaves, by_chapter):
     used = {}
 
@@ -291,6 +311,7 @@ def make(spec, concepts):
 
     assign_kinds(leaves, by_chapter, rules["numericalTheorySplit"]["target"][0])
     assign_difficulty(leaves, rules["difficulty"]["target"], offered)
+    easier_parts_first(leaves)
     assign_concepts(leaves, by_chapter)
     for leaf in leaves:
         leaf["obj"].update(kind=leaf["kind"], difficulty=leaf["difficulty"], concept=leaf["concept"])

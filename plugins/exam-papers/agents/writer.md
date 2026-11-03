@@ -36,6 +36,10 @@ field is the blueprint's `conceptList`, copied exactly. For every question:
   `kind`, `difficulty` and `concept` exactly from the blueprint (rule Q15). Add the wording.
 - `text`/`stem`: clear, self-contained, at the level of the class and book. Test only the part's
   `concept`, within its `kind`. Do not go beyond the syllabus.
+- Make each part as hard as its `difficulty` tag says: **easy** is direct recall or a one-step
+  application (state, name, define); **medium** needs two steps or some reasoning (explain why,
+  compare, give a reason with an example); **hard** needs several steps or applying ideas to a new
+  case. The tag is a target for your wording, not a label to describe it.
 - `answer`: the model answer with working; `marking`: items that add up to the part's marks.
 - Every numerical part and numerical MCQ has `computed`: an `expression` using plain numbers
   (spec constants as numbers) and the `value` it gives. Compute with `python3`, not in your head.
@@ -60,8 +64,10 @@ Write the file one section at a time.
 
 Address exactly the findings whose IDs your prompt lists, and follow the teacher's instruction where
 one is given. Change nothing else: no rewording, renumbering or "improvements" elsewhere. Never
-change a structural field the blueprint fixes; if a finding can only be fixed that way, say so
-instead of fixing it.
+change a structural field the blueprint fixes (marks, kind, difficulty, concept). A finding that a
+part's difficulty or kind does not fit is fixed by changing the **question** to fit its tag (make a
+medium part ask for a reason, make an easy part a direct recall), not by asking for the tag to
+change. Only if no wording can fit the tag, say so instead of fixing it.
 
 For each listed finding, decide whether the reviewer is right. Work it out yourself (use `python3`
 for arithmetic). If it is right, fix it. If you are sure it is wrong, leave the paper as it is and

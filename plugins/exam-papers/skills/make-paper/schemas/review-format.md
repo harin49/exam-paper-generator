@@ -171,8 +171,8 @@ since the last closed round; the reviewer gets it from round 2 on.
 ] }
 ```
 
-The user's decisions on open warnings and suggestions, and on disputes (findings still open after
-round 3), one entry per typed command, never rewritten. The hook refuses a decision that leaves a
+The user's decisions on open warnings and suggestions, and on disputes (findings the writer
+disagreed with that the reviewer kept open, and findings still open after round 3), one entry per typed command, never rewritten. The hook refuses a decision that leaves a
 listed finding undecided, accepts a finding that is not listed, or rejects one that is neither listed
 nor an open error (the user may overrule the reviewer on an error) nor a fix the writer made. Rejecting
 a resolved finding the writer fixed undoes the fix: the hook lists it in `undo`, and the writer

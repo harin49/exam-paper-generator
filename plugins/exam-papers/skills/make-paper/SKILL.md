@@ -253,7 +253,8 @@ File formats: `${CLAUDE_SKILL_DIR}/schemas/review-format.md`. Everything goes in
    it. Then run `review_status.py TASK` and show its summary to the user.
 6. **Decide (approval point, only when the summary lists something under "Teacher to decide" or
    "Disputes").** Errors are not asked about: the writer fixes them. Show each listed warning and
-   suggestion. A dispute is a finding still open after round 3: show the reviewer's finding and the
+   suggestion. A dispute is a finding the writer disagreed with that the reviewer kept open, or any
+   finding still open after round 3: show the reviewer's finding and the
    writer's response side by side; `accept` gives the writer one more round (ask for the user's
    instruction), `reject` leaves the paper as it is (to fix it themselves, the user edits
    `questions.json` and rejects it). Then ask the user to type their decision, covering every listed

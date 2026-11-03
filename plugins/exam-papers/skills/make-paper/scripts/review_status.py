@@ -24,8 +24,10 @@ With no option it prints the status: the round, the open findings, what the teac
 what the writer has to address, and the next state:
     close    the round under review is not closed yet: the report, questions.json or the writer's
              responses differ from the last closed round (a report can repeat word for word)
-    decide   the teacher decides (gate 3): an open warning or suggestion nobody has decided, or, from
-             round 3 on, anything still open that the teacher has not settled for this round
+    decide   the teacher decides (gate 3): an open warning or suggestion nobody has decided; a
+             dispute, i.e. a finding the writer disagreed with in the revision just reviewed that the
+             reviewer kept open; or, from round 3 on, anything still open that the teacher has not
+             settled for this round
     revise   the writer revises: open errors and open accepted findings (before round 3), or the
              findings the teacher accepted for one more round (from round 3 on); and it reverts any
              fix the teacher undid (rejected after it was resolved)
@@ -171,7 +173,10 @@ def status(task):
         verdict.update({i: "accepted" for i in d["accepted"]})
         verdict.update({i: "rejected" for i in d["rejected"]})
     for_this_round = {i for d in decisions if d["round"] == n for i in d["accepted"]}
-    actions = latest_actions(read_responses(task))
+    responses = read_responses(task)
+    actions = latest_actions(responses)
+    # The writer said why it would not change these in the revision this round reviewed.
+    disagreed = {e.get("id") for e in responses if e["round"] == n and e.get("action") == "disagree"}
     undone = [i for d in decisions for i in d.get("undo", [])]
     to_revert = [i for i in dict.fromkeys(undone) if actions.get(i) != "reverted"]
     open_ = [f for f in findings if f["status"] == "open" and verdict.get(f["id"]) != "rejected"]
@@ -179,7 +184,11 @@ def status(task):
     to_decide, to_address, disputes = [], [], []
     if n < MAX_ROUNDS:
         for f in open_:
-            if f["severity"] == "error" or verdict.get(f["id"]) == "accepted":
+            if f["id"] in for_this_round:
+                to_address.append(f["id"])
+            elif f["id"] in disagreed:
+                disputes.append(f["id"])
+            elif f["severity"] == "error" or verdict.get(f["id"]) == "accepted":
                 to_address.append(f["id"])
             elif f["id"] not in verdict:
                 to_decide.append(f["id"])
@@ -423,7 +432,8 @@ def summary(s):
              f"Open: errors {ids(o['error'])}; warnings {ids(o['warning'])}; suggestions {ids(o['suggestion'])}",
              f"Resolved: {ids(s['resolved'])}. Rejected by the teacher: {ids(s['rejected'])}.",
              f"Teacher to decide: {ids(s['toDecide'])}",
-             f"Disputes (still open after round {s['maxRounds']}): {ids(s['disputes'])}",
+             f"Disputes (the writer disagreed and the reviewer kept it open, or still open after round "
+             f"{s['maxRounds']}): {ids(s['disputes'])}",
              f"Writer to address: {ids(s['toAddress'])}",
              f"Writer to revert (fixes you undid): {ids(s['toRevert'])}",
              f"NEXT: {s['next']}"]

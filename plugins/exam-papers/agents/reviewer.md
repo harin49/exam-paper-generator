@@ -44,7 +44,9 @@ From **round 2** on, the writer has revised the paper. Do not review it from scr
    one. For each, decide whether it is now fixed: `"status": "resolved"` or `"open"`. Look at the
    change list and the writer's response; where the writer disagreed, weigh its evidence fairly and
    resolve the finding if it is right. Add a `note` saying why you resolved it or why it is still
-   open.
+   open. A finding the writer disagreed with that you keep open goes straight to the teacher as a
+   dispute, with your note and the writer's reason side by side, so make the note state your side
+   plainly.
 2. Findings the teacher **rejected** (in `decisions.json`) are closed: copy them unchanged and do not
    argue them again.
 3. You may change a finding's severity if the revision shows it was mislabelled; say why in `note`.
@@ -70,7 +72,10 @@ From **round 2** on, the writer has revised the paper. Do not review it from scr
    pitched for the class. Flag anything beyond the syllabus, and anything that needs a result the
    syllabus does not teach.
 5. **Difficulty.** Each part's tagged difficulty is fair. A part tagged easy should be a direct
-   recall or one-step application; medium needs two steps or some reasoning.
+   recall or one-step application; medium needs two steps or some reasoning. The tags come from the
+   approved blueprint and cannot change, so when a part does not fit its tag, the suggested fix is
+   to change the question to fit the tag (e.g. "make (a) ask why, not what"), never to retag it.
+   The same goes for a part's kind and marks.
 6. **Marking scheme.** The marking items match the model answer, are marked sensibly (the marks for a
    step appear where a student earns them), accept reasonable alternatives, and say where carry-
    forward applies. A reader could award marks from the scheme alone. In `computed`, exactly the

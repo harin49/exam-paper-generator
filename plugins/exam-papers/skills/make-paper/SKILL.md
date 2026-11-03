@@ -16,23 +16,19 @@ the user provides. Scripts decide the structure and check the result; you write 
   version of what a script does, and do not run a script that is not listed for the step. Check the
   exit code of every script; stop on one this file does not expect.
 - **Never assume.** If something in the spec or a script's output is unclear, ask the user.
-- **One step at a time, in order.** Before every step, run `python3 "${CLAUDE_SKILL_DIR}/scripts/next_step.py" TASK`
-  and do only the step it prints (see "Order of work"). Never run two steps side by side: do not start
-  a step, read ahead for it or prepare it while a script or subagent from an earlier step is still
-  running. Wait for each subagent to finish before doing anything else. When a step has finished,
-  record it with the `--done` command `next_step.py` prints, report the step briefly, then run
-  `next_step.py` again. Stop and wait at the approval points (spec errors, blueprint, decisions on
-  findings, final paper).
-- **Approvals and decisions come only from the user typing them.** The blueprint and the final paper
-  are approved when the user types `/exam-papers:approve blueprint` or `/exam-papers:approve paper`,
-  and review findings are decided with `/exam-papers:decide accept ... reject ...`; a hook records
-  them in `TASK/approvals.json` and `TASK/review/decisions.json`. Ask the user to type the command.
-  Never write, edit or copy either file (a hook blocks it), and never treat "approved" or a decision
-  in chat as recorded.
+- **One step at a time, in the order `next_step.py` gives** (see "Order of work").
+- **Approvals and decisions come only from the user typing them:** `/exam-papers:approve concepts`,
+  `/exam-papers:approve blueprint`, `/exam-papers:approve paper` and `/exam-papers:decide accept ...
+  reject ...`. A hook records them in `approvals.json` (the pack's or `TASK`'s) and
+  `TASK/review/decisions.json`. Ask the user to type the command, and wait. Never write, edit or copy
+  either file (a hook blocks it), and never treat "approved" or a decision in chat as recorded.
 - **The writer subagent writes the questions; you orchestrate.** Never write or edit
   `questions.json` yourself, even for a small fix: start the writer in revise mode.
-- **Show script and reviewer output verbatim** when it contains errors or findings. Do not summarise
-  them away, and do not change anything because of them until the user has seen them.
+- **Start the plugin's agents by their type** (`exam-papers:writer`, `exam-papers:blind-solver`,
+  `exam-papers:reviewer`). Never paste an agent's instructions into a general-purpose subagent: its
+  tool limits would be lost. Write every path in an agent's prompt out in full.
+- **Show script and reviewer output verbatim** when it contains errors, warnings or findings. Do not
+  summarise them away, and do not change anything because of them until the user has seen them.
 - **Refer to scripts by file name** (`check_questions.py`), not "the checker".
 - **Never edit an approved concept list.** If a concept is wrong or missing, tell the user; changes
   go through a reviewed diff.
@@ -54,64 +50,43 @@ There are two places:
 `PACK` means the paper's syllabus pack, `syllabi/<pack>/` (for example
 `syllabi/icse9-physics-selina/`), holding `syllabus.md` and `concepts.json`.
 
-### Scripts used in the workflow
-
-| Step | Script (exact path) | What it does | Writes |
-|---|---|---|---|
-| every | `${CLAUDE_SKILL_DIR}/scripts/next_step.py` | Prints the one step that may run next (order from `${CLAUDE_SKILL_DIR}/workflow.json`) | nothing |
-| 0 | `${CLAUDE_SKILL_DIR}/scripts/new_paper.py` | Makes `TASK` and copies the user's spec into it | `TASK/spec.json` |
-| 1 | `${CLAUDE_SKILL_DIR}/scripts/validate_paper_spec.py` | Checks the spec (rules S1-S20) | nothing |
-| 2 | `${CLAUDE_SKILL_DIR}/scripts/make_blueprint.py` | Plans every question slot from the spec and concept list | `TASK/blueprint.json` |
-| 4 | `${CLAUDE_SKILL_DIR}/scripts/check_questions.py` | Checks the questions (rules Q1-Q16) | nothing |
-| 5.1 | `${CLAUDE_SKILL_DIR}/scripts/extract_paper.py` | Makes the paper with no answers for the blind solver | `TASK/review/solver-input.json` |
-| 5.3 | `${CLAUDE_SKILL_DIR}/scripts/compare_solutions.py` | Compares the solver's answers with the key (rules V1-V6) | `TASK/review/compare-output.txt` |
-| 5.4 | `${CLAUDE_SKILL_DIR}/scripts/render_review.py` | Checks the reviewer's findings and makes the HTML report (run by the reviewer; `--print` shows the findings again and writes nothing) | `TASK/review/reviewer-report.html` |
-| 5.5-5.7 | `${CLAUDE_SKILL_DIR}/scripts/review_status.py` | Closes each review round and says what happens next (`--changes`: what changed since the last round) | `TASK/review/rounds.json`, `TASK/review/rounds/N/` |
-| 6 | `${CLAUDE_SKILL_DIR}/scripts/render.py` | Builds the question paper and answer key PDFs | two PDFs in `TASK` |
-
-Files that are **not** run in the workflow: `${CLAUDE_SKILL_DIR}/scripts/spec_types.py`,
+Each step below names the script it runs. Files in `${CLAUDE_SKILL_DIR}/scripts/` that are **not**
+run in the workflow: `${CLAUDE_SKILL_DIR}/scripts/spec_types.py`,
 `${CLAUDE_SKILL_DIR}/scripts/approvals.py`, `${CLAUDE_SKILL_DIR}/scripts/latex.py`,
 `${CLAUDE_SKILL_DIR}/scripts/paper.py`, `${CLAUDE_SKILL_DIR}/scripts/report.py` and
-`${CLAUDE_SKILL_DIR}/scripts/task_files.py` (libraries
-the other scripts and the plugin's approval hook import) and
-`${CLAUDE_SKILL_DIR}/scripts/number_syllabus.py` (used by the make-pack skill) and
-`${CLAUDE_SKILL_DIR}/scripts/validate_concepts.py` (at step 0 when the pack's concept list is not
-approved yet, or when the user asks
-you to check a concept list).
+`${CLAUDE_SKILL_DIR}/scripts/task_files.py` (libraries the other scripts and the plugin's hooks
+import), and `${CLAUDE_SKILL_DIR}/scripts/number_syllabus.py` (used by the make-pack skill).
 
-### Other files used
-
-| What | Exact path |
+| Other files | Exact path |
 |---|---|
 | Spec format and template | `${CLAUDE_SKILL_DIR}/schemas/paper-spec-format.md`, `${CLAUDE_SKILL_DIR}/schemas/paper-spec.template.json` |
 | Question format (the writer reads it; you need it to explain a finding) | `${CLAUDE_SKILL_DIR}/schemas/question-format.md` |
 | Review file formats | `${CLAUDE_SKILL_DIR}/schemas/review-format.md` |
 | Concept list format | `${CLAUDE_SKILL_DIR}/schemas/concept-list-format.md` |
 | Sample pack: ICSE Class 9 Physics (Selina) | `${CLAUDE_SKILL_DIR}/assets/syllabi/icse9-physics-selina/` |
-| Writer, blind solver and reviewer | the plugin's agents `exam-papers:writer`, `exam-papers:blind-solver` and `exam-papers:reviewer` |
 
 ## Order of work
 
-The steps, their order and the approval points are listed in `${CLAUDE_SKILL_DIR}/workflow.json`.
-`next_step.py` reads it, looks at what is in `TASK`, and prints the one step that may run next:
+The steps, their order and the approval points are in `${CLAUDE_SKILL_DIR}/workflow.json`.
+`next_step.py` reads it, looks at what is in `TASK`, and prints the one step that may run next, with
+its command or action, whether to stop for the user, and how the step is recorded:
 
 ```
 python3 "${CLAUDE_SKILL_DIR}/scripts/next_step.py" TASK
 ```
 
 - Run it before every step (from step 1 on; before step 0 there is no `TASK`). Do the step it prints,
-  and nothing else, until that step has finished.
-- The four script steps (`make_blueprint.py`, `extract_paper.py`, `compare_solutions.py`,
-  `render.py`) record themselves when they succeed: they print "Recorded: ...". If one prints
-  "Step not recorded", show the message to the user. Every other step (the subagents', yours, the
-  user's) you record when it has finished, with the command `next_step.py` printed:
-  `python3 "${CLAUDE_SKILL_DIR}/scripts/next_step.py" TASK --done STEP_ID`. This saves the hashes of
-  the step's files in `TASK/state.json` and appends to `TASK/run.jsonl`. A step that is not recorded
-  is not done, and `next_step.py` will print it again. At an approval point, record it only after
-  the user has answered (for the blueprint and the paper: after they typed the approve command).
+  and nothing else, until that step has finished; the section of this file it names says how. Never
+  run two steps side by side: do not start a step, read ahead for it or prepare it while a script or
+  subagent from an earlier step is still running.
+- When a step has finished, report it briefly and run `next_step.py` again. Script steps that record
+  themselves print "Recorded: ..."; if one prints "Step not recorded", show the message to the user.
+  Every other step you record with the command `next_step.py` printed,
+  `python3 "${CLAUDE_SKILL_DIR}/scripts/next_step.py" TASK --done STEP_ID`. A step that is not
+  recorded is not done, and `next_step.py` will print it again. At an approval point, record it
+  only after the user has answered (for a gate: after they typed the command).
 - If `--done` prints **Not recorded**, the step has not finished (a missing file, a failing check, an
   earlier step not done): show the message to the user; do not work around it.
-- If it says **STOP**, the step is an approval point: ask the user and wait for their answer.
 - It can send you back: editing `questions.json` makes the blind paper, the comparison and the PDFs
   out of date, so those steps are next again. Follow it; do not skip a step it prints.
 - If what it prints disagrees with what you expected, tell the user; do not work around it.
@@ -122,8 +97,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/next_step.py" TASK
 
 The user provides a spec file. If they have none, point them to
 `${CLAUDE_SKILL_DIR}/schemas/paper-spec.template.json` and `${CLAUDE_SKILL_DIR}/schemas/paper-spec-format.md`,
-and ask them to supply one. Do not
-write a spec from a chat description.
+and ask them to supply one. Do not write a spec from a chat description.
 
 Make the paper's task folder:
 
@@ -149,11 +123,11 @@ is not. If `PACK/approvals.json` has no approval of it (always so for a newly co
 ```
 python3 "${CLAUDE_SKILL_DIR}/scripts/validate_concepts.py" PACK/concepts.json
 ```
-and show the user its output verbatim and, per chapter, each concept's tag, kinds and maxMarks, and
-every point in `notTested` with its reason. Ask them to type `/exam-papers:approve concepts` (with
-the pack's folder name if there are several packs), and wait. A hook validates the list and records
-the approval with the list's hash; editing the list afterwards voids it. Never write
-`approvals.json` and never treat "approved" in chat as an approval.
+and show the user its output and, per chapter, each concept's tag, kinds and maxMarks, and every
+point in `notTested` with its reason. Ask them to type `/exam-papers:approve concepts` (with the
+pack's folder name if there are several packs). The hook validates the list before recording it;
+editing the list afterwards voids the approval. Run `validate_concepts.py` at other times only when
+the user asks you to check a concept list.
 
 ### 1. Validate the spec
 
@@ -161,7 +135,7 @@ the approval with the list's hash; editing the list afterwards voids it. Never w
 python3 "${CLAUDE_SKILL_DIR}/scripts/validate_paper_spec.py" TASK/spec.json
 ```
 
-- Exit code 1, errors (`[S1]`...): show them verbatim and stop. Suggest fixes; the user decides.
+- Exit code 1, errors (`[S1]`...): show them and stop. Suggest fixes; the user decides.
 - Exit code 0: show any warnings and info, then continue.
 
 ### 2. Make the blueprint (approval point)
@@ -170,27 +144,21 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/validate_paper_spec.py" TASK/spec.json
 python3 "${CLAUDE_SKILL_DIR}/scripts/make_blueprint.py" TASK/spec.json
 ```
 
-It writes
-`TASK/blueprint.json`. Show the user, per question: number, section, chapter, concept, marks, kind
-and difficulty; the balance figures; and any `[Q14]` warnings. Then ask them to approve it by typing
-`/exam-papers:approve blueprint`, and wait. The approval holds only for the blueprint as it is when
-they type it: any change to the file afterwards voids it. If the user wants a different blueprint,
-the spec is what changes (rerun the script); never hand-edit slots.
-`make_blueprint.py` will not overwrite an approved blueprint without `--force`; do not use `--force`
-unless the user asks for it.
+It writes `TASK/blueprint.json`. Show the user, per question: number, section, chapter, concept,
+marks, kind and difficulty; the balance figures; and any `[Q14]` warnings. Then ask them to type
+`/exam-papers:approve blueprint`. The approval holds only for the blueprint as it is when they type
+it. If the user wants a different blueprint, the spec is what changes (rerun the script); never
+hand-edit slots. `make_blueprint.py` will not overwrite an approved blueprint without `--force`; do
+not use `--force` unless the user asks for it.
 
 ### 3. Draft `questions.json` (writer subagent)
 
-Start the `exam-papers:writer` subagent by its type (never paste its instructions into a
-general-purpose subagent) in **draft** mode. Its prompt gives these paths, each written out in full:
+Start the `exam-papers:writer` subagent by its type in **draft** mode. Its prompt gives these paths:
 `TASK/blueprint.json`, `TASK/spec.json`, `PACK/concepts.json`, `PACK/syllabus.md`,
 `${CLAUDE_SKILL_DIR}/schemas/question-format.md`, the script
 `${CLAUDE_SKILL_DIR}/scripts/check_questions.py`, and the output `TASK/questions.json`. The writer
 writes the questions, answers, marking and diagrams (`TASK/make_diagrams.py` and its images) and runs
 the check itself until it passes. Wait for it to finish.
-
-You never write or edit `TASK/questions.json` yourself: the writer does, in draft mode here and in
-revise mode at step 5.5.
 
 ### 4. Check
 
@@ -199,8 +167,7 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/check_questions.py" TASK/questions.json
 ```
 
 The writer ran this before handing back, so it should pass (exit code 0): show the user the warnings.
-If it fails (exit code 1), show the errors verbatim and ask the user how to go on; do not fix them
-yourself.
+If it fails (exit code 1), show the errors and ask the user how to go on; do not fix them yourself.
 
 ### 5. Review (a loop of up to 3 rounds)
 
@@ -215,22 +182,20 @@ File formats: `${CLAUDE_SKILL_DIR}/schemas/review-format.md`. Everything goes in
    python3 "${CLAUDE_SKILL_DIR}/scripts/extract_paper.py" TASK/questions.json
    ```
    This writes `TASK/review/solver-input.json`: the paper as a student sees it, with no answers.
-2. **Blind solver.** Start the `exam-papers:blind-solver` subagent by its type (its definition limits
-   its tools; never paste its instructions into a general-purpose subagent). Its prompt is only two paths: `TASK/review/solver-input.json` (its input) and
-   `TASK/review/solver-answers.json` (its output). Give it nothing else: do not paste in
-   `questions.json`, the key or any answer.
+2. **Blind solver.** Start the `exam-papers:blind-solver` subagent by its type. Its prompt is only
+   two paths: `TASK/review/solver-input.json` (its input) and `TASK/review/solver-answers.json` (its
+   output). Give it nothing else: do not paste in `questions.json`, the key or any answer.
 3. **Compare.**
    ```
    python3 "${CLAUDE_SKILL_DIR}/scripts/compare_solutions.py" TASK/questions.json TASK/review/solver-answers.json --out TASK/review/compare-output.txt
    ```
    Exit code 1 means mismatches (`[V1]`-`[V5]`), not a failure of the script. The output also lists
-   problems the solver reported (`[V6]`) and the theory parts side by side. Show it to the user
-   verbatim.
-4. **Reviewer (every round).** Start the `exam-papers:reviewer` subagent by its type (never paste
-   its instructions into a general-purpose subagent). Its prompt gives these paths, each written out
-   in full: `TASK/questions.json`, `TASK/spec.json`, `PACK/concepts.json`, `PACK/syllabus.md`,
-   `${CLAUDE_SKILL_DIR}/schemas/question-format.md`, `${CLAUDE_SKILL_DIR}/schemas/review-format.md`,
-   the script `${CLAUDE_SKILL_DIR}/scripts/render_review.py`, and the output path
+   problems the solver reported (`[V6]`) and the theory parts side by side. Show it to the user.
+4. **Reviewer (every round).** Start the `exam-papers:reviewer` subagent by its type. Its prompt
+   gives these paths: `TASK/questions.json`, `TASK/spec.json`, `PACK/concepts.json`,
+   `PACK/syllabus.md`, `${CLAUDE_SKILL_DIR}/schemas/question-format.md`,
+   `${CLAUDE_SKILL_DIR}/schemas/review-format.md`, the script
+   `${CLAUDE_SKILL_DIR}/scripts/render_review.py`, and the output path
    `TASK/review/reviewer-report.json`; also paste in the full output of step 3. From round 2 on
    (`TASK/review/rounds.json` lists the closed rounds; N is the last), it also gets
    `TASK/review/rounds/N/reviewer-report.json` (its previous report),
@@ -245,8 +210,8 @@ File formats: `${CLAUDE_SKILL_DIR}/schemas/review-format.md`. Everything goes in
    ```
    python3 "${CLAUDE_SKILL_DIR}/scripts/render_review.py" TASK/review/reviewer-report.json --print
    ```
-   and show that output to the user verbatim, then send them `TASK/review/reviewer-report.html`.
-   Exit code 1 means the reviewer's file breaks the format: tell the user, and do not fix it yourself.
+   and show that output to the user, then send them `TASK/review/reviewer-report.html`. Exit code 1
+   means the reviewer's file breaks the format: tell the user, and do not fix it yourself.
 5. **Close the round.**
    ```
    python3 "${CLAUDE_SKILL_DIR}/scripts/review_status.py" TASK --close-round
@@ -257,26 +222,24 @@ File formats: `${CLAUDE_SKILL_DIR}/schemas/review-format.md`. Everything goes in
 6. **Decide (approval point, only when the summary lists something under "Teacher to decide" or
    "Disputes").** Errors are not asked about: the writer fixes them. Show each listed warning and
    suggestion. A dispute is a finding the writer disagreed with that the reviewer kept open, or any
-   finding still open after round 3: show the reviewer's finding and the
-   writer's response side by side; `accept` gives the writer one more round (ask for the user's
-   instruction), `reject` leaves the paper as it is (to fix it themselves, the user edits
-   `questions.json` and rejects it). Then ask the user to type their decision, covering every listed
-   finding at once, for example
-   `/exam-papers:decide accept R2 R4 reject R5`, and wait. A hook checks it and records it in
-   `TASK/review/decisions.json`; never write that file yourself (a hook blocks it), and never treat a
-   decision given in chat as recorded. Reasons and instructions stay in chat: pass the instructions
-   to the writer. Only `R` IDs: the reviewer has turned every solver mismatch into a finding or listed
-   it as dismissed; if the user disagrees with a dismissal, say so and ask how to proceed. A rejected
-   finding stays closed for good; an accepted one is fixed by the writer like an error. The user may
-   also reject an open error they think the reviewer got wrong (`/exam-papers:decide reject R1`),
-   even while the writer is due to fix it.
+   finding still open after round 3: show the reviewer's finding and the writer's response side by
+   side; `accept` gives the writer one more round (ask for the user's instruction), `reject` leaves
+   the paper as it is (to fix it themselves, the user edits `questions.json` and rejects it). Then
+   ask the user to type their decision, covering every listed finding at once, for example
+   `/exam-papers:decide accept R2 R4 reject R5`. Reasons and instructions stay in chat: pass the
+   instructions to the writer. Only `R` IDs: the reviewer has turned every solver mismatch into a
+   finding or listed it as dismissed; if the user disagrees with a dismissal, say so and ask how to
+   proceed. A rejected finding stays closed for good; an accepted one is fixed by the writer like an
+   error. The user may also reject an open error they think the reviewer got wrong
+   (`/exam-papers:decide reject R1`), even while the writer is due to fix it.
 7. **Revise (writer, no approval needed).** When the summary lists IDs under "Writer to address" or
    "Writer to revert", start the `exam-papers:writer` subagent by its type in **revise** mode. Its
    prompt gives those IDs (for each one to revert, the before and after text from
-   `review_status.py TASK --fixes`), any instruction the user gave, and these paths in full: `TASK/questions.json`,
-   `TASK/review/reviewer-report.json`, `TASK/blueprint.json`, `TASK/spec.json`,
-   `PACK/concepts.json`, `PACK/syllabus.md`, `${CLAUDE_SKILL_DIR}/schemas/question-format.md`, the
-   script `${CLAUDE_SKILL_DIR}/scripts/check_questions.py`, and the output
+   `review_status.py TASK --fixes`), any instruction the user gave, and these paths:
+   `TASK/questions.json`, `TASK/review/reviewer-report.json`, `TASK/blueprint.json`,
+   `TASK/spec.json`, `PACK/concepts.json`, `PACK/syllabus.md`,
+   `${CLAUDE_SKILL_DIR}/schemas/question-format.md`, the script
+   `${CLAUDE_SKILL_DIR}/scripts/check_questions.py`, and the output
    `TASK/review/writer-response.json`. Never give the writer the comparison output or the solver's
    answers. When it has finished, show the user `TASK/review/writer-response.json` and carry on
    without waiting: the next round starts (the user can interrupt at any time).
@@ -285,14 +248,13 @@ File formats: `${CLAUDE_SKILL_DIR}/schemas/review-format.md`. Everything goes in
    ```
    python3 "${CLAUDE_SKILL_DIR}/scripts/review_status.py" TASK --fixes
    ```
-   Show its output verbatim: each change is labelled AUTOMATIC (an error fixed without asking),
-   ACCEPTED BY YOU or UNDONE BY YOU, with the reviewer's verdict and the text before and after, and
-   it lists any change no writer response accounts for. Ask the user to type
-   `/exam-papers:approve paper`, and wait. To undo a fix instead, the user types
-   `/exam-papers:decide reject ID`: the finding is closed for good, the writer restores the text
-   (step 7), and a new round reviews the result. Any later change to `TASK/questions.json` voids this
-   approval and starts a new review round; the 3-round cap still applies, so anything the reviewer
-   flags in it comes to the user as a dispute.
+   Show its output: each change is labelled AUTOMATIC (an error fixed without asking), ACCEPTED BY
+   YOU or UNDONE BY YOU, with the reviewer's verdict and the text before and after, and it lists any
+   change no writer response accounts for. Ask the user to type `/exam-papers:approve paper`. To undo
+   a fix instead, the user types `/exam-papers:decide reject ID`: the finding is closed for good, the
+   writer restores the text (step 7), and a new round reviews the result. Any later change to
+   `TASK/questions.json` voids this approval and starts a new review round; the 3-round cap still
+   applies, so anything the reviewer flags in it comes to the user as a dispute.
 
 A mismatch is not proof that the key is wrong: the solver may be wrong, or the question unclear.
 The reviewer works out which; if the user doubts its call, discuss it with them.

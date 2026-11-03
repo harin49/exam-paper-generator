@@ -17,7 +17,6 @@
       "by": "script",
       "waitsForUser": false,
       "run": "python3 \"${CLAUDE_SKILL_DIR}/scripts/validate_paper_spec.py\" TASK/spec.json",
-      "note": "If it fails, show the errors verbatim and stop; the user decides how to fix the spec.",
       "done": {"passes": "scripts/validate_paper_spec.py", "args": ["spec.json"]}
     },
     {
@@ -27,7 +26,6 @@
       "by": "script",
       "waitsForUser": false,
       "run": "python3 \"${CLAUDE_SKILL_DIR}/scripts/make_blueprint.py\" TASK/spec.json",
-      "note": "It reads the concept list of the pack the spec names (syllabi/<exam.syllabusPack>/concepts.json). If the spec changed after the blueprint was made, the blueprint is out of date.",
       "recordsItself": true,
       "inputs": ["spec.json"],
       "outputs": ["blueprint.json"],
@@ -39,7 +37,7 @@
       "title": "Show the blueprint and get the user's approval",
       "by": "user",
       "waitsForUser": true,
-      "run": "Show the blueprint as SKILL.md step 2 says, then ask the user to type /exam-papers:approve blueprint, and wait. Never write approvals.json or change TASK/blueprint.json yourself.",
+      "run": "Show TASK/blueprint.json as SKILL.md step 2 says, and ask the user to type /exam-papers:approve blueprint. Wait.",
       "done": {"approved": "blueprint"}
     },
     {
@@ -48,7 +46,7 @@
       "title": "Draft questions.json and its diagrams",
       "by": "subagent",
       "waitsForUser": false,
-      "run": "Start the exam-papers:writer subagent by its type (the plugin's agents/writer.md; never pasted into a general-purpose subagent) in draft mode, with the paths SKILL.md step 3 lists. It writes TASK/questions.json (and TASK/make_diagrams.py with its images) and runs the check itself. Wait for it to finish. Never write or edit questions.json yourself.",
+      "run": "Start the exam-papers:writer subagent by its type in draft mode, with the paths SKILL.md step 3 lists. Wait for it to finish.",
       "done": {"exists": "questions.json"}
     },
     {
@@ -58,7 +56,6 @@
       "by": "script",
       "waitsForUser": false,
       "run": "python3 \"${CLAUDE_SKILL_DIR}/scripts/check_questions.py\" TASK/questions.json",
-      "note": "The writer ran this before handing back, so it should pass. If it fails, show the errors verbatim and ask the user; do not fix them yourself.",
       "done": {"passes": "scripts/check_questions.py", "args": ["questions.json"]}
     },
     {
@@ -79,7 +76,7 @@
       "title": "Blind solver",
       "by": "subagent",
       "waitsForUser": false,
-      "run": "Start the exam-papers:blind-solver subagent by its type (the plugin's agents/blind-solver.md; never pasted into a general-purpose subagent) with only two paths: input TASK/review/solver-input.json and output TASK/review/solver-answers.json. Wait for it to finish.",
+      "run": "Start the exam-papers:blind-solver subagent by its type with only two paths: input TASK/review/solver-input.json and output TASK/review/solver-answers.json. Wait for it to finish.",
       "inputs": ["review/solver-input.json"],
       "outputs": ["review/solver-answers.json"],
       "done": {"recorded": ["review/solver-input.json"]}
@@ -91,7 +88,7 @@
       "by": "script",
       "waitsForUser": false,
       "run": "python3 \"${CLAUDE_SKILL_DIR}/scripts/compare_solutions.py\" TASK/questions.json TASK/review/solver-answers.json --out TASK/review/compare-output.txt",
-      "note": "Exit code 1 means mismatches, not a failure. Show the output verbatim.",
+      "note": "Exit code 1 means mismatches, not a failure.",
       "recordsItself": true,
       "inputs": ["review/solver-answers.json", "questions.json"],
       "outputs": ["review/compare-output.txt"],
@@ -103,8 +100,7 @@
       "title": "Reviewer subagent checks the paper",
       "by": "subagent",
       "waitsForUser": false,
-      "run": "Start the exam-papers:reviewer subagent by its type (the plugin's agents/reviewer.md; never pasted into a general-purpose subagent) with the paths SKILL.md step 5.4 lists (from round 2 on, also the previous round's report, the writer's responses, decisions.json if there is one and the output of review_status.py TASK --changes); output TASK/review/reviewer-report.json (it makes TASK/review/reviewer-report.html). Wait for it to finish, then print the findings with python3 \"${CLAUDE_SKILL_DIR}/scripts/render_review.py\" TASK/review/reviewer-report.json --print, show them verbatim and send the user the HTML report.",
-      "note": "The reviewer runs every round. In rounds 2 and 3 it re-checks its earlier findings and reviews only what changed.",
+      "run": "Start the exam-papers:reviewer subagent by its type with the paths SKILL.md step 5.4 lists (more from round 2 on). Wait for it to finish, then show the output of python3 \"${CLAUDE_SKILL_DIR}/scripts/render_review.py\" TASK/review/reviewer-report.json --print and send the user TASK/review/reviewer-report.html.",
       "inputs": ["review/compare-output.txt", "questions.json", "review/writer-response.json"],
       "outputs": ["review/reviewer-report.json", "review/reviewer-report.html"],
       "done": {"recorded": ["review/compare-output.txt", "questions.json", "review/writer-response.json"]}
@@ -116,7 +112,7 @@
       "by": "script",
       "waitsForUser": false,
       "run": "python3 \"${CLAUDE_SKILL_DIR}/scripts/review_status.py\" TASK --close-round",
-      "note": "Exit code 1: the report drops an earlier finding or changes a severity without a note. Show the message and start the reviewer again with it; do not edit the report yourself.",
+      "note": "Exit code 1 means the reviewer must fix its report: start it again with the message.",
       "done": {"passes": "scripts/review_status.py", "args": ["."], "flags": ["--not", "close"],
                "reads": ["review/reviewer-report.json", "questions.json", "review/writer-response.json"]}
     },
@@ -126,7 +122,7 @@
       "title": "The user decides on the open findings",
       "by": "user",
       "waitsForUser": true,
-      "run": "Run python3 \"${CLAUDE_SKILL_DIR}/scripts/review_status.py\" TASK and show it verbatim, with the findings it lists under 'Teacher to decide' and 'Disputes' (SKILL.md step 5.6). Ask the user to type /exam-papers:decide accept ... reject ... covering each of them, and wait. Never write decisions.json yourself.",
+      "run": "Show python3 \"${CLAUDE_SKILL_DIR}/scripts/review_status.py\" TASK and the findings it lists under 'Teacher to decide' and 'Disputes' (SKILL.md step 5.6), and ask the user to type /exam-papers:decide accept ... reject ... covering each of them. Wait.",
       "done": {"passes": "scripts/review_status.py", "args": ["."], "flags": ["--not", "decide"]}
     },
     {
@@ -135,7 +131,7 @@
       "title": "The writer addresses the findings",
       "by": "subagent",
       "waitsForUser": false,
-      "run": "Run python3 \"${CLAUDE_SKILL_DIR}/scripts/review_status.py\" TASK and show it. Start the exam-papers:writer subagent by its type in revise mode, with the IDs under 'Writer to address', the IDs under 'Writer to revert' with their before and after text from review_status.py TASK --fixes, the user's instructions, and the paths SKILL.md step 5.7 lists. Wait for it to finish, then show the user TASK/review/writer-response.json and carry on without waiting. next_step.py then sends the paper through the next review round.",
+      "run": "Start the exam-papers:writer subagent by its type in revise mode, with the IDs python3 \"${CLAUDE_SKILL_DIR}/scripts/review_status.py\" TASK lists under 'Writer to address' and 'Writer to revert' and the rest SKILL.md step 5.7 lists. Wait for it to finish, show the user TASK/review/writer-response.json, and carry on without waiting.",
       "inputs": ["review/reviewer-report.json", "review/decisions.json", "review/rounds.json"],
       "outputs": ["questions.json", "review/writer-response.json"],
       "done": {"any": [
@@ -149,7 +145,7 @@
       "title": "Approve the final paper",
       "by": "user",
       "waitsForUser": true,
-      "run": "Show the final paper and the output of python3 \"${CLAUDE_SKILL_DIR}/scripts/review_status.py\" TASK --fixes (verbatim) as SKILL.md step 5.8 says, then ask the user to type /exam-papers:approve paper, or /exam-papers:decide reject ID to undo a fix, and wait. Never write approvals.json.",
+      "run": "Show the finished paper and the output of python3 \"${CLAUDE_SKILL_DIR}/scripts/review_status.py\" TASK --fixes (SKILL.md step 5.8), and ask the user to type /exam-papers:approve paper, or /exam-papers:decide reject ID to undo a fix. Wait.",
       "done": {"approved": "paper"}
     },
     {
@@ -159,7 +155,6 @@
       "by": "script",
       "waitsForUser": false,
       "run": "python3 \"${CLAUDE_SKILL_DIR}/scripts/render.py\" TASK/questions.json",
-      "note": "Open both PDFs and look at them before delivering.",
       "recordsItself": true,
       "inputs": ["questions.json"],
       "outputs": ["{paper_pdf}", "{key_pdf}"],

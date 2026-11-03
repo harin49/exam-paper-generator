@@ -40,32 +40,19 @@ To make a paper, give Claude your `spec.json` (format and template in the make-p
 
 ## Workflow
 
-The steps run one at a time, in the order listed in the skill's `workflow.json`. Its
-`scripts/next_step.py TASK` checks the paper's task folder and prints the one step that may run next
-(approval points say STOP); `SKILL.md` has Claude run it before every step. When a step finishes,
-`next_step.py TASK --done STEP_ID` records the hashes of its files in `TASK/state.json` and appends to
-`TASK/run.jsonl`; a step is done while its inputs are unchanged, so copying a folder or re-saving a
-file does not change where the paper is. At the two approval points you type
-`/exam-papers:approve blueprint` and `/exam-papers:approve paper`; a hook records each one, with the
-file's hash, in `TASK/approvals.json`, and editing an approved file voids its approval.
+In short: the spec is checked, a script plans every question slot (the **blueprint**, which you
+approve), the writer subagent words the questions, scripts check them, and a review loop of up to 3
+rounds runs (a blind solver, a comparison with the key, a reviewer; errors are fixed without asking,
+and you decide warnings, suggestions and disputes). You approve the final paper, and a script builds
+the two PDFs.
 
-1. **Paper spec**: the user supplies `spec.json`; `validate_paper_spec.py` checks it (rules S1–S20).
-2. **Blueprint**: `make_blueprint.py` builds `blueprint.json` from the spec and the approved concept
-   list: one slot per question part (chapter, marks, kind, difficulty, concept, MCQ answer letter). It
-   first checks the concept list against its syllabus (`validate_concepts.py`, rules C1–C6). The user
-   approves the blueprint.
-3. **Draft**: the writer subagent writes `questions.json` from the approved blueprint (wording only).
-4. **Check**: `check_questions.py` runs hard rules (block) and soft rules (warn), Q1–Q16.
-5. **Review**: `extract_paper.py` writes the paper without answers; the `exam-papers:blind-solver`
-   agent solves it; `compare_solutions.py` compares its answers with the key (rules V1–V6); the
-   `exam-papers:reviewer` agent writes its findings as JSON and runs `render_review.py`, which makes
-   an HTML report. Reports are shown verbatim.
-6. **Fix (loop)**: `review_status.py` closes each round and says what is next. The writer fixes open
-   errors without asking; the teacher decides warnings and suggestions by typing
-   `/exam-papers:decide accept … reject …`; after round 3, anything still
-   open comes to the teacher as a dispute. Each revision goes through steps 4–5 again.
-7. **Build**: `render.py questions.json` renders the question paper and the answer key into the task
-   folder. It runs `check_questions.py` first and refuses to build if a hard rule fails.
+The steps run one at a time. Their order, and when each is done, is in the make-paper skill's
+`workflow.json`; how Claude does each one is in its `SKILL.md`. Before every step Claude runs
+`next_step.py TASK`, which checks the task folder and prints the one step that may run next. Finished
+steps are recorded by content hash in `TASK/state.json` (and logged in `TASK/run.jsonl`), so copying
+a folder or re-saving a file does not change where a paper is. You approve and decide by typing
+`/exam-papers:approve concepts|blueprint|paper` and `/exam-papers:decide accept … reject …`; a hook
+records each with the file's hash, and editing an approved file voids its approval.
 
 ## Development
 

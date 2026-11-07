@@ -59,13 +59,14 @@ Each section:
 | `mcqOptions` | whole number | MCQ sections only: options per question. | Each MCQ has exactly this many options, labelled (a), (b)... (Q4). |
 | `subParts` | `"none"`, `"allowed"` or `"required"` | Whether questions are split into parts (a), (b)... | How the blueprint splits each question's marks; checked by Q5. |
 | `minSubParts`, `maxSubParts` | whole number, optional | Limits on the number of parts. | If left out, the minimum is 2 when `subParts` is `"required"` (S18 warns) and 1 when `"allowed"`; the maximum is `marksPerQuestion` ÷ `smallestMarkUnit`, which in practice means no limit. |
+| `difficulty` | object | `target`: `{"easy": %, "medium": %, "hard": %}`; `tolerancePercent`. The mix of levels in this section. | The blueprint gives each part in the section a level to meet the target on the section's marks offered; Q13 warns if the section misses it. A level at **0%** is banned in this section outright: any part at that level is an error (Q9), not a warning. Other sections may still use it. |
+
 ## `content`: rules for the questions
 
 | Field | Type | Meaning | Used for |
 |---|---|---|---|
 | `chapterWeightage` | object | `mode`: `"equal"`, or `"custom"` with `weights` (chapter number → percentage); `toleranceMarks`: allowed gap from each chapter's target. | The blueprint gives chapters to questions to stay within the tolerance; S19 warns if no split can; Q11 warns if the paper misses it. |
 | `numericalTheorySplit` | object | `target`: `[numerical %, theory %]`; `tolerancePercent`. | The blueprint marks each part numerical or theory to meet the target; Q12 warns if the paper misses it. |
-| `difficulty` | object | `target`: `{"easy": %, "medium": %, "hard": %}`; `tolerancePercent`. | The blueprint gives each part a level to meet the target; Q13 warns if the paper misses it. A level at **0%** is banned outright: any part at that level is an error (Q9), not a warning. |
 | `everyChapterInCompulsorySection` | true/false | Every chapter has at least one question that every student must answer. | The blueprint places one compulsory question per chapter first; S14 checks there is room; Q10 is an error if it is missed. |
 | `diagrams` | `"none"`, `"only_if_essential"` or `"allowed"` | | An instruction to the writer, which the reviewer checks. No script enforces it. |
 | `showChapterNames` | true/false | Whether chapter names are printed next to questions. | If true, the paper prints "Unit N: title" above each question. The key always shows each question's unit and concepts. |
@@ -92,11 +93,19 @@ offered: 15 + 21 + 40):
   20.2 per chapter.
 - **Numerical/theory:** `[50, 50]` with `tolerancePercent: 5` allows 45–55% numerical, which is 34.2
   to 41.8 marks.
-- **Difficulty:** easy 50, medium 50, hard 0 with `tolerancePercent: 10` allows 40–60% easy and
-  40–60% medium, and no hard part at all.
+- **Difficulty** is set per section and measured on that section's marks offered. Section A (15
+  marks) at easy 60, medium 40, hard 0, ±10% allows 7.5–10.5 easy marks and no hard question.
+  Section C (40 marks) at easy 20, medium 50, hard 30, ±15% allows 6–18 hard marks (15–45%). The three
+  sections add up to a paper mix of easy 33.4%, medium 50.8%, hard 15.8%.
 
-The validator prints each chapter's target and an example split that meets the tolerance, so a
-pattern that cannot balance shows up (S19) before any questions are written.
+A small section is coarse: one part changing level moves its mix by that part's share of the section
+(a 3-mark part in a 40-mark section is 7.5%), so give it a wider tolerance than a large one. In a
+section with no parts every question has one level, so its target must be reachable in whole
+questions (S21).
+
+The validator prints each chapter's target, an example split that meets the tolerance, and the
+paper's difficulty mix, so a pattern that cannot balance shows up (S19, S21) before any questions
+are written.
 
 ## `output`: what is produced
 
@@ -120,25 +129,28 @@ What `answerKey.include` changes:
 A section with no choice: make `questionsToAttempt` equal to `questionsOffered`. Its total is then
 the whole section, and it counts as compulsory for `everyChapterInCompulsorySection`.
 
+A section with no choice, all easy recall: 10 questions, so each is 10% of the section.
+
 ```json
 { "id": "A", "type": "mcq", "questionsOffered": 10, "questionsToAttempt": 10,
-  "marksPerQuestion": 1, "sectionTotal": 10, "mcqOptions": 4, "subParts": "none" }
+  "marksPerQuestion": 1, "sectionTotal": 10, "mcqOptions": 4, "subParts": "none",
+  "difficulty": { "target": { "easy": 100, "medium": 0, "hard": 0 }, "tolerancePercent": 0 } }
 ```
 
-A section with choice, where every question has 2 to 4 parts: 6 printed, any 4 answered, 5 marks
-each, so the section is worth 20 to a student and offers 30.
+A section with choice, where every question has 2 to 4 parts and some are hard: 6 printed, any 4
+answered, 5 marks each, so the section is worth 20 to a student and offers 30.
 
 ```json
 { "id": "B", "type": "long_answer", "questionsOffered": 6, "questionsToAttempt": 4,
   "marksPerQuestion": 5, "sectionTotal": 20, "subParts": "required",
-  "minSubParts": 2, "maxSubParts": 4 }
+  "minSubParts": 2, "maxSubParts": 4,
+  "difficulty": { "target": { "easy": 30, "medium": 40, "hard": 30 }, "tolerancePercent": 15 } }
 ```
 
-An easier paper with no hard questions and more theory:
+A paper with more theory:
 
 ```json
-"numericalTheorySplit": { "target": [30, 70], "tolerancePercent": 10 },
-"difficulty": { "target": { "easy": 70, "medium": 30, "hard": 0 }, "tolerancePercent": 10 }
+"numericalTheorySplit": { "target": [30, 70], "tolerancePercent": 10 }
 ```
 
 ## Rules checked by `validate_paper_spec.py`
@@ -160,8 +172,8 @@ Every message starts with its rule number, e.g. `[S6] pattern.sections[B]: secti
 - **S10.** Sub-part limits are at least 2, the minimum is not above the maximum, they are not set
   when `subParts` is `"none"`, and a question's marks can be split into the minimum number of parts
   of at least `smallestMarkUnit` each.
-- **S11.** Each percentage target adds up to 100; the difficulty target has exactly `easy`,
-  `medium` and `hard`; the numerical/theory target has exactly two values; tolerances are 0–100.
+- **S11.** Each percentage target adds up to 100; every section has a difficulty target with exactly
+  `easy`, `medium` and `hard`; the numerical/theory target has exactly two values; tolerances are 0–100.
 - **S12.** Custom chapter weights cover every chapter in `exam.chapters`, no others, and add up to 100.
 - **S14.** If `everyChapterInCompulsorySection` is true, there is a compulsory section and it has at
   least one question per chapter.
@@ -175,6 +187,9 @@ Every message starts with its rule number, e.g. `[S6] pattern.sections[B]: secti
 - **S17.** A field is set but ignored (`mcqOptions` on a non-MCQ section, `weights` with `"equal"`).
 - **S18.** `subParts` is `"required"` without `minSubParts`; 2 is assumed.
 - **S19.** Even the best possible chapter split is further from target than `toleranceMarks`.
+- **S21.** A section with `subParts` `"none"` cannot meet its difficulty target within its tolerance
+  in whole questions (each question has one level).
 
-The validator also reports, as information: marks offered versus attempted, each chapter's target,
-and an example chapter split that meets the tolerance.
+The validator also reports, as information: marks offered versus attempted, the paper's difficulty
+mix that the section targets add up to, each chapter's target, and an example chapter split that
+meets the tolerance.

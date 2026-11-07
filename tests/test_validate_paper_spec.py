@@ -86,8 +86,23 @@ class BrokenSpecs(unittest.TestCase):
         self.spec["content"]["numericalTheorySplit"]["target"] = [60, 50]
         self.assertIn("must add up to 100", self.errors())
 
+    def test_section_difficulty_required(self):
+        del self.sec("B")["difficulty"]
+        self.assertIn("pattern.sections[B].difficulty: is required", self.errors())
+
+    def test_whole_questions_cannot_meet_target(self):
+        self.sec("A")["difficulty"] = {"target": {"easy": 45, "medium": 55, "hard": 0}, "tolerancePercent": 0}
+        w = v.validate(self.spec).warnings
+        self.assertIn("[S21] pattern.sections[A].difficulty: 6 whole questions cannot meet this target "
+                      "within ±0%: each question has one level and is 16.7% of the section", w)
+
+    def test_paper_difficulty_mix_reported(self):
+        self.sec("C")["difficulty"]["target"] = {"easy": 0, "medium": 50, "hard": 50}
+        info = " | ".join(v.validate(self.spec).info)
+        self.assertIn("Paper difficulty mix from the section targets: easy 22.5%, medium 52.5%, hard 25.0%", info)
+
     def test_difficulty_keys(self):
-        self.spec["content"]["difficulty"]["target"] = {"easy": 50, "medium": 50}
+        self.sec("A")["difficulty"]["target"] = {"easy": 50, "medium": 50}
         self.assertIn("must have exactly the keys", self.errors())
 
     def test_too_few_compulsory_questions(self):

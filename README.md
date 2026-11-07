@@ -126,12 +126,13 @@ requirements.txt, requirements-dev.txt
 - Sections are a list; each has `questionsOffered`, `questionsToAttempt`,
   `marksPerQuestion` and `sectionTotal` (kept on purpose as a cross-check).
 - Balance rules (chapters, numerical/theory, difficulty) are **soft**, with tolerances set in the
-  spec (the template uses chapter weightage ±5 marks, numerical/theory ±5%, difficulty ±10%).
+  spec (the template uses chapter weightage ±5 marks, numerical/theory ±5%, and per-section
+  difficulty ±10% for Section A and ±15% for B and C).
 - Balance is measured on marks **offered**, not attempted.
 - A spec can require every chapter to appear in the compulsory section
   (`everyChapterInCompulsorySection`, on in the template).
-- Totals, sub-part sums, question counts, constants and difficulty levels the spec excludes (0%, e.g.
-  no hard questions) are **hard** rules.
+- Totals, sub-part sums, question counts, constants and difficulty levels a section excludes (0%,
+  e.g. no hard questions in Section A) are **hard** rules.
 - Questions: text markup is HTML-style (`<sup>`, `<sub>`, `<b>`, `<i>`), with LaTeX for maths that
   needs layout; every numerical answer has a `computed` expression that a script evaluates; concept
   tags come from a fixed list per syllabus unit; numerical/theory and difficulty are tagged per part
@@ -139,7 +140,9 @@ requirements.txt, requirements-dev.txt
 - Pipeline: `spec.json` (user-supplied, checked by script) → `blueprint.json` (script,
   approved by user) → `questions.json` (writer subagent, checked by script and reviewers) → PDFs
   (script).
-- The template's difficulty target is easy 50, medium 50, hard 0, ±10%.
+- Difficulty is set per section (D22). The template has Section A at easy 60, medium 40, hard 0;
+  B at easy 40, medium 60, hard 0; C at easy 20, medium 50, hard 30, which comes to easy 33.4%,
+  medium 50.8%, hard 15.8% over the paper.
 - Determinism: code decides structure (blueprint, marks, concepts, arithmetic); Claude writes the wording.
 - The concept list is drafted once from the syllabus, checked for coverage, approved by a teacher and
   then frozen. Each concept records its syllabus `source`, the `kinds` it supports (encoding syllabus

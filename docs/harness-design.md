@@ -431,6 +431,22 @@ kept it open. Three changes:
 paragraph (Physics: 53 points, 6 not tested), finer than the old sections (22). The ids carry no
 meaning, so gate 1 shows each one beside its text.
 
+### D22. Difficulty is set per section
+
+- Each section has its own `difficulty` (`target` and `tolerancePercent`); there is no paper-wide
+  target. The blueprint assigns levels within each section against that section's marks offered.
+  Q9 bans a 0% level in that section only, and Q13 warns per section. The paper's mix is worked out
+  from the sections and printed as information by the validator, the blueprint and the checker.
+- A paper default with optional section overrides was considered and dropped: the paper-wide field
+  would no longer mean the paper's mix, and a section's target would be in one of two places.
+- A small section is coarse (one part changing level moves its mix by that part's share), so its
+  tolerance should be wider; S21 warns when a section with no parts cannot meet its target in whole
+  questions. The numerical/theory split stays paper-wide for now.
+
+*Why:* with one paper-wide target, every section came out with about the same mix (the example
+paper: A 47% easy, B 52%, C 50%), so a teacher could not ask for easy recall in Section A and the
+hard questions in Section C.
+
 ### D14. State is a hash ledger plus a run log
 
 - `state.json` in each task folder records every finished step with the SHA-256 hashes of its inputs

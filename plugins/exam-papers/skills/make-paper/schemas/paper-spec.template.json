@@ -19,7 +19,8 @@
         "marksPerQuestion": 1,
         "sectionTotal": 15,
         "mcqOptions": 4,
-        "subParts": "none"
+        "subParts": "none",
+        "difficulty": { "target": { "easy": 60, "medium": 40, "hard": 0 }, "tolerancePercent": 10 }
       },
       {
         "id": "B",
@@ -29,7 +30,8 @@
         "marksPerQuestion": 3,
         "sectionTotal": 15,
         "subParts": "allowed",
-        "maxSubParts": 3
+        "maxSubParts": 3,
+        "difficulty": { "target": { "easy": 40, "medium": 60, "hard": 0 }, "tolerancePercent": 15 }
       },
       {
         "id": "C",
@@ -39,7 +41,8 @@
         "marksPerQuestion": 10,
         "sectionTotal": 30,
         "subParts": "required",
-        "minSubParts": 3
+        "minSubParts": 3,
+        "difficulty": { "target": { "easy": 20, "medium": 50, "hard": 30 }, "tolerancePercent": 15 }
       }
     ],
     "numbering": "per_section",
@@ -48,7 +51,6 @@
   "content": {
     "chapterWeightage": { "mode": "equal", "toleranceMarks": 5 },
     "numericalTheorySplit": { "target": [50, 50], "tolerancePercent": 5 },
-    "difficulty": { "target": { "easy": 50, "medium": 50, "hard": 0 }, "tolerancePercent": 10 },
     "everyChapterInCompulsorySection": true,
     "diagrams": "only_if_essential",
     "showChapterNames": false,

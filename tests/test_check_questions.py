@@ -542,26 +542,36 @@ class ConceptsQ8(WithSpec):
 
 
 class DifficultyQ9(WithSpec):
+    def sec(self, sid):
+        return next(s for s in self.spec["pattern"]["sections"] if s["id"] == sid)
+
     def test_hard_part_rejected(self):
         q(self.qdoc, 11)["parts"][2]["difficulty"] = "hard"
-        self.assertIn("[Q9] Q11(c): is hard, but the spec's difficulty target for hard is 0%", self.errors())
+        self.assertIn("[Q9] Q11(c): is hard, but section C's difficulty target for hard is 0%", self.errors())
 
     def test_hard_mcq_rejected(self):
         q(self.qdoc, 5)["difficulty"] = "hard"
-        self.assertIn("[Q9] Q5: is hard, but the spec's difficulty target for hard is 0%", self.errors())
+        self.assertIn("[Q9] Q5: is hard, but section A's difficulty target for hard is 0%", self.errors())
 
     def test_hard_subpart_rejected(self):
         q(self.qdoc, 12)["parts"][0]["parts"][0]["difficulty"] = "hard"
         self.assertIn("[Q9] Q12(a)(i): is hard", self.errors())
 
     def test_hard_allowed_when_target_above_zero(self):
-        self.spec["content"]["difficulty"]["target"] = {"easy": 40, "medium": 40, "hard": 20}
+        self.sec("C")["difficulty"]["target"] = {"easy": 40, "medium": 40, "hard": 20}
         q(self.qdoc, 11)["parts"][2]["difficulty"] = "hard"
         self.assertEqual([e for e in self.result().errors if "[Q9]" in e], [])
 
+    def test_hard_allowed_in_one_section_only(self):
+        self.sec("C")["difficulty"]["target"] = {"easy": 40, "medium": 40, "hard": 20}
+        q(self.qdoc, 11)["parts"][2]["difficulty"] = "hard"
+        q(self.qdoc, 5)["difficulty"] = "hard"
+        q9 = [e for e in self.result().errors if "[Q9]" in e]
+        self.assertEqual(q9, ["[Q9] Q5: is hard, but section A's difficulty target for hard is 0%"])
+
     def test_any_zero_level_is_excluded(self):
-        self.spec["content"]["difficulty"]["target"] = {"easy": 0, "medium": 100, "hard": 0}
-        self.assertIn("[Q9] Q2: is easy, but the spec's difficulty target for easy is 0%", self.errors())
+        self.sec("A")["difficulty"]["target"] = {"easy": 0, "medium": 100, "hard": 0}
+        self.assertIn("[Q9] Q2: is easy, but section A's difficulty target for easy is 0%", self.errors())
 
 
 class CompulsoryCoverageQ10(WithSpec):
@@ -616,15 +626,24 @@ class BalanceQ11toQ14(WithSpec):
         self.spec["content"]["numericalTheorySplit"]["target"] = [70, 30]
         self.assertIn("numerical is 47.2% of marks offered, outside the target 70% ± 5", self.warnings("Q12")[0])
 
+    def sec(self, sid):
+        return next(s for s in self.spec["pattern"]["sections"] if s["id"] == sid)
+
     def test_difficulty_within_new_target(self):
-        self.spec["content"]["difficulty"]["target"] = {"easy": 55, "medium": 45, "hard": 0}
+        self.sec("C")["difficulty"]["target"] = {"easy": 55, "medium": 45, "hard": 0}
         self.assertEqual(self.warnings("Q13"), [])
 
     def test_difficulty_outside_new_target(self):
-        self.spec["content"]["difficulty"]["target"] = {"easy": 70, "medium": 30, "hard": 0}
+        self.sec("C")["difficulty"]["target"] = {"easy": 70, "medium": 30, "hard": 0}
         w = self.warnings("Q13")
         self.assertEqual(len(w), 1)
-        self.assertIn("easy is 50.0% (target 70%); medium is 50.0% (target 30%)", w[0])
+        self.assertIn("[Q13] section C difficulty: outside the tolerance of ±10%: "
+                      "easy is 55.6% (target 70%); medium is 44.4% (target 30%)", w[0])
+
+    def test_difficulty_info_per_section_and_paper(self):
+        info = " | ".join(self.result().info)
+        self.assertIn("Difficulty, whole paper: easy 50.0%, medium 50.0%, hard 0.0%", info)
+        self.assertIn("Difficulty, section A: easy 33.3% (target 35%), medium 66.7% (target 65%)", info)
 
     def test_shared_concept_message(self):
         w = " | ".join(self.warnings("Q14"))

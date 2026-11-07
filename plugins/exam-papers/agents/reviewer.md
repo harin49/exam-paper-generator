@@ -15,7 +15,7 @@ concept tags. You look for what they cannot. You do **not** fix anything: you re
 The prompt gives you paths to:
 
 - `questions.json`: the paper with its answer key, marking scheme and explanations;
-- `spec.json`: the paper's pattern and content rules (constants, difficulty target, diagrams);
+- `spec.json`: the paper's pattern and content rules (constants, each section's difficulty target, diagrams);
 - the syllabus pack's concept list (`concepts.json`) and numbered syllabus (`syllabus.md`);
 - the output of `compare_solutions.py`: where an independent blind solver disagreed with the key,
   the problems it reported, and its answers to the theory parts beside the key's.

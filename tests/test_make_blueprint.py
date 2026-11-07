@@ -56,7 +56,18 @@ class Blueprint(unittest.TestCase):
         _, r = self.build()
         info = " | ".join(r.info)
         self.assertIn("Numerical/theory: 50.0% / 50.0%", info)
-        self.assertIn("easy 50.0% (target 50%), medium 50.0% (target 50%)", info)
+        # 15 and 21 marks cannot split 50/50, so A and B come as close as one mark allows
+        self.assertIn("Difficulty, section A: easy 53.3% (target 50%), medium 46.7% (target 50%)", info)
+        self.assertIn("Difficulty, section B: easy 52.4% (target 50%), medium 47.6% (target 50%)", info)
+        self.assertIn("Difficulty, section C: easy 50.0% (target 50%), medium 50.0% (target 50%)", info)
+
+    def test_each_section_gets_its_own_difficulty(self):
+        spec = load(TEMPLATE)
+        qs, r = self.build(spec)
+        self.assertEqual(r.errors, [])
+        self.assertEqual([w for w in r.warnings if w.startswith("[Q13]")], [])
+        hard = {q["section"] for q, leaf in leaves(qs) if leaf["difficulty"] == "hard"}
+        self.assertEqual(hard, {"C"})       # only section C's target allows hard
 
     def test_deterministic(self):
         a, _ = self.build()

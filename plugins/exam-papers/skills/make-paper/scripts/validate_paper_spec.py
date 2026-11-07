@@ -11,6 +11,7 @@ Exit codes:
     2  the file could not be read or is not valid JSON
 """
 import json
+import math
 import os
 import sys
 from fractions import Fraction
@@ -35,8 +36,8 @@ ALLOWED_KEYS = {
     "exam": {"board", "class", "subject", "book", "syllabusPack", "chapters"},
     "pattern": {"totalMarks", "durationMinutes", "sections", "numbering", "smallestMarkUnit"},
     "section": {"id", "type", "questionsOffered", "questionsToAttempt", "marksPerQuestion",
-                "sectionTotal", "mcqOptions", "subParts", "minSubParts", "maxSubParts"},
-    "content": {"chapterWeightage", "numericalTheorySplit", "difficulty",
+                "sectionTotal", "mcqOptions", "subParts", "minSubParts", "maxSubParts", "difficulty"},
+    "content": {"chapterWeightage", "numericalTheorySplit",
                 "everyChapterInCompulsorySection", "diagrams", "showChapterNames",
                 "constants", "avoidOverlappingConcepts"},
     "output": {"header", "answerKey"},
@@ -171,9 +172,15 @@ def validate(spec):
             if is_int(mn) and mpq and smu and frac(mpq) / frac(smu) < mn:
                 r.error(p, f"{fmt(mpq)} marks cannot be split into {mn} parts of at least {fmt(smu)} mark each", rule="S10")
 
+            if "difficulty" in s:
+                check_percent_target(r, s["difficulty"], f"{p}.difficulty", DIFFICULTY_LEVELS)
+            else:
+                r.error(f"{p}.difficulty", "is required", rule="S1")
+
             if all(v is not None for v in (sid, off, att, mpq)):
                 sections.append({"id": sid, "offered": off, "attempt": att, "marks": mpq,
-                                 "compulsory": off == att})
+                                 "compulsory": off == att, "subParts": sub,
+                                 "difficulty": s.get("difficulty")})
 
         if total and secs and all(isinstance(s, dict) and is_num(s.get("sectionTotal")) for s in secs):
             st = sum(frac(s["sectionTotal"]) for s in secs)
@@ -218,10 +225,6 @@ def validate(spec):
                 r.error("content.numericalTheorySplit.target", "must have exactly two values: [numerical, theory]", rule="S11")
         else:
             r.error("content.numericalTheorySplit", "is required", rule="S1")
-        if "difficulty" in content:
-            check_percent_target(r, content["difficulty"], "content.difficulty", DIFFICULTY_LEVELS)
-        else:
-            r.error("content.difficulty", "is required", rule="S1")
 
         every_ch = need(r, content, "everyChapterInCompulsorySection", "content",
                         lambda x: isinstance(x, bool), "true or false")
@@ -253,10 +256,36 @@ def validate(spec):
     return r
 
 
+def difficulty_mix(r, sections, offered):
+    """Report the paper's difficulty mix that the section targets add up to (info), and warn (S21)
+    when a section without parts cannot meet its target: each of its questions has one level, so
+    each moves the section's mix by a whole question's share."""
+    levels = [d.value for d in Difficulty]
+    paper = {lvl: sum(frac(s["offered"]) * frac(s["marks"]) * frac(s["difficulty"]["target"][lvl])
+                      for s in sections) / offered for lvl in levels}
+    r.info.append("Paper difficulty mix from the section targets: " +
+                  ", ".join(f"{lvl} {float(paper[lvl]):.1f}%" for lvl in levels))
+    for s in sections:
+        if s["subParts"] != SubParts.NONE:
+            continue
+        n, target = s["offered"], s["difficulty"]["target"]
+        tol = frac(s["difficulty"]["tolerancePercent"])
+        lo, hi = {}, {}
+        for lvl in levels:
+            t = frac(target[lvl])
+            lo[lvl] = 0 if t == 0 else max(0, math.ceil((t - tol) * n / 100))
+            hi[lvl] = 0 if t == 0 else min(n, math.floor((t + tol) * n / 100))
+        if any(lo[lvl] > hi[lvl] for lvl in levels) or not sum(lo.values()) <= n <= sum(hi.values()):
+            r.warn(f"pattern.sections[{s['id']}].difficulty",
+                   f"{n} whole questions cannot meet this target within ±{fmt(tol)}%: each question has "
+                   f"one level and is {float(Fraction(100, n)):.1f}% of the section", rule="S21")
+
+
 def feasibility(r, chapters, sections, mode, weights, tol, every_ch):
     offered = sum(frac(s["offered"]) * frac(s["marks"]) for s in sections)
     attempted = sum(frac(s["attempt"]) * frac(s["marks"]) for s in sections)
     r.info.append(f"Marks offered: {fmt(float(offered))}; marks a student attempts: {fmt(float(attempted))}")
+    difficulty_mix(r, sections, offered)
 
     if every_ch:
         comp = sum(s["offered"] for s in sections if s["compulsory"])

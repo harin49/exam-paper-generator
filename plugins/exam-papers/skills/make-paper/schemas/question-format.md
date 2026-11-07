@@ -169,8 +169,8 @@ Hard rules (the paper cannot be built until they pass):
   `concept`: either all of a question's parts do or none do; the question's `concepts` are exactly
   those named; and each part's kind is one of its concept's `kinds` and its marks are at most the
   concept's `maxMarks`.
-- **Q9.** No question or part uses a difficulty level whose target in the spec is 0% (e.g. `"hard"`
-  when the target is easy 50, medium 50, hard 0).
+- **Q9.** No question or part uses a difficulty level whose target in its section is 0% (e.g.
+  `"hard"` in a section whose target is easy 50, medium 50, hard 0).
 - **Q10.** If `everyChapterInCompulsorySection` is true, every chapter has at least one question in
   the compulsory section(s).
 
@@ -180,13 +180,15 @@ every leaf part's marks under its kind and difficulty:
 - **Q11.** Each chapter's marks are within `toleranceMarks` of its target (equal share, or the
   custom weight). One warning lists every chapter outside the tolerance.
 - **Q12.** The numerical percentage is within `tolerancePercent` of the target.
-- **Q13.** Each difficulty level's percentage is within `tolerancePercent` of its target. One warning
-  lists every level outside the tolerance.
+- **Q13.** In each section, each difficulty level's percentage of the section's marks offered is
+  within the section's `tolerancePercent` of its target. One warning per section lists every level
+  outside the tolerance.
 - **Q14.** If `avoidOverlappingConcepts` is true, each concept tag used by more than one question is
   listed for review (possible overlap).
 
 `check_questions.py` also reports, as information, the marks offered by chapter, the
-numerical/theory split and the difficulty mix, each against its target.
+numerical/theory split and each section's difficulty mix, each against its target, and the
+whole paper's difficulty mix.
 
 ## Blueprint (`blueprint.json`)
 

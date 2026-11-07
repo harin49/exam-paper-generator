@@ -13,7 +13,7 @@
       "kind": "numerical",
       "difficulty": "medium",
       "concept": "fps_cgs_systems",
-      "correctOption": "c"
+      "correctOption": "d"
     },
     {
       "number": 2,
@@ -24,9 +24,9 @@
         "pendulum_frequency"
       ],
       "kind": "numerical",
-      "difficulty": "medium",
+      "difficulty": "easy",
       "concept": "pendulum_frequency",
-      "correctOption": "a"
+      "correctOption": "c"
     },
     {
       "number": 3,
@@ -39,7 +39,7 @@
       "kind": "theory",
       "difficulty": "easy",
       "concept": "zero_error_basic_idea",
-      "correctOption": "d"
+      "correctOption": "a"
     },
     {
       "number": 4,
@@ -65,7 +65,7 @@
       "kind": "numerical",
       "difficulty": "medium",
       "concept": "velocity_time_graph_area",
-      "correctOption": "b"
+      "correctOption": "d"
     },
     {
       "number": 6,
@@ -78,7 +78,7 @@
       "kind": "numerical",
       "difficulty": "easy",
       "concept": "equations_of_motion_numericals",
-      "correctOption": "a"
+      "correctOption": "c"
     },
     {
       "number": 7,
@@ -91,7 +91,7 @@
       "kind": "theory",
       "difficulty": "medium",
       "concept": "rest_and_motion",
-      "correctOption": "c"
+      "correctOption": "b"
     },
     {
       "number": 8,
@@ -104,7 +104,7 @@
       "kind": "theory",
       "difficulty": "easy",
       "concept": "rest_and_motion",
-      "correctOption": "d"
+      "correctOption": "a"
     },
     {
       "number": 9,
@@ -130,7 +130,7 @@
       "kind": "numerical",
       "difficulty": "easy",
       "concept": "mass_and_weight",
-      "correctOption": "b"
+      "correctOption": "a"
     },
     {
       "number": 11,
@@ -156,7 +156,7 @@
       "kind": "numerical",
       "difficulty": "medium",
       "concept": "archimedes_principle",
-      "correctOption": "a"
+      "correctOption": "b"
     },
     {
       "number": 13,
@@ -169,7 +169,7 @@
       "kind": "theory",
       "difficulty": "easy",
       "concept": "atmospheric_pressure_manifestations",
-      "correctOption": "c"
+      "correctOption": "a"
     },
     {
       "number": 14,
@@ -182,7 +182,7 @@
       "kind": "theory",
       "difficulty": "medium",
       "concept": "pressure_and_altitude",
-      "correctOption": "a"
+      "correctOption": "d"
     },
     {
       "number": 15,
@@ -244,7 +244,7 @@
           "label": "b",
           "marks": 1,
           "kind": "theory",
-          "difficulty": "easy",
+          "difficulty": "medium",
           "concept": "screw_gauge"
         }
       ]
@@ -263,7 +263,7 @@
           "label": "a",
           "marks": 1,
           "kind": "theory",
-          "difficulty": "medium",
+          "difficulty": "easy",
           "concept": "scalar_vector_quantities"
         },
         {
@@ -296,7 +296,7 @@
           "label": "b",
           "marks": 1,
           "kind": "theory",
-          "difficulty": "easy",
+          "difficulty": "medium",
           "concept": "distance_displacement"
         }
       ]
@@ -313,17 +313,17 @@
       "parts": [
         {
           "label": "a",
+          "marks": 1,
+          "kind": "theory",
+          "difficulty": "easy",
+          "concept": "newtons_third_law"
+        },
+        {
+          "label": "b",
           "marks": 2,
           "kind": "numerical",
           "difficulty": "easy",
           "concept": "force_units_cgs_si"
-        },
-        {
-          "label": "b",
-          "marks": 1,
-          "kind": "theory",
-          "difficulty": "medium",
-          "concept": "newtons_third_law"
         }
       ]
     },
@@ -348,7 +348,7 @@
           "label": "b",
           "marks": 1,
           "kind": "theory",
-          "difficulty": "easy",
+          "difficulty": "medium",
           "concept": "action_reaction_pairs"
         }
       ]
@@ -367,7 +367,7 @@
           "label": "a",
           "marks": 1,
           "kind": "theory",
-          "difficulty": "medium",
+          "difficulty": "easy",
           "concept": "upthrust_vs_weight_cases"
         },
         {
@@ -449,17 +449,17 @@
         },
         {
           "label": "c",
-          "marks": 2,
-          "kind": "theory",
-          "difficulty": "medium",
-          "concept": "velocity_time_graph_slope"
-        },
-        {
-          "label": "d",
           "marks": 3,
           "kind": "numerical",
           "difficulty": "medium",
           "concept": "distance_time_graph"
+        },
+        {
+          "label": "d",
+          "marks": 2,
+          "kind": "theory",
+          "difficulty": "medium",
+          "concept": "velocity_time_graph_slope"
         }
       ]
     },
@@ -477,31 +477,31 @@
       "parts": [
         {
           "label": "a",
-          "marks": 3,
-          "kind": "numerical",
-          "difficulty": "easy",
-          "concept": "force_momentum_numericals"
-        },
-        {
-          "label": "b",
           "marks": 2,
           "kind": "theory",
           "difficulty": "easy",
           "concept": "non_contact_forces"
         },
         {
-          "label": "c",
-          "marks": 2,
-          "kind": "theory",
-          "difficulty": "medium",
-          "concept": "newtons_first_law"
+          "label": "b",
+          "marks": 3,
+          "kind": "numerical",
+          "difficulty": "easy",
+          "concept": "force_momentum_numericals"
         },
         {
-          "label": "d",
+          "label": "c",
           "marks": 3,
           "kind": "numerical",
           "difficulty": "medium",
           "concept": "universal_law_of_gravitation"
+        },
+        {
+          "label": "d",
+          "marks": 2,
+          "kind": "theory",
+          "difficulty": "medium",
+          "concept": "newtons_first_law"
         }
       ]
     },

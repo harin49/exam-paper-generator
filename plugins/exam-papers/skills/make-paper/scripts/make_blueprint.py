@@ -21,8 +21,8 @@ blueprint:
      through the best splits so questions in a section vary.
   3. Kinds: each part becomes numerical or theory to approach the spec's split within each
      section, using only kinds that some concept in its chapter supports at that many marks.
-  4. Difficulty: each part gets the level furthest below its target (levels at 0% are never used);
-     then each question's parts are reordered so the easier ones come first (marks and kind move
+  4. Difficulty: within each section, each part gets the level furthest below that section's target
+     (levels at 0% are never used); then each question's parts are reordered so the easier ones come first (marks and kind move
      with them, so no balance changes).
   5. Concepts: each part gets the least-used concept of its chapter that allows its kind and marks,
      preferring one not already used in the same question and one whose maxMarks fits the part
@@ -185,17 +185,22 @@ def assign_kinds(leaves, by_chapter, num_target_pct):
                 leaf["kind"] = Kind.THEORY.value
 
 
-def assign_difficulty(leaves, targets_pct, offered):
-    levels = [l for l in LEVEL_ORDER if l in targets_pct and targets_pct[l] > 0]
-    target = {l: offered * frac(targets_pct[l]) / 100 for l in levels}
-    got = {l: Fraction(0) for l in levels}
-    order = sorted(leaves, key=lambda l: (-l["marks"], l["kind"] != Kind.NUMERICAL, l["seq"]))
-    for leaf in order:
-        # numerical parts lean harder, theory parts easier, when deficits are close
-        pref = levels[::-1] if leaf["kind"] == Kind.NUMERICAL else levels
-        lvl = max(pref, key=lambda l: (target[l] - got[l], -pref.index(l)))
-        leaf["difficulty"] = lvl
-        got[lvl] += leaf["marks"]
+def assign_difficulty(leaves, sections):
+    """Levels per part, to meet each section's own target on that section's marks offered."""
+    for s in sections:
+        sec_leaves = [l for l in leaves if l["section"] == s["id"]]
+        targets_pct = s["difficulty"]["target"]
+        offered = frac(s["questionsOffered"]) * frac(s["marksPerQuestion"])
+        levels = [l for l in LEVEL_ORDER if l in targets_pct and targets_pct[l] > 0]
+        target = {l: offered * frac(targets_pct[l]) / 100 for l in levels}
+        got = {l: Fraction(0) for l in levels}
+        order = sorted(sec_leaves, key=lambda l: (-l["marks"], l["kind"] != Kind.NUMERICAL, l["seq"]))
+        for leaf in order:
+            # numerical parts lean harder, theory parts easier, when deficits are close
+            pref = levels[::-1] if leaf["kind"] == Kind.NUMERICAL else levels
+            lvl = max(pref, key=lambda l: (target[l] - got[l], -pref.index(l)))
+            leaf["difficulty"] = lvl
+            got[lvl] += leaf["marks"]
 
 
 def easier_parts_first(leaves):
@@ -313,7 +318,7 @@ def make(spec, concepts):
             questions.append(q)
 
     assign_kinds(leaves, by_chapter, rules["numericalTheorySplit"]["target"][0])
-    assign_difficulty(leaves, rules["difficulty"]["target"], offered)
+    assign_difficulty(leaves, sections)
     easier_parts_first(leaves)
     assign_concepts(leaves, by_chapter)
     for leaf in leaves:
@@ -351,10 +356,10 @@ def self_check(questions, spec, concepts):
     cq.check_marks(r, questions, spec["pattern"]["smallestMarkUnit"])
     tags = cq.read_concept_list(r, concepts, spec)
     cq.check_concepts(r, questions, tags, chapters)
-    cq.check_excluded_difficulty(r, questions, rules["difficulty"]["target"])
+    cq.check_excluded_difficulty(r, questions, spec_sections)
     if rules["everyChapterInCompulsorySection"]:
         cq.check_compulsory_coverage(r, questions, spec_sections, chapters)
-    cq.check_balance(r, questions, chapters, rules)
+    cq.check_balance(r, questions, chapters, rules, spec_sections)
     if rules["avoidOverlappingConcepts"]:
         cq.check_shared_concepts(r, questions)
     return r

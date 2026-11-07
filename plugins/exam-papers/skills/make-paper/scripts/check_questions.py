@@ -23,11 +23,11 @@ Rules implemented so far (see schemas/question-format.md in this skill):
     Q6   marks add up (parts, sub-parts, marking items) in multiples of the smallest mark unit
     Q7   every numerical answer has a computed formula that recalculates to its stored value
     Q8   concept tags come from the concept list and the question's own chapter
-    Q9   no difficulty level the spec's target excludes (0%), e.g. hard
+    Q9   no difficulty level its section's target excludes (0%), e.g. hard
     Q10  every chapter appears in the compulsory section(s), if the spec requires it
     Q11  (warning) chapter balance within the spec's tolerance
     Q12  (warning) numerical/theory split within the spec's tolerance
-    Q13  (warning) difficulty mix within the spec's tolerance
+    Q13  (warning) each section's difficulty mix within its tolerance
     Q14  (warning) questions sharing a concept tag, listed for review
 Balance (Q11-Q13) is measured on marks offered: with choices, every student attempts a different set.
     Q15  questions.json matches its approved blueprint on every structural field
@@ -654,16 +654,17 @@ def check_concepts(r, qs, tags, chapters):
 
 
 # ---------------- Q9: excluded difficulty levels ----------------
-def check_excluded_difficulty(r, qs, difficulty_target):
-    excluded = {lvl for lvl, pct in difficulty_target.items() if pct == 0}
-    if not excluded:
-        return
+def check_excluded_difficulty(r, qs, spec_sections):
     for q in qs:
+        sec = spec_sections.get(q.get("section"))
+        if not sec:
+            continue
+        excluded = {lvl for lvl, pct in sec["difficulty"]["target"].items() if pct == 0}
         items = list(leaves_with_location(q)) if isinstance(q.get("parts"), list) else [(q, where(q.get("number")))]
         for obj, loc in items:
             if obj.get("difficulty") in excluded:
-                r.error(loc, f"is {obj['difficulty']}, but the spec's difficulty target for "
-                             f"{obj['difficulty']} is 0%", "Q9")
+                r.error(loc, f"is {obj['difficulty']}, but section {q['section']}'s difficulty target "
+                             f"for {obj['difficulty']} is 0%", "Q9")
 
 
 # ---------------- Q10: every chapter in the compulsory section ----------------
@@ -693,15 +694,17 @@ def marked_items(q):
         yield frac(q["marks"]), q.get("kind"), q.get("difficulty")
 
 
-def check_balance(r, qs, chapters, rules):
+def check_balance(r, qs, chapters, rules, spec_sections):
     by_chapter = {c: Fraction(0) for c in chapters}
-    by_kind, by_level = {}, {}
+    by_kind, by_level, by_section = {}, {}, {}
     for q in qs:
         if q.get("chapter") in by_chapter and is_num(q.get("marks")):
             by_chapter[q["chapter"]] += frac(q["marks"])
+        sec_levels = by_section.setdefault(q.get("section"), {})
         for m, kind, level in marked_items(q):
             by_kind[kind] = by_kind.get(kind, 0) + m
             by_level[level] = by_level.get(level, 0) + m
+            sec_levels[level] = sec_levels.get(level, 0) + m
     offered = sum(by_chapter.values())
     if not offered:
         return
@@ -729,16 +732,24 @@ def check_balance(r, qs, chapters, rules):
         r.warn("numerical/theory", f"numerical is {num_pct:.1f}% of marks offered, outside the target "
                                    f"{fmt(nts['target'][0])}% ± {fmt(nts['tolerancePercent'])}", "Q12")
 
-    # Q13: difficulty
-    dt = rules["difficulty"]
-    levels = list(dt["target"])
-    actual = {lvl: pct(by_level.get(lvl, 0), offered) for lvl in levels}
-    r.info.append("Difficulty: " + ", ".join(
-        f"{lvl} {actual[lvl]:.1f}% (target {fmt(dt['target'][lvl])}%)" for lvl in levels))
-    off = [lvl for lvl in levels if abs(actual[lvl] - dt["target"][lvl]) > dt["tolerancePercent"]]
-    if off:
-        r.warn("difficulty", f"outside the tolerance of ±{fmt(dt['tolerancePercent'])}%: " + "; ".join(
-            f"{lvl} is {actual[lvl]:.1f}% (target {fmt(dt['target'][lvl])}%)" for lvl in off), "Q13")
+    # Q13: difficulty, per section (the paper's mix is information only)
+    levels = [d.value for d in Difficulty]
+    r.info.append("Difficulty, whole paper: " + ", ".join(
+        f"{lvl} {pct(by_level.get(lvl, 0), offered):.1f}%" for lvl in levels))
+    for sid, sec in spec_sections.items():
+        dt = sec["difficulty"]
+        got = by_section.get(sid, {})
+        sec_offered = sum(got.values())
+        if not sec_offered:
+            continue
+        actual = {lvl: pct(got.get(lvl, 0), sec_offered) for lvl in levels}
+        r.info.append(f"Difficulty, section {sid}: " + ", ".join(
+            f"{lvl} {actual[lvl]:.1f}% (target {fmt(dt['target'][lvl])}%)" for lvl in levels))
+        off = [lvl for lvl in levels if abs(actual[lvl] - dt["target"][lvl]) > dt["tolerancePercent"]]
+        if off:
+            r.warn(f"section {sid} difficulty", f"outside the tolerance of ±{fmt(dt['tolerancePercent'])}%: " +
+                   "; ".join(f"{lvl} is {actual[lvl]:.1f}% (target {fmt(dt['target'][lvl])}%)" for lvl in off),
+                   "Q13")
 
 
 def check_shared_concepts(r, qs):
@@ -863,10 +874,10 @@ def check(qdoc, bdoc=None, spec=None, concepts=None, blueprint_approved=None):
     tags = read_concept_list(r, concepts, spec if spec_sections else None) if concepts is not None else None
     check_concepts(r, qs, tags, chapters)
     if content_rules:
-        check_excluded_difficulty(r, qs, content_rules["difficulty"]["target"])
+        check_excluded_difficulty(r, qs, spec_sections)
         if content_rules["everyChapterInCompulsorySection"]:
             check_compulsory_coverage(r, qs, spec_sections, chapters)
-        check_balance(r, qs, chapters, content_rules)
+        check_balance(r, qs, chapters, content_rules, spec_sections)
         if content_rules["avoidOverlappingConcepts"]:
             check_shared_concepts(r, qs)
     if bdoc is not None:

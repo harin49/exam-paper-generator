@@ -244,7 +244,7 @@ class NextStep(unittest.TestCase):
         self.assertEqual(self.next_id(), "deliver")
 
     def test_rewriting_the_review_html_unchanged_keeps_the_decision(self):
-        # The bug that started D14: re-printing the findings sent a finished paper back to 5.5.
+        # The bug that led to hashes instead of file times: re-printing the findings sent a finished paper back to 5.5.
         self.first_review_round([self.finding("R1", "warning")])
         self.decide(rejected=["R1"])
         self.add("review/reviewer-report.html", "<!doctype html>")

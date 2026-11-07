@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""The plugin's UserPromptExpansion hook: records the teacher's typed commands (D6, D20). Reads the
+"""The plugin's UserPromptExpansion hook: records the teacher's typed commands. Reads the
 hook's JSON on stdin. Only a command the user types expands, so Claude and its subagents cannot get
 here. (guard.py stops them from writing the files this hook writes.)
 - /exam-papers:approve GATE [TASK] records the approval in that task's approvals.json.

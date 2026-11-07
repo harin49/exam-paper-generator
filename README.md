@@ -2,8 +2,8 @@
 
 A Claude plugin, **exam-papers**, that makes exam question papers and teacher answer keys (two PDFs)
 from a syllabus and a paper spec. Scripts plan and check the structure, Claude writes the wording, and
-a blind solver and an independent reviewer check the paper before the teacher approves it. The goal,
-the architecture and every decision are in [`docs/harness-design.md`](docs/harness-design.md).
+a blind solver and an independent reviewer check the paper before the teacher approves it. How the
+harness works is in [`docs/harness-design.md`](docs/harness-design.md).
 
 ## Install
 
@@ -97,7 +97,7 @@ approve it with `/exam-papers:approve concepts`. Name that pack in your spec's `
 ## Workflow
 
 The steps from syllabus to PDFs, with the four points where you approve or decide, are drawn in the
-[architecture diagram](docs/harness-design.md#architecture) in the design doc.
+[architecture diagram](docs/architecture.md); the review loop has [its own](docs/review-loop.md).
 
 ## Layout
 
@@ -124,7 +124,9 @@ plugins/exam-papers/                # the plugin: the only part that is installe
                                     # report (Report, value checks), task_files (JSON, hashes,
                                     # run log), approvals, spec_types, latex
     assets/syllabi/icse9-physics-selina/   # sample pack: syllabus.md, concepts.json (approve once copied)
-docs/harness-design.md              # goal, architecture, decisions D1–D23
+docs/harness-design.md              # the harness: scripts, state, hooks, agents, gates, tests
+docs/architecture.md                # diagrams: plugin and workspace, syllabus to PDFs
+docs/review-loop.md                 # diagram: how a paper is reviewed and revised
 docs/development.md                 # updating, trying edits from a clone, tests, releases
 examples/icse9-physics-units1-4/    # example paper: spec + draft blueprint
 tests/                              # unit tests; tests/test_data/ holds their fixed data

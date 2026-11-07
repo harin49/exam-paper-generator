@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PreToolUse hook: refuse tool calls that break the plugin's rules (D6, D13). Reads the hook's JSON
+"""PreToolUse hook: refuse tool calls that break the plugin's rules. Reads the hook's JSON
 input on stdin; inside a subagent it carries "agent_type" (e.g. "exam-papers:blind-solver").
 
 - Nobody (Claude or a subagent) writes approvals.json or decisions.json: only the approval hook

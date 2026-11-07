@@ -2,7 +2,7 @@
 and the final paper) and a syllabus pack's (syllabi/<pack>/approvals.json, for its concept list).
 
 Only the plugin's approval hook (hooks/approve.py) writes approvals.json, when the teacher types
-/exam-papers:approve GATE; another hook stops Claude and its subagents from writing it (D6). Each
+/exam-papers:approve GATE; another hook stops Claude and its subagents from writing it. Each
 record names the gate, the approved file and that file's SHA-256 hash:
 
     [{"gate": "blueprint", "file": "blueprint.json", "sha256": "...", "time": "...", "command": "..."}]

@@ -96,19 +96,8 @@ approve it with `/exam-papers:approve concepts`. Name that pack in your spec's `
 
 ## Workflow
 
-In short: the spec is checked, a script plans every question slot (the **blueprint**, which you
-approve), the writer subagent words the questions, scripts check them, and a review loop of up to 3
-rounds runs (a blind solver, a comparison with the key, a reviewer; errors are fixed without asking,
-and you decide warnings, suggestions and disputes). You approve the final paper, and a script builds
-the two PDFs.
-
-The steps run one at a time. Their order, and when each is done, is in the make-paper skill's
-`workflow.json`; how Claude does each one is in its `SKILL.md`. Before every step Claude runs
-`next_step.py TASK`, which checks the task folder and prints the one step that may run next. Finished
-steps are recorded by content hash in `TASK/state.json` (and logged in `TASK/run.jsonl`), so copying
-a folder or re-saving a file does not change where a paper is. You approve and decide by typing
-`/exam-papers:approve concepts|blueprint|paper` and `/exam-papers:decide accept … reject …`; a hook
-records each with the file's hash, and editing an approved file voids its approval.
+The steps from syllabus to PDFs, with the four points where you approve or decide, are drawn in the
+[architecture diagram](docs/harness-design.md#architecture) in the design doc.
 
 ## Layout
 

@@ -39,8 +39,7 @@
         "marksPerQuestion": 10,
         "sectionTotal": 20,
         "subParts": "required",
-        "minSubParts": 3,
-        "singleChapterPerQuestion": true
+        "minSubParts": 3
       }
     ],
     "numbering": "continuous",
@@ -66,7 +65,6 @@
       },
       "tolerancePercent": 10
     },
-    "measureOn": "offered",
     "everyChapterInCompulsorySection": true,
     "diagrams": "only_if_essential",
     "showChapterNames": false,
@@ -77,12 +75,8 @@
   },
   "output": {
     "header": null,
-    "paperFormat": "pdf",
     "answerKey": {
-      "format": "pdf",
-      "audience": "teacher",
       "include": [
-        "answers",
         "explanations",
         "markingScheme"
       ]

@@ -165,8 +165,7 @@ Hard rules (the paper cannot be built until they pass):
   the formula fits the question: that is the blind solver's job.
 - **Q8.** The concept list is for the spec's board and class (and book, when both name one), and lists each tag under one
   chapter only. Each question's `chapter` is one of the spec's chapters; its concept tags are all in
-  the concept list, all belong to that chapter, and none is repeated. (Every question has exactly one
-  `chapter`, so `singleChapterPerQuestion` is always met.) Where parts (or an MCQ) name their
+  the concept list, all belong to that chapter, and none is repeated. Where parts (or an MCQ) name their
   `concept`: either all of a question's parts do or none do; the question's `concepts` are exactly
   those named; and each part's kind is one of its concept's `kinds` and its marks are at most the
   concept's `maxMarks`.

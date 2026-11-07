@@ -43,8 +43,7 @@
         "marksPerQuestion": 6,
         "sectionTotal": 6,
         "subParts": "required",
-        "minSubParts": 3,
-        "singleChapterPerQuestion": true
+        "minSubParts": 3
       }
     ],
     "numbering": "continuous",
@@ -70,7 +69,6 @@
       },
       "tolerancePercent": 10
     },
-    "measureOn": "offered",
     "everyChapterInCompulsorySection": true,
     "diagrams": "only_if_essential",
     "showChapterNames": false,
@@ -81,12 +79,8 @@
   },
   "output": {
     "header": "Unit Test Paper",
-    "paperFormat": "pdf",
     "answerKey": {
-      "format": "pdf",
-      "audience": "teacher",
       "include": [
-        "answers",
         "explanations",
         "markingScheme"
       ]

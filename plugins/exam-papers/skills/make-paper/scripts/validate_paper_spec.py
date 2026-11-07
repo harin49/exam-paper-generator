@@ -18,8 +18,8 @@ from fractions import Fraction
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from report import Report, frac, fmt, is_int, is_num  # noqa: E402
-from spec_types import (PACK_NAME, Audience, Diagrams, Difficulty, KeyPart, MeasureOn,  # noqa: E402
-                        Numbering, OutputFormat, SectionType, SubParts, WeightMode)
+from spec_types import (PACK_NAME, Diagrams, Difficulty, KeyPart, Numbering,  # noqa: E402
+                        SectionType, SubParts, WeightMode)
 from task_files import load_json  # noqa: E402
 
 SECTION_TYPES = SectionType.values()
@@ -27,8 +27,6 @@ SUBPARTS = SubParts.values()
 NUMBERING = Numbering.values()
 WEIGHT_MODES = WeightMode.values()
 DIAGRAMS = Diagrams.values()
-FORMATS = OutputFormat.values()
-AUDIENCES = Audience.values()
 KEY_PARTS = KeyPart.values()
 DIFFICULTY_LEVELS = Difficulty.values()
 
@@ -37,13 +35,12 @@ ALLOWED_KEYS = {
     "exam": {"board", "class", "subject", "book", "syllabusPack", "chapters"},
     "pattern": {"totalMarks", "durationMinutes", "sections", "numbering", "smallestMarkUnit"},
     "section": {"id", "type", "questionsOffered", "questionsToAttempt", "marksPerQuestion",
-                "sectionTotal", "mcqOptions", "subParts", "minSubParts", "maxSubParts",
-                "singleChapterPerQuestion"},
-    "content": {"chapterWeightage", "numericalTheorySplit", "difficulty", "measureOn",
+                "sectionTotal", "mcqOptions", "subParts", "minSubParts", "maxSubParts"},
+    "content": {"chapterWeightage", "numericalTheorySplit", "difficulty",
                 "everyChapterInCompulsorySection", "diagrams", "showChapterNames",
                 "constants", "avoidOverlappingConcepts"},
-    "output": {"header", "paperFormat", "answerKey"},
-    "answerKey": {"format", "audience", "include"},
+    "output": {"header", "answerKey"},
+    "answerKey": {"include"},
 }
 
 
@@ -173,8 +170,6 @@ def validate(spec):
                 r.warn(p, "subParts is 'required' but minSubParts is not set; 2 will be assumed", rule="S18")
             if is_int(mn) and mpq and smu and frac(mpq) / frac(smu) < mn:
                 r.error(p, f"{fmt(mpq)} marks cannot be split into {mn} parts of at least {fmt(smu)} mark each", rule="S10")
-            if "singleChapterPerQuestion" in s and not isinstance(s["singleChapterPerQuestion"], bool):
-                r.error(f"{p}.singleChapterPerQuestion", "must be true or false", rule="S1")
 
             if all(v is not None for v in (sid, off, att, mpq)):
                 sections.append({"id": sid, "offered": off, "attempt": att, "marks": mpq,
@@ -228,13 +223,6 @@ def validate(spec):
         else:
             r.error("content.difficulty", "is required", rule="S1")
 
-        m = content.get("measureOn")
-        if m == "attempted":
-            r.error("content.measureOn", "'attempted' is not supported: with choices, each student "
-                                         "attempts a different set, so balance is measured on marks offered", rule="S13")
-        elif m != MeasureOn.OFFERED:
-            r.error("content.measureOn", f"must be '{MeasureOn.OFFERED}'", rule="S13")
-
         every_ch = need(r, content, "everyChapterInCompulsorySection", "content",
                         lambda x: isinstance(x, bool), "true or false")
         need(r, content, "diagrams", "content", lambda x: x in DIAGRAMS, f"one of {sorted(DIAGRAMS)}")
@@ -252,15 +240,12 @@ def validate(spec):
             r.error("output.header", "is required (use null for no header)", rule="S15")
         elif out["header"] is not None and not isinstance(out["header"], str):
             r.error("output.header", "must be text or null", rule="S15")
-        need(r, out, "paperFormat", "output", lambda x: x in FORMATS, f"one of {sorted(FORMATS)}")
         ak = need(r, out, "answerKey", "output", lambda x: isinstance(x, dict), "an object")
         if ak is not None:
             check_keys(r, ak, "answerKey", "output.answerKey")
-            need(r, ak, "format", "output.answerKey", lambda x: x in FORMATS, f"one of {sorted(FORMATS)}")
-            need(r, ak, "audience", "output.answerKey", lambda x: x in AUDIENCES, f"one of {sorted(AUDIENCES)}")
             need(r, ak, "include", "output.answerKey",
-                 lambda x: isinstance(x, list) and x and set(x) <= KEY_PARTS,
-                 f"a non-empty list drawn from {sorted(KEY_PARTS)}")
+                 lambda x: isinstance(x, list) and set(x) <= KEY_PARTS,
+                 f"a list drawn from {sorted(KEY_PARTS)} (empty for answers only)")
 
     # ---------------- feasibility (only if the structure is sound) ----------------
     if not r.errors and chapters and sections:

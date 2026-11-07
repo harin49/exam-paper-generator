@@ -212,7 +212,7 @@ class Build(unittest.TestCase):
 
     @unittest.skipUnless(pypdf, "pypdf not installed")
     def test_key_follows_the_include_list(self):
-        self.set_spec(lambda d: d["output"]["answerKey"].update(include=["answers"]))
+        self.set_spec(lambda d: d["output"]["answerKey"].update(include=[]))
         code, out = self.run_main()
         self.assertEqual(code, 0, out)
         text = pdf_text(self.paths()[1])

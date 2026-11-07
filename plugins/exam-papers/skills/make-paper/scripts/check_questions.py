@@ -29,7 +29,7 @@ Rules implemented so far (see schemas/question-format.md in this skill):
     Q12  (warning) numerical/theory split within the spec's tolerance
     Q13  (warning) difficulty mix within the spec's tolerance
     Q14  (warning) questions sharing a concept tag, listed for review
-Balance (Q11-Q13) is measured on marks offered, as the spec's measureOn requires.
+Balance (Q11-Q13) is measured on marks offered: with choices, every student attempts a different set.
     Q15  questions.json matches its approved blueprint on every structural field
     Q16  every LaTeX formula ($...$, $$...$$) is closed and can be typeset
 Every message starts with its rule number, e.g. "[Q4] Q12: ...".

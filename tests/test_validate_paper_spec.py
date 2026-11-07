@@ -33,6 +33,11 @@ class ValidSpecs(unittest.TestCase):
         self.assertEqual(r.errors, [])
         self.assertEqual(r.warnings, [])
 
+    def test_answers_only_key_is_valid(self):
+        spec = load(EXAMPLE)
+        spec["output"]["answerKey"]["include"] = []
+        self.assertEqual(v.validate(spec).errors, [])
+
 
 class BrokenSpecs(unittest.TestCase):
     def setUp(self):
@@ -73,9 +78,9 @@ class BrokenSpecs(unittest.TestCase):
         self.sec("C")["minSubParts"] = 25
         self.assertIn("cannot be split into 25 parts", self.errors())
 
-    def test_measure_on_attempted_rejected(self):
-        self.spec["content"]["measureOn"] = "attempted"
-        self.assertIn("'attempted' is not supported", self.errors())
+    def test_unknown_answer_key_part(self):
+        self.spec["output"]["answerKey"]["include"] = ["explanations", "hints"]
+        self.assertIn("output.answerKey.include: must be a list drawn from", self.errors())
 
     def test_split_must_add_to_100(self):
         self.spec["content"]["numericalTheorySplit"]["target"] = [60, 50]

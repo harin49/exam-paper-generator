@@ -44,27 +44,13 @@ class WeightMode(_StrEnum):
     CUSTOM = "custom"
 
 
-class MeasureOn(_StrEnum):
-    OFFERED = "offered"
-
-
 class Diagrams(_StrEnum):
     NONE = "none"
     ONLY_IF_ESSENTIAL = "only_if_essential"
     ALLOWED = "allowed"
 
 
-class OutputFormat(_StrEnum):
-    PDF = "pdf"
-
-
-class Audience(_StrEnum):
-    TEACHER = "teacher"
-    STUDENT = "student"
-
-
 class KeyPart(_StrEnum):
-    ANSWERS = "answers"
     EXPLANATIONS = "explanations"
     MARKING_SCHEME = "markingScheme"
 

@@ -61,9 +61,11 @@ To add a syllabus, give Claude the syllabus file (Markdown or text) and invoke
 list, checks it (`validate_concepts.py`) and asks you to approve it by typing
 `/exam-papers:approve concepts`.
 
-To make a paper, give Claude your `spec.json` (format and template in the make-paper skill's
-`schemas/`) and invoke `/exam-papers:make-paper`. The spec names its pack in `exam.syllabusPack`
+To make a paper, give Claude your `spec.json` and invoke `/exam-papers:make-paper`. The spec names its pack in `exam.syllabusPack`
 (e.g. `"icse9-physics-selina"`); the paper uses that pack's approved concept list and no other.
+Every spec field, what it changes in the paper and the rules it must follow are in
+[`paper-spec-format.md`](plugins/exam-papers/skills/make-paper/schemas/paper-spec-format.md); start
+from [`paper-spec.template.json`](plugins/exam-papers/skills/make-paper/schemas/paper-spec.template.json).
 
 ## Workflow
 

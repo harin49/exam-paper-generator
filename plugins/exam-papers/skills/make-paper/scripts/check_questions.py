@@ -22,7 +22,7 @@ Rules implemented so far (see schemas/question-format.md in this skill):
     Q5   number of parts follows the section's subParts rule
     Q6   marks add up (parts, sub-parts, marking items) in multiples of the smallest mark unit
     Q7   every numerical answer has a computed formula that recalculates to its stored value
-    Q8   concept tags come from the concept list and the question's own chapter
+    Q8   concept tags come from the concept list and the question's own chapter, none left out by the spec
     Q9   no difficulty level its section's target excludes (0%), e.g. hard
     Q10  every chapter appears in the compulsory section(s), if the spec requires it
     Q11  (warning) chapter balance within the spec's tolerance
@@ -627,7 +627,7 @@ def check_part_concept(r, obj, loc, q_concepts, tags):
                      f"{fmt(max_marks)} per part", "Q8")
 
 
-def check_concepts(r, qs, tags, chapters):
+def check_concepts(r, qs, tags, chapters, excluded=()):
     for q in qs:
         loc, ch, cs = where(q.get("number")), q.get("chapter"), q.get("concepts")
         if chapters and is_int(ch) and ch not in chapters:
@@ -636,6 +636,9 @@ def check_concepts(r, qs, tags, chapters):
             continue
         if len(set(cs)) != len(cs):
             r.error(loc, "lists the same concept tag twice", "Q8")
+        for t in cs:      # needs only the spec, so it runs even without the concept list
+            if t in excluded:
+                r.error(loc, f"concept '{t}' is left out of this paper (content.excludedConcepts)", "Q8")
         for t in (cs if tags is not None else []):
             if t not in tags:
                 r.error(loc, f"concept '{t}' is not in the concept list", "Q8")
@@ -872,7 +875,7 @@ def check(qdoc, bdoc=None, spec=None, concepts=None, blueprint_approved=None):
     check_answers(r, qs)
     check_math(r, qs)
     tags = read_concept_list(r, concepts, spec if spec_sections else None) if concepts is not None else None
-    check_concepts(r, qs, tags, chapters)
+    check_concepts(r, qs, tags, chapters, (content_rules or {}).get("excludedConcepts", []))
     if content_rules:
         check_excluded_difficulty(r, qs, spec_sections)
         if content_rules["everyChapterInCompulsorySection"]:

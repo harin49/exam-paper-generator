@@ -101,6 +101,14 @@ class BrokenSpecs(unittest.TestCase):
         info = " | ".join(v.validate(self.spec).info)
         self.assertIn("Paper difficulty mix from the section targets: easy 22.5%, medium 52.5%, hard 25.0%", info)
 
+    def test_excluded_concepts_must_be_tags(self):
+        self.spec["content"]["excludedConcepts"] = "neutral_points"
+        self.assertIn("content.excludedConcepts: must be a list of concept tags", self.errors())
+
+    def test_excluded_concept_listed_twice(self):
+        self.spec["content"]["excludedConcepts"] = ["neutral_points", "neutral_points"]
+        self.assertIn("content.excludedConcepts: lists the same concept tag twice", self.errors())
+
     def test_difficulty_keys(self):
         self.sec("A")["difficulty"]["target"] = {"easy": 50, "medium": 50}
         self.assertIn("must have exactly the keys", self.errors())

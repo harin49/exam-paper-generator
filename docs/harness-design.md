@@ -447,6 +447,23 @@ meaning, so gate 1 shows each one beside its text.
 paper: A 47% easy, B 52%, C 50%), so a teacher could not ask for easy recall in Section A and the
 hard questions in Section C.
 
+### D23. A paper can leave concepts out
+
+- `content.excludedConcepts` lists concept tags that one paper leaves out, e.g. magnetism from Unit 8
+  for a unit test on electricity. The pack and its approved concept list are unchanged.
+- The blueprint drops them before assigning concepts, and errors on a tag that is not a concept of
+  the paper's chapters or on a chapter left with none. Q8 errors if a question uses one. The writer
+  and reviewer are told, because wording can stray into a left-out topic even when its tag is not
+  used. Chapter balance is unchanged.
+- Considered and dropped: syllabus point ids (`S50`), which are shorter to write but coarser (one
+  point can hold several concepts); a mixed list of both (two meanings in one field); free-text
+  topics, which would need Claude's judgement to match; an include list, since leaving out is the
+  usual case and a concept added to the pack later is then included by default. The PDFs do not
+  mention the exclusion; `output.header` can say so.
+
+*Why:* a unit test often covers only part of a unit, and the only way before was to edit the pack's
+approved concept list, which changes every paper made from it.
+
 ### D14. State is a hash ledger plus a run log
 
 - `state.json` in each task folder records every finished step with the SHA-256 hashes of its inputs

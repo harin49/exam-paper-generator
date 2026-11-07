@@ -541,6 +541,22 @@ class ConceptsQ8(WithSpec):
         self.assertIn("[Q8] conceptList: must be an object with a 'chapters' object", self.errors())
 
 
+class ExcludedConceptsQ8(WithSpec):
+    def test_question_uses_an_excluded_concept(self):
+        self.spec["content"]["excludedConcepts"] = ["unit_conversion"]
+        self.assertIn("[Q8] Q1: concept 'unit_conversion' is left out of this paper "
+                      "(content.excludedConcepts)", self.errors())
+
+    def test_checked_without_the_concept_list(self):
+        self.spec["content"]["excludedConcepts"] = ["unit_conversion"]
+        errors = " | ".join(cq.check(self.qdoc, spec=self.spec).errors)
+        self.assertIn("[Q8] Q1: concept 'unit_conversion' is left out of this paper", errors)
+
+    def test_unused_exclusion_is_fine(self):
+        self.spec["content"]["excludedConcepts"] = ["neutral_points"]
+        self.assertEqual(self.result().errors, [])
+
+
 class DifficultyQ9(WithSpec):
     def sec(self, sid):
         return next(s for s in self.spec["pattern"]["sections"] if s["id"] == sid)

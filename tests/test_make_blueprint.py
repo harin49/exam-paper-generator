@@ -120,6 +120,27 @@ class Blueprint(unittest.TestCase):
         qs, _ = self.build()
         self.assertEqual({q["chapter"] for q in qs if q["section"] == "A"}, {1, 2, 3, 4, 5})
 
+    PENDULUM = ["simple_pendulum_terms", "pendulum_frequency", "pendulum_time_period_formula",
+                "pendulum_l_t2_graph"]
+
+    def test_excluded_concepts_are_never_used(self):
+        self.spec["content"]["excludedConcepts"] = self.PENDULUM
+        qs, r = self.build()
+        self.assertEqual(r.errors, [])
+        self.assertFalse({leaf["concept"] for _, leaf in leaves(qs)} & set(self.PENDULUM))
+        self.assertTrue(any(q["chapter"] == 1 for q in qs))      # chapter 1 keeps its other concepts
+
+    def test_excluded_concept_not_in_the_paper(self):
+        self.spec["content"]["excludedConcepts"] = ["neutral_points", "pendulm_frequency"]
+        _, r = self.build()
+        self.assertIn("blueprint: content.excludedConcepts names neutral_points, pendulm_frequency: "
+                      "not a concept in the paper's chapters [1, 2, 3, 4, 5]", r.errors[0])
+
+    def test_excluding_a_whole_chapter(self):
+        self.spec["content"]["excludedConcepts"] = [c["tag"] for c in self.concepts["chapters"]["1"]["concepts"]]
+        _, r = self.build()
+        self.assertIn("leaves out every concept in chapter 1", r.errors[0])
+
     def test_template_spec(self):
         qs, r = self.build(load(TEMPLATE))
         self.assertEqual(r.errors, [])

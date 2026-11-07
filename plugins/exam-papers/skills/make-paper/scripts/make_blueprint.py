@@ -24,7 +24,8 @@ blueprint:
   4. Difficulty: within each section, each part gets the level furthest below that section's target
      (levels at 0% are never used); then each question's parts are reordered so the easier ones come first (marks and kind move
      with them, so no balance changes).
-  5. Concepts: each part gets the least-used concept of its chapter that allows its kind and marks,
+  5. Concepts: each part gets the least-used concept of its chapter that allows its kind and marks
+     (never one the spec's content.excludedConcepts leaves out),
      preferring one not already used in the same question and one whose maxMarks fits the part
      (a concept meant for parts 3+ marks bigger counts as already used once).
   6. Correct options: each MCQ section's correct letters are dealt in shuffled rounds of a, b, c, d
@@ -286,6 +287,18 @@ def make(spec, concepts):
             raise BlueprintError(f"the concept list has no chapter {c}")
         by_chapter[c] = [dict(x, maxMarks=frac(x["maxMarks"])) for x in entry["concepts"]]
 
+    # concepts this paper leaves out (content.excludedConcepts) are never assigned
+    excluded = set(rules.get("excludedConcepts", []))
+    unknown = sorted(excluded - {x["tag"] for c in chapters for x in by_chapter[c]})
+    if unknown:
+        raise BlueprintError(f"content.excludedConcepts names {', '.join(unknown)}: not a concept in the "
+                             f"paper's chapters {sorted(chapters)}")
+    for c in chapters:
+        by_chapter[c] = [x for x in by_chapter[c] if x["tag"] not in excluded]
+        if not by_chapter[c]:
+            raise BlueprintError(f"content.excludedConcepts leaves out every concept in chapter {c}; "
+                                 f"remove the chapter from exam.chapters instead")
+
     offered = sum(frac(s["questionsOffered"]) * frac(s["marksPerQuestion"]) for s in sections)
     cw = rules["chapterWeightage"]
     if cw["mode"] == "custom":
@@ -355,7 +368,7 @@ def self_check(questions, spec, concepts):
     cq.check_part_counts(r, questions, spec_sections)
     cq.check_marks(r, questions, spec["pattern"]["smallestMarkUnit"])
     tags = cq.read_concept_list(r, concepts, spec)
-    cq.check_concepts(r, questions, tags, chapters)
+    cq.check_concepts(r, questions, tags, chapters, rules.get("excludedConcepts", []))
     cq.check_excluded_difficulty(r, questions, spec_sections)
     if rules["everyChapterInCompulsorySection"]:
         cq.check_compulsory_coverage(r, questions, spec_sections, chapters)

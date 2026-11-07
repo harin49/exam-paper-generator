@@ -39,7 +39,7 @@ ALLOWED_KEYS = {
                 "sectionTotal", "mcqOptions", "subParts", "minSubParts", "maxSubParts", "difficulty"},
     "content": {"chapterWeightage", "numericalTheorySplit",
                 "everyChapterInCompulsorySection", "diagrams", "showChapterNames",
-                "constants", "avoidOverlappingConcepts"},
+                "constants", "avoidOverlappingConcepts", "excludedConcepts"},
     "output": {"header", "answerKey"},
     "answerKey": {"include"},
 }
@@ -234,6 +234,12 @@ def validate(spec):
         if "constants" in content and not (isinstance(content["constants"], dict) and
                                            all(is_num(v) for v in content["constants"].values())):
             r.error("content.constants", "must be an object of name: number", rule="S1")
+        if "excludedConcepts" in content:
+            ex = content["excludedConcepts"]
+            if not (isinstance(ex, list) and all(isinstance(t, str) and t.strip() for t in ex)):
+                r.error("content.excludedConcepts", "must be a list of concept tags", rule="S1")
+            elif len(set(ex)) != len(ex):
+                r.error("content.excludedConcepts", "lists the same concept tag twice", rule="S1")
 
     # ---------------- output ----------------
     out = need(r, spec, "output", "", lambda x: isinstance(x, dict), "an object")

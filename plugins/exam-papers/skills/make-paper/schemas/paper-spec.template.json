@@ -55,7 +55,8 @@
     "diagrams": "only_if_essential",
     "showChapterNames": false,
     "constants": { "g": 9.8 },
-    "avoidOverlappingConcepts": true
+    "avoidOverlappingConcepts": true,
+    "excludedConcepts": []
   },
   "output": {
     "header": null,

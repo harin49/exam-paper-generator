@@ -72,6 +72,15 @@ Each section:
 | `showChapterNames` | true/false | Whether chapter names are printed next to questions. | If true, the paper prints "Unit N: title" above each question. The key always shows each question's unit and concepts. |
 | `constants` | object | Values to use, e.g. `{"g": 9.8}`. | Printed in the paper's general instructions ("Take g = 9.8 m s⁻² unless stated otherwise"; only `g` gets a unit, other names print as given); the writer computes with them; passed to the blind solver and reviewer. `{}` prints nothing. |
 | `avoidOverlappingConcepts` | true/false | Questions should not test the same concept twice. | If true, Q14 lists every concept used by more than one question, for review. The blueprint spreads concepts in either case. |
+| `excludedConcepts` | list of concept tags, optional | Concepts this paper leaves out, from the concept list of the paper's chapters. For this paper only: the syllabus pack is unchanged. | The blueprint never assigns them, and errors on a tag that is not a concept in the paper's chapters (a typo) or when a chapter would have none left (drop the chapter from `exam.chapters` instead); Q8 is an error if a question uses one; the writer keeps its wording clear of them and the reviewer flags any that creeps in. Chapter balance is unchanged: the chapter still gets its share, from the concepts left. |
+
+A unit test on Unit 8 that covers electricity but not magnetism leaves out Unit 8's magnetism
+concepts (the tags are in the pack's `concepts.json`):
+
+```json
+"excludedConcepts": ["induced_magnetism", "magnetic_field_lines", "earths_magnetic_field",
+                     "neutral_points", "electromagnet_and_uses"]
+```
 
 Custom weights are keyed by chapter number as a string, because JSON keys are always strings:
 
@@ -160,7 +169,9 @@ Every message starts with its rule number, e.g. `[S6] pattern.sections[B]: secti
 **Errors** (the spec must be fixed before a blueprint is made):
 
 - **S1.** Every field above is present (except those marked optional) with the right type, and
-  every fixed value is one of the allowed options.
+  every fixed value is one of the allowed options; `excludedConcepts` names each tag once. (Whether
+  each tag is a concept of the paper's chapters is checked when the blueprint is made, since the
+  validator does not read the concept list.)
 - **S2.** `chapters` is a non-empty list of positive chapter numbers with no duplicates.
 - **S3.** `smallestMarkUnit` divides 1 evenly (1, 0.5, 0.25...).
 - **S4.** Section ids are unique.

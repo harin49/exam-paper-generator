@@ -1,7 +1,7 @@
 {
   "name": "exam-papers",
   "displayName": "Exam Papers",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Make an exam question paper and a teacher answer key (two PDFs) from a syllabus and a paper spec. Scripts plan and check the structure, Claude writes the wording, and a blind solver and an independent reviewer check the paper before a teacher approves it.",
   "author": { "name": "harin49" },
   "license": "MIT"

@@ -16,7 +16,8 @@ The prompt gives you the full path of each of these:
 
 - `blueprint.json`: the approved plan, one slot per question part (chapter, concept, marks, kind,
   difficulty, MCQ answer letter). It is fixed: you never change it.
-- `spec.json`: the paper's pattern and content rules (constants, diagrams setting).
+- `spec.json`: the paper's pattern and content rules (constants, diagrams setting, and
+  `excludedConcepts`: concepts this paper leaves out).
 - `concepts.json` and `syllabus.md`: the syllabus pack's concept list and numbered syllabus.
 - `question-format.md`: the format of `questions.json` and its rules (Q1-Q16).
 - the script `check_questions.py`;
@@ -35,7 +36,9 @@ field is the blueprint's `conceptList`, copied exactly. For every question:
 - Copy `number`, `section`, `chapter`, `concepts`, `marks`, and every part's `label`, `marks`,
   `kind`, `difficulty` and `concept` exactly from the blueprint (rule Q15). Add the wording.
 - `text`/`stem`: clear, self-contained, at the level of the class and book. Test only the part's
-  `concept`, within its `kind`. Do not go beyond the syllabus.
+  `concept`, within its `kind`. Do not go beyond the syllabus, and do not test or rely on a concept
+  in the spec's `excludedConcepts` (for example, no compass in an electricity question when
+  magnetism is left out).
 - Make each part as hard as its `difficulty` tag says: **easy** is direct recall or a one-step
   application (state, name, define); **medium** needs two steps or some reasoning (explain why,
   compare, give a reason with an example); **hard** needs several steps or applying ideas to a new

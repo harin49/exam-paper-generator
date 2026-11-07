@@ -15,7 +15,8 @@ concept tags. You look for what they cannot. You do **not** fix anything: you re
 The prompt gives you paths to:
 
 - `questions.json`: the paper with its answer key, marking scheme and explanations;
-- `spec.json`: the paper's pattern and content rules (constants, each section's difficulty target, diagrams);
+- `spec.json`: the paper's pattern and content rules (constants, each section's difficulty target, diagrams,
+  and `excludedConcepts`: concepts this paper leaves out);
 - the syllabus pack's concept list (`concepts.json`) and numbered syllabus (`syllabus.md`);
 - the output of `compare_solutions.py`: where an independent blind solver disagreed with the key,
   the problems it reported, and its answers to the theory parts beside the key's.
@@ -69,8 +70,9 @@ From **round 2** on, the writer has revised the paper. Do not review it from scr
    everything the picture must show.
 4. **Syllabus and level.** Every question tests its concept (the one the blueprint assigned), stays
    inside the syllabus and book (check against `syllabus.md` and the concept's `source`), and is
-   pitched for the class. Flag anything beyond the syllabus, and anything that needs a result the
-   syllabus does not teach.
+   pitched for the class. Flag anything beyond the syllabus, anything that needs a result the
+   syllabus does not teach, and anything that tests or relies on a concept in the spec's
+   `excludedConcepts`.
 5. **Difficulty.** Each part's tagged difficulty is fair. A part tagged easy should be a direct
    recall or one-step application; medium needs two steps or some reasoning. The tags come from the
    approved blueprint and cannot change, so when a part does not fit its tag, the suggested fix is

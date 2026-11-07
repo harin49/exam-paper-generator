@@ -62,7 +62,9 @@ list, checks it (`validate_concepts.py`) and asks you to approve it by typing
 `/exam-papers:approve concepts`.
 
 To make a paper, give Claude your `spec.json` and invoke `/exam-papers:make-paper`. The spec names its pack in `exam.syllabusPack`
-(e.g. `"icse9-physics-selina"`); the paper uses that pack's approved concept list and no other.
+(e.g. `"icse9-physics-selina"`); the paper uses that pack's approved concept list and no other. To
+leave part of a unit out of one paper (say, magnetism from a unit on electricity and magnetism),
+list those concepts in `content.excludedConcepts`.
 Every spec field, what it changes in the paper and the rules it must follow are in
 [`paper-spec-format.md`](plugins/exam-papers/skills/make-paper/schemas/paper-spec-format.md); start
 from [`paper-spec.template.json`](plugins/exam-papers/skills/make-paper/schemas/paper-spec.template.json).

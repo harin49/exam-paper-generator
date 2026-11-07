@@ -647,6 +647,11 @@ Still to find out:
 
 ## Open questions
 
-None at present. Questions answered so far: who drives the loop (D4, D5), first-version scope (D8),
+- The ICSE Physics syllabus includes spherical mirrors (with mirror-formula numericals) and
+  electromagnets: check whether the book edition covers them (their concepts are included for now).
+- Still to do: a finished example paper (approve the `icse9-physics-units1-4` blueprint, write its
+  questions, review, render).
+
+Questions answered so far: who drives the loop (D4, D5), first-version scope (D8),
 syllabus input (D9), approvals (D6), gates (D7), state (D14), question kinds (D15), formats (D16),
 evals (D17).

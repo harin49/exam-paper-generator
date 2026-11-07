@@ -7,67 +7,92 @@ the architecture and every decision are in [`docs/harness-design.md`](docs/harne
 
 ## Install
 
-The repo is a plugin marketplace: `.claude-plugin/marketplace.json` names the marketplace
-`exam-paper-generator` and lists one plugin, `exam-papers`. Add the marketplace from GitHub, then
-install the plugin. The plugin needs Python 3 with the packages in `requirements.txt` (reportlab for
-the PDFs, matplotlib for diagrams).
-
-**Claude desktop app or Cowork:** open **Customize > Plugins**, choose **Add marketplace**, and enter
-`harin49/exam-paper-generator` (or `https://github.com/harin49/exam-paper-generator`). If the repo
-is private, connect your GitHub account when asked and give the Claude GitHub App access to it. Then
-install **exam-papers** from that marketplace.
-
-**Claude Code (terminal):**
+**Claude Code:**
 
 ```
 /plugin marketplace add harin49/exam-paper-generator
 /plugin install exam-papers@exam-paper-generator
 ```
 
-`/plugin install` opens the plugin's page so you can choose where to install it. For a private repo,
-Claude Code uses the git credentials already on your machine: an SSH key that works for
-`ssh -T git@github.com`, or an HTTPS credential helper.
+Claude Code runs the plugin's scripts with your own Python 3, so install the two packages they need
+(reportlab for the PDFs, matplotlib for formulas and diagrams):
 
-### Updating
+```bash
+pip3 install "reportlab>=4.0" "matplotlib>=3.8"
+```
 
-Claude Code copies a new version of the plugin only when the `version` in
-`plugins/exam-papers/.claude-plugin/plugin.json` changes. To release a change: commit it, raise the
-version (for example `0.1.0` to `0.2.0`), and push. Users then pick it up with **Check for updates**
-on the marketplace (desktop app or Cowork; **Sync automatically** does it for them), or in Claude Code
-with `/plugin marketplace update exam-paper-generator` and `claude plugin update
-exam-papers@exam-paper-generator`. A session already open keeps the version it started with; a new
-session, or `/reload-plugins`, loads the new one.
+**Claude desktop app or Cowork:**
 
-### Developing
+1. Open **Customize > Plugins** and choose **Add marketplace**.
+2. Enter `harin49/exam-paper-generator`. If the repo is private, connect your GitHub account when asked.
+3. Install **exam-papers** from that marketplace.
 
-To try edits without pushing, add the marketplace from your clone instead:
-`/plugin marketplace add /path/to/exam-paper-generator`. The plugin's files are then read straight
-from the repo, so an edit takes effect after `/reload-plugins` or in the next session, with no version
-change.
+Updating the plugin, trying edits from a clone and running the tests are in
+[`docs/development.md`](docs/development.md).
 
-## Using it
+## Get started
 
-Work in a folder of your own (the **workspace**), not in this repo. It holds:
+This example makes an ICSE Class 9 Physics paper on units 1–4 with the sample syllabus pack that
+ships with the plugin. Type each `/exam-papers:...` command in the chat yourself: Claude cannot
+approve or decide for you.
 
-- `syllabi/<pack>/`: a syllabus with numbered points (`syllabus.md`), its concept list
-  (`concepts.json`) and your approval of it (`approvals.json`). A sample pack, ICSE Class 9 Physics
-  (Selina), ships with the skill and is copied in on request.
-- `papers/<task>/`: one folder per paper, `papers/<board>-<class>-<subject>-<date>/`, made by
-  `new_paper.py`; it holds the spec, blueprint, questions, review files and both PDFs. An existing
-  folder is never reused (a second paper on the same day gets `-2`).
+1. **Make a workspace folder** for your papers (not this repo) and start Claude Code in it. In Cowork,
+   choose this folder for the task instead.
 
-To add a syllabus, give Claude the syllabus file (Markdown or text) and invoke
-`/exam-papers:make-pack`: it numbers the syllabus's points (`number_syllabus.py`), drafts the concept
-list, checks it (`validate_concepts.py`) and asks you to approve it by typing
-`/exam-papers:approve concepts`.
+   ```bash
+   mkdir -p ~/exam-papers && cd ~/exam-papers
+   ```
 
-To make a paper, give Claude your `spec.json` and invoke `/exam-papers:make-paper`. The spec names its pack in `exam.syllabusPack`
-(e.g. `"icse9-physics-selina"`); the paper uses that pack's approved concept list and no other. To
-leave part of a unit out of one paper (say, magnetism from a unit on electricity and magnetism),
-list those concepts in `content.excludedConcepts`.
-Every spec field, what it changes in the paper and the rules it must follow are in
-[`paper-spec-format.md`](plugins/exam-papers/skills/make-paper/schemas/paper-spec-format.md); start
-from [`paper-spec.template.json`](plugins/exam-papers/skills/make-paper/schemas/paper-spec.template.json).
+   ```bash
+   claude
+   ```
+
+2. **Add a paper spec.** Save [`examples/icse9-physics-units1-4/spec.json`](examples/icse9-physics-units1-4/spec.json)
+   as `~/exam-papers/spec.json`. It sets the units, sections, marks and difficulty, and names the
+   syllabus pack (`exam.syllabusPack`). For your own paper, start from
+   [`paper-spec.template.json`](plugins/exam-papers/skills/make-paper/schemas/paper-spec.template.json);
+   every field is explained in
+   [`paper-spec-format.md`](plugins/exam-papers/skills/make-paper/schemas/paper-spec-format.md).
+
+3. **Start the paper.**
+
+   ```
+   /exam-papers:make-paper spec.json
+   ```
+
+   Claude makes the paper's folder, `papers/icse-9-physics-<date>/`, and checks the spec. The first
+   time, it offers to copy the sample pack into `syllabi/icse9-physics-selina/`: say yes.
+
+4. **Approve the concept list** (once per syllabus pack), after reading the concepts Claude shows:
+
+   ```
+   /exam-papers:approve concepts
+   ```
+
+5. **Approve the blueprint**, the plan of every question's unit, concept, marks, kind and difficulty:
+
+   ```
+   /exam-papers:approve blueprint
+   ```
+
+6. **Decide the review findings.** Claude writes the questions, a blind solver and a reviewer check
+   them, and errors are fixed without asking. Accept or reject the warnings and suggestions Claude
+   lists, by their ids:
+
+   ```
+   /exam-papers:decide accept R2 R4 reject R5
+   ```
+
+7. **Approve the final paper.** Claude then builds the question paper and the answer key as PDFs in
+   `papers/icse-9-physics-<date>/`.
+
+   ```
+   /exam-papers:approve paper
+   ```
+
+**Your own syllabus:** give Claude the syllabus file (Markdown or text) and type
+`/exam-papers:make-pack`. It numbers the syllabus's points, drafts a concept list and asks you to
+approve it with `/exam-papers:approve concepts`. Name that pack in your spec's `exam.syllabusPack`.
 
 ## Workflow
 
@@ -84,13 +109,6 @@ steps are recorded by content hash in `TASK/state.json` (and logged in `TASK/run
 a folder or re-saving a file does not change where a paper is. You approve and decide by typing
 `/exam-papers:approve concepts|blueprint|paper` and `/exam-papers:decide accept … reject …`; a hook
 records each with the file's hash, and editing an approved file voids its approval.
-
-## Development
-
-Install the packages from the repo root: `pip3 install -r requirements-dev.txt` (adds pypdf, which the
-PDF-content tests need; they are skipped without it). Run all tests from the repo root:
-`python3 -m unittest discover tests`. The tests use fixed data in `tests/test_data/` (a small 21-mark
-paper, plus a 50-mark spec for the blueprint generator), never `examples/` or generated papers.
 
 ## Layout
 
@@ -117,100 +135,9 @@ plugins/exam-papers/                # the plugin: the only part that is installe
                                     # report (Report, value checks), task_files (JSON, hashes,
                                     # run log), approvals, spec_types, latex
     assets/syllabi/icse9-physics-selina/   # sample pack: syllabus.md, concepts.json (approve once copied)
-docs/harness-design.md              # goal, architecture, decisions D1–D21
+docs/harness-design.md              # goal, architecture, decisions D1–D23
+docs/development.md                 # updating, trying edits from a clone, tests, releases
 examples/icse9-physics-units1-4/    # example paper: spec + draft blueprint
 tests/                              # unit tests; tests/test_data/ holds their fixed data
 requirements.txt, requirements-dev.txt
 ```
-
-## Decisions so far
-
-- Sections are a list; each has `questionsOffered`, `questionsToAttempt`,
-  `marksPerQuestion` and `sectionTotal` (kept on purpose as a cross-check).
-- Balance rules (chapters, numerical/theory, difficulty) are **soft**, with tolerances set in the
-  spec (the template uses chapter weightage ±5 marks, numerical/theory ±5%, and per-section
-  difficulty ±10% for Section A and ±15% for B and C).
-- Balance is measured on marks **offered**, not attempted.
-- A spec can require every chapter to appear in the compulsory section
-  (`everyChapterInCompulsorySection`, on in the template).
-- Totals, sub-part sums, question counts, constants and difficulty levels a section excludes (0%,
-  e.g. no hard questions in Section A) are **hard** rules.
-- Questions: text markup is HTML-style (`<sup>`, `<sub>`, `<b>`, `<i>`), with LaTeX for maths that
-  needs layout; every numerical answer has a `computed` expression that a script evaluates; concept
-  tags come from a fixed list per syllabus unit; numerical/theory and difficulty are tagged per part
-  (one kind per part); parts nest one level at most.
-- Pipeline: `spec.json` (user-supplied, checked by script) → `blueprint.json` (script,
-  approved by user) → `questions.json` (writer subagent, checked by script and reviewers) → PDFs
-  (script).
-- Difficulty is set per section (D22). The template has Section A at easy 60, medium 40, hard 0;
-  B at easy 40, medium 60, hard 0; C at easy 20, medium 50, hard 30, which comes to easy 33.4%,
-  medium 50.8%, hard 15.8% over the paper.
-- Determinism: code decides structure (blueprint, marks, concepts, arithmetic); Claude writes the wording.
-- The concept list is drafted once from the syllabus, checked for coverage, approved by a teacher and
-  then frozen. Each concept records its syllabus `source`, the `kinds` it supports (encoding syllabus
-  limits such as "no numerical problems on callipers and screw gauge") and `maxMarks`.
-- Concepts are organised by the syllabus's own units, not book chapters (D11): in the ICSE Physics
-  sample, unit 4 "Fluids" is book chapters 4 and 5, and unit 8 is book chapters 9 and 10. The field
-  names keep the word `chapter`.
-- The blueprint names a concept for every part, so the approved blueprint says what each part tests.
-- Rendering: everything printed that is not question wording comes from the spec (time, maximum marks,
-  section headings, general instructions, constants, numbering, chapter names, what the answer key
-  includes). `render.py` gates on `check_questions.py`; warnings do not block.
-- Diagrams: Claude draws each image (matplotlib) when it drafts the question and saves it beside
-  `questions.json`; `render.py` only places it. A missing image prints a labelled placeholder box and a
-  warning at the end of the run (no flag, no failure).
-- Fonts: system fonts only, nothing bundled: the first of Times New Roman, Liberation Serif, DejaVu Serif
-  that is installed and has every character the paper uses (a warning names any missing glyph).
-- Review: the blind solver gets its input from a script (`extract_paper.py`), which refuses to write any
-  answer field, so blindness does not depend on Claude stripping things out. Numerical and MCQ answers are
-  compared by script; theory answers are listed side by side for the reviewer to judge. A mismatch is a
-  lead, not proof (unit and sign conventions cause false alarms).
-- Output: every generated paper lives in its own folder, `papers/<board>-<class>-<subject>-<date>/`,
-  made by `new_paper.py` (never reused; `-2`, `-3` on a clash). `render.py` writes the PDFs into the
-  task folder itself. `examples/` is for reference papers, not new ones.
-- Blueprint chapter allocation: spread evenly within each section first, then stay within the chapter
-  tolerance; with 4 long questions over 5 chapters, one chapter gets no long question.
-
-## Status
-
-- [x] Paper spec format + `validate_paper_spec.py` (rules S1–S20)
-- [x] Question and blueprint formats (rules Q1–Q16) + `check_questions.py`
-- [x] Shared enums (`spec_types.py`); rule numbers in every message (`[S6] ...`, `[Q4] ...`, `[C6] ...`)
-- [x] Syllabus 2026–2027 saved as the sample pack's `syllabus.md`
-- [x] Concept list redrafted from the syllabus (94 concepts, all 22 syllabus sections covered)
-      + `validate_concepts.py` (rules C1–C6)
-- [x] `concepts.json` reviewed and approved by the user (now approved with `/exam-papers:approve concepts`)
-- [x] `make_blueprint.py` + tests; first draft blueprint in `examples/icse9-physics-units1-4/`
-- [x] `render.py` + tests
-- [x] `SKILL.md` reviewed and approved (user supplies the spec; no clarifying questions for now)
-- [x] Review chain: `extract_paper.py`, `compare_solutions.py`, the blind-solver and reviewer agents
-      (run once end to end with real subagents)
-- [x] `workflow.json` + `next_step.py`: one step at a time, in a fixed order, checked against the task folder
-- [x] State by content hashes (`state.json`, `run.jsonl`, `next_step.py --done`) instead of file times
-- [x] Script steps record themselves; a gate refused for an unrecorded step says which step and how to fix it
-- [x] LaTeX maths (D10): `$...$` inline and `$$...$$` displayed, drawn by matplotlib's mathtext;
-      rule Q16 checks every formula; MCQ options may be written in LaTeX
-- [x] Blueprint puts easier parts first; the writer fits wording to each part's tag; a writer
-      disagreement the reviewer keeps open goes to the teacher at once
-- [x] Typed approvals for the blueprint and the final paper (`/exam-papers:approve`, hooks, `approvals.json`)
-- [x] Writer subagent drafts and revises the questions; hooks keep the solver blind and the writer
-      away from the solver's answers; the reviewer judges every solver mismatch
-- [x] Review loop: up to 3 rounds, errors fixed without asking, warnings and suggestions decided by the
-      teacher, disputes after round 3 (`review_status.py`, `review/rounds/`, `review/decisions.json`)
-- [x] Typed decisions on review findings (`/exam-papers:decide`; a hook writes `review/decisions.json`)
-- [x] Syllabus units (D11): concept lists and specs use the syllabus's own units (field names kept as
-      `chapters`), the book is optional, the PDFs print "Unit"; the Physics sample has 8 units
-- [x] The spec names its syllabus pack (`exam.syllabusPack`, rule S20); `make_blueprint.py` finds
-      `syllabi/<pack>/concepts.json` from it
-- [x] `/exam-papers:make-pack` skill: number the syllabus, draft the concept list, validate, gate 1
-- [x] Gate 1: a pack's concept list is approved by typing `/exam-papers:approve concepts` (validated,
-      hash-bound); `make_blueprint.py` refuses an unapproved list
-- [x] Syllabus points numbered by a script (`number_syllabus.py`, ids `[S1]`...), coverage per point
-      with `notTested` reasons; the ICSE Physics sample moved to point ids
-- [x] Final approval shows every change made in the review loop (`review_status.py --fixes`), and any
-      automatic fix can be undone with `/exam-papers:decide reject ID`
-- [x] Unit tests moved to their own test data (`tests/test_data/`); 411 tests, all passing
-- [ ] New example: approve the `icse9-physics-units1-4` blueprint, write its questions, review, render
-
-Open question: the syllabus includes spherical mirrors (with mirror-formula numericals) and
-electromagnets; check whether the book edition covers them (concepts are included for now).
